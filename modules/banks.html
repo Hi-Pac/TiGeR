@@ -1,0 +1,172 @@
+<div id="banks-module">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">إدارة البنوك والخزائن</h3>
+            <div class="flex space-x-2 space-x-reverse">
+                <button id="add-bank-account-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                    <i class="fas fa-university ml-2"></i> إضافة حساب بنكي/خزينة
+                </button>
+                <button id="add-bank-transaction-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                    <i class="fas fa-exchange-alt ml-2"></i> تسجيل معاملة جديدة
+                </button>
+            </div>
+        </div>
+    
+        <!-- Bank Accounts Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="bank-summary-cards">
+            <!-- Summary cards will be populated by JS -->
+            <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg shadow animate-pulse"> <!-- Pulse for loading -->
+                <div class="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                <div class="h-8 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+            </div>
+        </div>
+    
+        <h4 class="text-md font-semibold mb-2 mt-6">قائمة الحسابات البنكية والخزائن</h4>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium">اسم الحساب/الخزينة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">نوع الحساب</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">رقم الحساب (إن وجد)</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">الرصيد الحالي</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">العملة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="bank-accounts-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Bank account rows will be populated by JavaScript -->
+                    <tr><td colspan="6" class="text-center p-4">جاري تحميل الحسابات...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Bank Account Form (Modal Style) -->
+    <div id="bank-account-form-container" class="fixed inset-0 bg-gray-800 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 overflow-y-auto hidden z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-auto max-w-xl">
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+                <h3 id="bank-account-form-title" class="text-xl font-bold">إضافة حساب جديد</h3>
+                <button id="close-bank-account-form-btn" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <form id="bank-account-form">
+                <input type="hidden" id="bank-account-id-field">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="account-name-field" class="block text-sm font-medium mb-1">اسم الحساب/الخزينة <span class="text-red-500">*</span></label>
+                        <input type="text" id="account-name-field" required class="form-input" placeholder="مثال: حساب البنك الأهلي جاري, خزينة المكتب الرئيسية">
+                    </div>
+                    <div>
+                        <label for="account-type-field" class="block text-sm font-medium mb-1">نوع الحساب <span class="text-red-500">*</span></label>
+                        <select id="account-type-field" required class="form-select">
+                            <option value="bank_current">حساب بنكي - جاري</option>
+                            <option value="bank_saving">حساب بنكي - توفير</option>
+                            <option value="cash_on_hand">خزينة نقدية</option>
+                            <option value="e_wallet">محفظة إلكترونية</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="bank-name-field" class="block text-sm font-medium mb-1">اسم البنك (إذا كان حساب بنكي)</label>
+                        <input type="text" id="bank-name-field" class="form-input">
+                    </div>
+                    <div>
+                        <label for="account-number-field" class="block text-sm font-medium mb-1">رقم الحساب (إذا كان حساب بنكي)</label>
+                        <input type="text" id="account-number-field" class="form-input">
+                    </div>
+                    <div>
+                        <label for="account-iban-field" class="block text-sm font-medium mb-1">IBAN (إذا كان حساب بنكي)</label>
+                        <input type="text" id="account-iban-field" class="form-input">
+                    </div>
+                     <div>
+                        <label for="account-currency-field" class="block text-sm font-medium mb-1">العملة <span class="text-red-500">*</span></label>
+                        <select id="account-currency-field" required class="form-select">
+                            <option value="EGP">جنيه مصري (EGP)</option>
+                            <option value="USD">دولار أمريكي (USD)</option>
+                            <option value="EUR">يورو (EUR)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="account-opening-balance-field" class="block text-sm font-medium mb-1">الرصيد الافتتاحي <span class="text-red-500">*</span></label>
+                        <input type="number" id="account-opening-balance-field" required step="0.01" value="0" class="form-input">
+                    </div>
+                    <div>
+                        <label for="account-opening-date-field" class="block text-sm font-medium mb-1">تاريخ الرصيد الافتتاحي <span class="text-red-500">*</span></label>
+                        <input type="date" id="account-opening-date-field" required class="form-input">
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="account-notes-field" class="block text-sm font-medium mb-1">ملاحظات</label>
+                        <textarea id="account-notes-field" class="form-input" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-8 space-x-2 space-x-reverse">
+                    <button type="button" id="cancel-bank-account-form-btn" class="bg-gray-300 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                    <button type="submit" id="save-bank-account-form-btn" class="bg-primary text-white px-4 py-2 rounded-md text-sm">حفظ الحساب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Bank Transaction Form (Modal Style) -->
+    <div id="bank-transaction-form-container" class="fixed inset-0 bg-gray-800 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 overflow-y-auto hidden z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-auto max-w-xl">
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+                <h3 id="bank-transaction-form-title" class="text-xl font-bold">تسجيل معاملة جديدة</h3>
+                <button id="close-bank-transaction-form-btn" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+            <form id="bank-transaction-form">
+                <input type="hidden" id="bank-transaction-id-field">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="transaction-date-field" class="block text-sm font-medium mb-1">تاريخ المعاملة <span class="text-red-500">*</span></label>
+                        <input type="date" id="transaction-date-field" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="transaction-account-field" class="block text-sm font-medium mb-1">الحساب/الخزينة <span class="text-red-500">*</span></label>
+                        <select id="transaction-account-field" required class="form-select">
+                            <option value="">اختر الحساب...</option>
+                            <!-- Populate with bank accounts/cash boxes -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transaction-type-field" class="block text-sm font-medium mb-1">نوع المعاملة <span class="text-red-500">*</span></label>
+                        <select id="transaction-type-field" required class="form-select">
+                            <option value="deposit">إيداع / وارد</option>
+                            <option value="withdrawal">سحب / مصروف</option>
+                            <option value="transfer_out">تحويل صادر</option>
+                            <option value="transfer_in">تحويل وارد</option>
+                            <option value="bank_fee">رسوم بنكية</option>
+                            <option value="interest">فائدة</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="transaction-amount-field" class="block text-sm font-medium mb-1">المبلغ <span class="text-red-500">*</span></label>
+                        <input type="number" id="transaction-amount-field" required min="0.01" step="0.01" class="form-input">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="transaction-description-field" class="block text-sm font-medium mb-1">البيان/الوصف <span class="text-red-500">*</span></label>
+                        <input type="text" id="transaction-description-field" required class="form-input" placeholder="مثال: إيداع من العميل فلان، سداد فاتورة مورد، رسوم...">
+                    </div>
+                    <div>
+                        <label for="transaction-ref-field" class="block text-sm font-medium mb-1">رقم مرجعي (شيك، إيصال)</label>
+                        <input type="text" id="transaction-ref-field" class="form-input">
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="transaction-notes-field" class="block text-sm font-medium mb-1">ملاحظات</label>
+                        <textarea id="transaction-notes-field" class="form-input" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-8 space-x-2 space-x-reverse">
+                    <button type="button" id="cancel-bank-transaction-form-btn" class="bg-gray-300 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                    <button type="submit" id="save-bank-transaction-form-btn" class="bg-primary text-white px-4 py-2 rounded-md text-sm">حفظ المعاملة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+    // Module-specific script
+    if (window.currentLoadedModule === 'banks' && typeof initBanksModule === 'function') {
+        initBanksModule();
+    }
+    </script>
+</div>

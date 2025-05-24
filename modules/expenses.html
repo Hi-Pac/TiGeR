@@ -1,0 +1,134 @@
+<div id="expenses-module">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">إدارة المصروفات</h3>
+            <button id="add-expense-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                <i class="fas fa-plus ml-2"></i> إضافة مصروف جديد
+            </button>
+        </div>
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-4 mb-4">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+                <input type="text" id="expense-search-input" class="form-input pr-10" placeholder="بحث في البيان...">
+            </div>
+            <select id="expense-type-filter" class="form-select">
+                <option value="">كل أنواع المصروفات</option>
+                <option value="fuel">وقود</option>
+                <option value="maintenance">صيانة</option>
+                <option value="rent">إيجارات</option>
+                <option value="salaries">رواتب</option>
+                <option value="utilities">فواتير ومرافق</option>
+                <option value="office_supplies">أدوات مكتبية</option>
+                <option value="marketing">تسويق ودعاية</option>
+                <option value="transport">نقل ومواصلات</option>
+                <option value="other">أخرى</option>
+            </select>
+            <input type="date" id="expense-date-from-filter" class="form-input" title="من تاريخ">
+            <input type="date" id="expense-date-to-filter" class="form-input" title="إلى تاريخ">
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium">تاريخ المصروف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">نوع المصروف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">البيان/الوصف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">المبلغ (ج.م)</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">طريقة الدفع</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">الموظف/الجهة</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="expenses-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Expense rows will be populated by JavaScript -->
+                    <tr><td colspan="7" class="text-center p-4">جاري تحميل بيانات المصروفات...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination can be added here later -->
+    </div>
+    
+    <!-- Add/Edit Expense Form (Hidden by default) - Can be a simple div, not necessarily a modal -->
+    <div id="expense-form-container" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 hidden">
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+            <h3 id="expense-form-title" class="text-lg font-bold">إضافة مصروف جديد</h3>
+            <button id="close-expense-form-btn" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="expense-form">
+            <input type="hidden" id="expense-id-field"> <!-- For editing -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="expense-date-field" class="block text-sm font-medium mb-1">تاريخ المصروف <span class="text-red-500">*</span></label>
+                    <input type="date" id="expense-date-field" required class="form-input">
+                </div>
+                <div>
+                    <label for="expense-type-field" class="block text-sm font-medium mb-1">نوع المصروف <span class="text-red-500">*</span></label>
+                    <select id="expense-type-field" required class="form-select">
+                        <option value="">اختر النوع...</option>
+                        <option value="fuel">وقود</option>
+                        <option value="maintenance">صيانة</option>
+                        <option value="rent">إيجارات</option>
+                        <option value="salaries">رواتب</option>
+                        <option value="utilities">فواتير ومرافق (كهرباء، مياه، نت)</option>
+                        <option value="office_supplies">أدوات مكتبية وقرطاسية</option>
+                        <option value="marketing">تسويق ودعاية وإعلان</option>
+                        <option value="transport">نقل ومواصلات وانتقالات</option>
+                        <option value="bank_fees">رسوم بنكية</option>
+                        <option value="government_fees">رسوم حكومية وتراخيص</option>
+                        <option value="hospitality">ضيافة وبوفيه</option>
+                        <option value="other">مصروفات أخرى</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="expense-description-field" class="block text-sm font-medium mb-1">البيان/الوصف التفصيلي <span class="text-red-500">*</span></label>
+                    <textarea id="expense-description-field" required class="form-input" rows="2" placeholder="مثال: بنزين لسيارة رقم س ص ع 123, إيجار مكتب شهر أكتوبر..."></textarea>
+                </div>
+                <div>
+                    <label for="expense-amount-field" class="block text-sm font-medium mb-1">المبلغ (ج.م) <span class="text-red-500">*</span></label>
+                    <input type="number" id="expense-amount-field" required min="0.01" step="0.01" class="form-input">
+                </div>
+                <div>
+                    <label for="expense-payment-method-field" class="block text-sm font-medium mb-1">طريقة الدفع</label>
+                    <select id="expense-payment-method-field" class="form-select">
+                        <option value="cash">نقداً (خزينة)</option>
+                        <option value="bank_account_1">حساب بنك 1</option> <!-- Populate with actual bank accounts -->
+                        <option value="employee_paid">دفعها موظف (سلفة/عهدة)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="expense-paid-to-field" class="block text-sm font-medium mb-1">مدفوع إلى / المستفيد (اختياري)</label>
+                    <input type="text" id="expense-paid-to-field" class="form-input" placeholder="اسم الجهة أو الشخص">
+                </div>
+                 <div>
+                    <label for="expense-employee-field" class="block text-sm font-medium mb-1">الموظف المسؤول (إذا كانت عهدة)</label>
+                    <select id="expense-employee-field" class="form-select">
+                         <option value="">اختر الموظف...</option>
+                        <!-- Populate with employees -->
+                    </select>
+                </div>
+                 <div class="md:col-span-2">
+                    <label for="expense-attachment-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">إرفاق فاتورة/إيصال (اختياري)</label>
+                    <input type="file" id="expense-attachment-field" class="form-input">
+                    <span id="expense-current-attachment" class="text-xs text-gray-500 dark:text-gray-400 mt-1 block"></span>
+                </div>
+            </div>
+            <div class="flex justify-end mt-6 space-x-2 space-x-reverse">
+                <button type="button" id="cancel-expense-form-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                <button type="submit" id="save-expense-form-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center justify-center">
+                    <span>حفظ المصروف</span>
+                </button>
+            </div>
+        </form>
+    </div>
+    <script>
+    // Module-specific script
+    if (window.currentLoadedModule === 'expenses' && typeof initExpensesModule === 'function') {
+        initExpensesModule();
+    }
+    </script>
+</div>

@@ -1,0 +1,130 @@
+<div id="suppliers-module">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">إدارة الموردين</h3>
+            <button id="add-supplier-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                <i class="fas fa-plus ml-2"></i> إضافة مورد جديد
+            </button>
+        </div>
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-4 mb-4">
+            <div class="relative flex-grow">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+                <input type="text" id="supplier-search-input" class="form-input pr-10" placeholder="بحث (اسم الشركة، المسؤول، الهاتف)...">
+            </div>
+            <select id="supplier-category-filter" class="form-select">
+                <option value="">كل التصنيفات (التي يوردها)</option>
+                <option value="oils">زيوت</option>
+                <option value="rice">أرز</option>
+                <option value="pasta">مكرونة</option>
+                <option value="canned">معلبات</option>
+                <option value="spices">توابل</option>
+                <!-- Consider populating this dynamically based on product categories -->
+            </select>
+            <select id="supplier-status-filter" class="form-select">
+                <option value="">كل الحالات</option>
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+            </select>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">المورد</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">رقم الهاتف</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">أهم الأصناف</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الرصيد الحالي</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الحالة</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="suppliers-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Supplier rows will be populated by JavaScript -->
+                    <tr><td colspan="6" class="text-center p-4">جاري تحميل بيانات الموردين...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination can be added here later -->
+    </div>
+    
+    <!-- Add/Edit Supplier Form (Hidden by default) -->
+    <div id="supplier-form-container" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 hidden">
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+            <h3 id="supplier-form-title" class="text-lg font-bold">إضافة مورد جديد</h3>
+            <button id="close-supplier-form-btn" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="supplier-form">
+            <input type="hidden" id="supplier-id-field"> <!-- For editing -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="supplier-company-name-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم الشركة/المؤسسة</label>
+                    <input type="text" id="supplier-company-name-field" required class="form-input">
+                </div>
+                <div>
+                    <label for="supplier-contact-person-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم المسؤول/جهة الاتصال</label>
+                    <input type="text" id="supplier-contact-person-field" class="form-input">
+                </div>
+                <div>
+                    <label for="supplier-phone-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم الهاتف الأساسي</label>
+                    <input type="tel" id="supplier-phone-field" required class="form-input">
+                </div>
+                <div>
+                    <label for="supplier-email-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني (اختياري)</label>
+                    <input type="email" id="supplier-email-field" class="form-input">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="supplier-address-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label>
+                    <textarea id="supplier-address-field" class="form-input" rows="2"></textarea>
+                </div>
+                <div>
+                    <label for="supplier-opening-balance-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرصيد الافتتاحي (ج.م)</label>
+                    <input type="number" id="supplier-opening-balance-field" class="form-input" value="0" title="موجب: المورد دائن (له عندنا)، سالب: المورد مدين (لنا عنده)">
+                </div>
+                 <div>
+                    <label for="supplier-payment-terms-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">شروط الدفع (أيام)</label>
+                    <input type="number" id="supplier-payment-terms-field" class="form-input" min="0" placeholder="مثال: 30 يوم">
+                </div>
+                <div>
+                    <label for="supplier-status-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحالة</label>
+                    <select id="supplier-status-field" required class="form-select">
+                        <option value="active">نشط</option>
+                        <option value="inactive">غير نشط</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">فئات الأصناف التي يوردها</label>
+                     <div id="supplier-product-categories-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border border-gray-300 dark:border-gray-600 rounded-md max-h-32 overflow-y-auto">
+                        <!-- Checkboxes will be populated by JS or hardcoded if static -->
+                        <label class="inline-flex items-center"><input type="checkbox" value="oils" class="form-checkbox-input rounded"> <span class="mr-2">زيوت</span></label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="rice" class="form-checkbox-input rounded"> <span class="mr-2">أرز</span></label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="pasta" class="form-checkbox-input rounded"> <span class="mr-2">مكرونة</span></label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="canned" class="form-checkbox-input rounded"> <span class="mr-2">معلبات</span></label>
+                        <label class="inline-flex items-center"><input type="checkbox" value="spices" class="form-checkbox-input rounded"> <span class="mr-2">توابل</span></label>
+                     </div>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="supplier-notes-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات (اختياري)</label>
+                    <textarea id="supplier-notes-field" class="form-input" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end mt-6 space-x-2 space-x-reverse">
+                <button type="button" id="cancel-supplier-form-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                <button type="submit" id="save-supplier-form-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center justify-center">
+                    <span>حفظ</span>
+                    <!-- Spinner will be prepended here by JS -->
+                </button>
+            </div>
+        </form>
+    </div>
+    <script>
+    // Module-specific script
+    if (window.currentLoadedModule === 'suppliers' && typeof initSuppliersModule === 'function') {
+        initSuppliersModule();
+    }
+    </script>
+</div>

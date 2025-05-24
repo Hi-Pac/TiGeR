@@ -1,0 +1,205 @@
+<div id="accounting-module">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">إدارة الحسابات</h3>
+            <div class="flex space-x-2 space-x-reverse">
+                <button id="manage-chart-of-accounts-btn" class="tab-btn accounting-tab-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-4 py-2 rounded-md text-sm" data-tab="chart-of-accounts">
+                    شجرة الحسابات
+                </button>
+                <button id="manage-journal-entries-btn" class="tab-btn accounting-tab-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-4 py-2 rounded-md text-sm" data-tab="journal-entries">
+                    دفتر اليومية (القيود)
+                </button>
+                <button id="view-reports-btn" class="tab-btn accounting-tab-btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-4 py-2 rounded-md text-sm" data-tab="reports">
+                    التقارير المحاسبية
+                </button>
+            </div>
+        </div>
+    
+        <!-- Chart of Accounts Tab Content -->
+        <div id="chart-of-accounts-tab" class="accounting-tab-content">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-md font-semibold">شجرة الحسابات</h4>
+                <button id="add-account-btn" class="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-md text-xs flex items-center">
+                    <i class="fas fa-plus ml-1"></i> إضافة حساب جديد
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-2 text-right text-xs">كود الحساب</th>
+                            <th class="px-4 py-2 text-right text-xs">اسم الحساب</th>
+                            <th class="px-4 py-2 text-right text-xs">النوع الرئيسي</th>
+                            <th class="px-4 py-2 text-right text-xs">النوع الفرعي</th>
+                            <th class="px-4 py-2 text-right text-xs">طبيعة الحساب</th>
+                            <th class="px-4 py-2 text-right text-xs">الرصيد الحالي</th>
+                            <th class="px-4 py-2 text-right text-xs">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chart-of-accounts-table-body">
+                        <tr><td colspan="7" class="p-4 text-center">جاري تحميل شجرة الحسابات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
+        <!-- Journal Entries Tab Content -->
+        <div id="journal-entries-tab" class="accounting-tab-content hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-md font-semibold">دفتر اليومية (القيود المحاسبية)</h4>
+                <button id="add-journal-entry-btn" class="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-md text-xs flex items-center">
+                    <i class="fas fa-plus ml-1"></i> إضافة قيد يومية جديد
+                </button>
+            </div>
+            <!-- Filters for journal entries: date range, entry number, account involved -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-2 text-right text-xs">تاريخ القيد</th>
+                            <th class="px-4 py-2 text-right text-xs">رقم القيد</th>
+                            <th class="px-4 py-2 text-right text-xs">البيان (الوصف)</th>
+                            <th class="px-4 py-2 text-right text-xs">إجمالي مدين</th>
+                            <th class="px-4 py-2 text-right text-xs">إجمالي دائن</th>
+                            <th class="px-4 py-2 text-right text-xs">الحالة</th> <!-- Posted, Draft -->
+                            <th class="px-4 py-2 text-right text-xs">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="journal-entries-table-body">
+                         <tr><td colspan="7" class="p-4 text-center">جاري تحميل القيود...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
+        <!-- Reports Tab Content -->
+        <div id="reports-tab" class="accounting-tab-content hidden">
+            <h4 class="text-md font-semibold mb-4">التقارير المحاسبية</h4>
+            <p class="text-gray-600 dark:text-gray-400">سيتم إضافة التقارير (ميزان المراجعة، قائمة الدخل، الميزانية العمومية) هنا لاحقًا.</p>
+            <!-- Report generation options and display area -->
+        </div>
+    </div>
+    
+    <!-- Add/Edit Account (CoA) Form - Modal Style -->
+    <div id="account-coa-form-container" class="fixed inset-0 bg-gray-800 bg-opacity-75 hidden z-50 p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-auto max-w-lg">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 id="account-coa-form-title" class="text-lg font-bold">إضافة حساب جديد</h3>
+                <button id="close-account-coa-form-btn" class="text-2xl">×</button>
+            </div>
+            <form id="account-coa-form">
+                <input type="hidden" id="account-coa-id-field">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="account-coa-code-field" class="block text-sm font-medium mb-1">كود الحساب <span class="text-red-500">*</span></label>
+                        <input type="text" id="account-coa-code-field" required class="form-input" placeholder="مثال: 1101">
+                    </div>
+                    <div>
+                        <label for="account-coa-name-field" class="block text-sm font-medium mb-1">اسم الحساب <span class="text-red-500">*</span></label>
+                        <input type="text" id="account-coa-name-field" required class="form-input" placeholder="مثال: النقدية بالصندوق">
+                    </div>
+                    <div>
+                        <label for="account-coa-main-type-field" class="block text-sm font-medium mb-1">النوع الرئيسي <span class="text-red-500">*</span></label>
+                        <select id="account-coa-main-type-field" required class="form-select">
+                            <option value="">اختر...</option>
+                            <option value="assets">أصول</option>
+                            <option value="liabilities">خصوم (التزامات)</option>
+                            <option value="equity">حقوق الملكية</option>
+                            <option value="revenue">إيرادات</option>
+                            <option value="expenses_coa">مصروفات</option> <!-- expenses_coa to avoid conflict with main expenses module -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="account-coa-sub-type-field" class="block text-sm font-medium mb-1">النوع الفرعي (اختياري)</label>
+                        <input type="text" id="account-coa-sub-type-field" class="form-input" placeholder="مثال: أصول متداولة, نقدية">
+                    </div>
+                    <div>
+                        <label for="account-coa-nature-field" class="block text-sm font-medium mb-1">طبيعة الحساب <span class="text-red-500">*</span></label>
+                        <select id="account-coa-nature-field" required class="form-select">
+                            <option value="debit">مدين</option>
+                            <option value="credit">دائن</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="account-coa-opening-balance-field" class="block text-sm font-medium mb-1">الرصيد الافتتاحي</label>
+                        <input type="number" id="account-coa-opening-balance-field" value="0" step="0.01" class="form-input">
+                    </div>
+                     <div class="md:col-span-2">
+                        <label for="account-coa-notes-field" class="block text-sm font-medium mb-1">ملاحظات</label>
+                        <textarea id="account-coa-notes-field" class="form-input" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-6 space-x-2 space-x-reverse">
+                    <button type="button" id="cancel-account-coa-form-btn" class="bg-gray-300 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                    <button type="submit" id="save-account-coa-form-btn" class="bg-primary text-white px-4 py-2 rounded-md text-sm">حفظ الحساب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Journal Entry Form - Modal Style -->
+    <div id="journal-entry-form-container" class="fixed inset-0 bg-gray-800 bg-opacity-75 hidden z-50 p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-auto max-w-3xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 id="journal-entry-form-title" class="text-lg font-bold">إضافة قيد يومية</h3>
+                <button id="close-journal-entry-form-btn" class="text-2xl">×</button>
+            </div>
+            <form id="journal-entry-form">
+                <input type="hidden" id="journal-entry-id-field">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label for="journal-entry-date-field" class="block text-sm font-medium mb-1">تاريخ القيد <span class="text-red-500">*</span></label>
+                        <input type="date" id="journal-entry-date-field" required class="form-input">
+                    </div>
+                    <div>
+                        <label for="journal-entry-ref-field" class="block text-sm font-medium mb-1">رقم مرجعي (اختياري)</label>
+                        <input type="text" id="journal-entry-ref-field" class="form-input" placeholder="فاتورة، إيصال...">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label for="journal-entry-description-field" class="block text-sm font-medium mb-1">بيان القيد <span class="text-red-500">*</span></label>
+                        <input type="text" id="journal-entry-description-field" required class="form-input">
+                    </div>
+                </div>
+                <h4 class="text-md font-semibold mb-2 mt-4">بنود القيد</h4>
+                <div class="overflow-x-auto mb-2">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-2 py-1 text-right text-xs w-2/5">الحساب</th>
+                                <th class="px-2 py-1 text-right text-xs w-2/5">الوصف الفرعي</th>
+                                <th class="px-2 py-1 text-right text-xs w-1/5">مدين</th>
+                                <th class="px-2 py-1 text-right text-xs w-1/5">دائن</th>
+                                <th class="px-1 py-1 text-center text-xs"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="journal-entry-lines-table-body">
+                            <!-- Journal entry lines will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+                <button type="button" id="add-journal-entry-line-btn" class="text-sm text-primary hover:underline mb-4"><i class="fas fa-plus mr-1"></i> إضافة سطر للقيد</button>
+                
+                <div class="flex justify-between items-center mt-4 pt-2 border-t dark:border-gray-600">
+                    <div class="text-sm font-semibold">الإجماليات:</div>
+                    <div class="flex space-x-4 space-x-reverse">
+                        <span class="text-sm">مدين: <strong id="journal-total-debit">0.00</strong></span>
+                        <span class="text-sm">دائن: <strong id="journal-total-credit">0.00</strong></span>
+                        <span id="journal-balance-status" class="text-sm"></span>
+                    </div>
+                </div>
+    
+                <div class="flex justify-end mt-6 space-x-2 space-x-reverse">
+                    <button type="button" id="cancel-journal-entry-form-btn" class="bg-gray-300 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                    <button type="submit" id="save-journal-entry-form-btn" class="bg-primary text-white px-4 py-2 rounded-md text-sm">حفظ القيد</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+    // Module-specific script
+    if (window.currentLoadedModule === 'accounting' && typeof initAccountingModule === 'function') {
+        initAccountingModule();
+    }
+    </script>
+</div>

@@ -1,0 +1,129 @@
+<div id="help-module">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6 mb-6">
+        <h3 class="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">مركز المساعدة والدعم</h3>
+    
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+            <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-2">
+                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-800/50 rounded-full flex items-center justify-center text-blue-500 dark:text-blue-300">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h4 class="font-semibold text-blue-700 dark:text-blue-300 mr-3">دليل المستخدم</h4>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">تعلم كيفية استخدام جميع وظائف النظام مع دليل المستخدم المفصل خطوة بخطوة.</p>
+                <button class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                    <i class="fas fa-external-link-alt ml-1"></i> عرض الدليل (قريبًا)
+                </button>
+            </div>
+            <div class="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-2">
+                    <div class="w-10 h-10 bg-purple-100 dark:bg-purple-800/50 rounded-full flex items-center justify-center text-purple-500 dark:text-purple-300">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h4 class="font-semibold text-purple-700 dark:text-purple-300 mr-3">الأسئلة المتكررة (FAQ)</h4>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">إجابات للأسئلة الشائعة حول استخدام النظام وحل المشكلات التي قد تواجهك.</p>
+                <button class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm transition-colors faq-scroll-btn">
+                    <i class="fas fa-chevron-down ml-1"></i> تصفح الأسئلة
+                </button>
+            </div>
+            <div class="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-2">
+                    <div class="w-10 h-10 bg-green-100 dark:bg-green-800/50 rounded-full flex items-center justify-center text-green-500 dark:text-green-300">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h4 class="font-semibold text-green-700 dark:text-green-300 mr-3">الدعم الفني</h4>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">تواصل مع فريق الدعم الفني للحصول على المساعدة في حل المشكلات أو الاستفسارات.</p>
+                <button class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm transition-colors contact-support-scroll-btn">
+                    <i class="fas fa-envelope ml-1"></i> طلب مساعدة
+                </button>
+            </div>
+        </div>
+    
+        <!-- FAQ Section -->
+        <div id="faq-section" class="mb-8 pt-4 border-t dark:border-gray-700">
+            <h4 class="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-200">الأسئلة الشائعة</h4>
+            <div class="space-y-3" id="faq-accordion-container">
+                <!-- FAQ items will be populated by JS or hardcoded here -->
+                <div class="faq-item bg-gray-50 dark:bg-gray-700/50 rounded-lg overflow-hidden shadow-sm">
+                    <button class="faq-toggle-btn w-full flex justify-between items-center p-4 text-right focus:outline-none">
+                        <span class="font-medium text-gray-700 dark:text-gray-200">كيف يمكنني إضافة فاتورة مبيعات جديدة؟</span>
+                        <i class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-4 pt-0 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                        <p>لإضافة فاتورة مبيعات جديدة، اتبع الخطوات التالية:</p>
+                        <ol class="list-decimal list-inside mr-5 my-2 space-y-1">
+                            <li>انتقل إلى قسم "إدارة المبيعات" من الشريط الجانبي.</li>
+                            <li>انقر على زر "فاتورة مبيعات جديدة" الموجود أعلى يمين الصفحة.</li>
+                            <li>املأ بيانات العميل، تاريخ الفاتورة، واختر المخزن.</li>
+                            <li>أضف الأصناف المطلوبة بالكميات والأسعار.</li>
+                            <li>راجع الإجماليات وحدد طريقة الدفع.</li>
+                            <li>انقر على زر "حفظ الفاتورة" أو "حفظ وطباعة".</li>
+                        </ol>
+                    </div>
+                </div>
+                <!-- Add more static FAQs here or load dynamically -->
+                 <div class="faq-item bg-gray-50 dark:bg-gray-700/50 rounded-lg overflow-hidden shadow-sm">
+                    <button class="faq-toggle-btn w-full flex justify-between items-center p-4 text-right focus:outline-none">
+                        <span class="font-medium text-gray-700 dark:text-gray-200">كيف يمكنني تغيير كلمة المرور الخاصة بي؟</span>
+                        <i class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden p-4 pt-0 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                        <p>لتغيير كلمة المرور:</p>
+                        <ol class="list-decimal list-inside mr-5 my-2 space-y-1">
+                            <li>انقر على اسمك أو الحرف الأول من اسمك في أعلى يسار الشاشة.</li>
+                            <li>اختر "تعديل الملف الشخصي" أو "إعدادات الحساب" (إذا كانت متاحة).</li>
+                            <li>ابحث عن قسم تغيير كلمة المرور.</li>
+                            <li>أدخل كلمة المرور الحالية ثم كلمة المرور الجديدة مرتين.</li>
+                            <li>انقر على "حفظ التغييرات".</li>
+                             <li>إذا لم تجد هذا الخيار، قد تحتاج إلى التواصل مع مدير النظام.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Contact Support Section -->
+        <div id="contact-support-section" class="pt-4 border-t dark:border-gray-700">
+            <h4 class="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-200">تواصل مع الدعم الفني</h4>
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 md:p-6 shadow-sm">
+                <form id="contact-support-form">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="support-name-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم <span class="text-red-500">*</span></label>
+                            <input type="text" id="support-name-field" required class="form-input">
+                        </div>
+                        <div>
+                            <label for="support-email-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني <span class="text-red-500">*</span></label>
+                            <input type="email" id="support-email-field" required class="form-input">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="support-subject-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الموضوع <span class="text-red-500">*</span></label>
+                        <input type="text" id="support-subject-field" required class="form-input">
+                    </div>
+                    <div class="mb-4">
+                        <label for="support-message-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">تفاصيل المشكلة/الاستفسار <span class="text-red-500">*</span></label>
+                        <textarea id="support-message-field" required class="form-input" rows="4"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="support-attachment-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">إرفاق ملف (اختياري، صورة للمشكلة مثلاً)</label>
+                        <input type="file" id="support-attachment-field" class="form-input">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" id="send-support-request-btn" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md text-sm flex items-center justify-center">
+                            <span>إرسال الطلب</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+    // Module-specific script
+    if (window.currentLoadedModule === 'help' && typeof initHelpModule === 'function') {
+        initHelpModule();
+    }
+    </script>
+</div>

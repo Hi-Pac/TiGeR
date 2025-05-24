@@ -1,0 +1,171 @@
+<div id="settings-module">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h3 class="text-xl font-bold mb-6">إعدادات النظام</h3>
+    
+        <!-- Tabs Navigation -->
+        <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="settings-tabs-nav">
+                <li class="mr-2">
+                    <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="company-info-tab">
+                        معلومات الشركة
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="system-preferences-tab">
+                        تفضيلات النظام
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="taxes-fees-tab">
+                        الضرائب والرسوم
+                    </button>
+                </li>
+                <li>
+                    <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="backup-restore-tab">
+                        النسخ الاحتياطي والاستعادة
+                    </button>
+                </li>
+            </ul>
+        </div>
+    
+        <!-- Tab Content Area -->
+        <div id="settings-tabs-content">
+            <!-- Company Information Tab -->
+            <div id="company-info-tab" class="settings-tab-pane p-4 hidden">
+                <h4 class="text-lg font-semibold mb-4">معلومات الشركة</h4>
+                <form id="company-info-form">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="company-name-field" class="block text-sm font-medium mb-1">اسم الشركة <span class="text-red-500">*</span></label>
+                            <input type="text" id="company-name-field" required class="form-input" value="شركة توزيع المواد الغذائية">
+                        </div>
+                        <div>
+                            <label for="company-cr-number-field" class="block text-sm font-medium mb-1">رقم السجل التجاري</label>
+                            <input type="text" id="company-cr-number-field" class="form-input" value="123456">
+                        </div>
+                        <div>
+                            <label for="company-tax-number-field" class="block text-sm font-medium mb-1">الرقم الضريبي</label>
+                            <input type="text" id="company-tax-number-field" class="form-input" value="987-654-321">
+                        </div>
+                        <div>
+                            <label for="company-phone-field" class="block text-sm font-medium mb-1">رقم الهاتف</label>
+                            <input type="tel" id="company-phone-field" class="form-input" value="02-12345678">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="company-address-field" class="block text-sm font-medium mb-1">العنوان</label>
+                            <textarea id="company-address-field" class="form-input" rows="2">123 شارع النصر، مدينة نصر، القاهرة</textarea>
+                        </div>
+                        <div>
+                            <label for="company-email-field" class="block text-sm font-medium mb-1">البريد الإلكتروني</label>
+                            <input type="email" id="company-email-field" class="form-input" value="info@examplefood.com">
+                        </div>
+                        <div>
+                            <label for="company-website-field" class="block text-sm font-medium mb-1">الموقع الإلكتروني</label>
+                            <input type="url" id="company-website-field" class="form-input" value="https://www.examplefood.com">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="company-logo-field" class="block text-sm font-medium mb-1">شعار الشركة</label>
+                            <input type="file" id="company-logo-field" class="form-input" accept="image/*">
+                            <img id="company-logo-preview" src="#" alt="معاينة الشعار" class="mt-2 h-20 hidden"/>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-right">
+                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90">حفظ معلومات الشركة</button>
+                    </div>
+                </form>
+            </div>
+    
+            <!-- System Preferences Tab -->
+            <div id="system-preferences-tab" class="settings-tab-pane p-4 hidden">
+                <h4 class="text-lg font-semibold mb-4">تفضيلات النظام</h4>
+                <form id="system-preferences-form">
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="system-default-currency-field" class="block text-sm font-medium mb-1">العملة الافتراضية</label>
+                            <select id="system-default-currency-field" class="form-select">
+                                <option value="EGP">جنيه مصري (EGP)</option>
+                                <option value="USD">دولار أمريكي (USD)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="system-date-format-field" class="block text-sm font-medium mb-1">تنسيق التاريخ</label>
+                            <select id="system-date-format-field" class="form-select">
+                                <option value="dd/mm/yyyy">DD/MM/YYYY</option>
+                                <option value="mm/dd/yyyy">MM/DD/YYYY</option>
+                                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="system-default-warehouse-field" class="block text-sm font-medium mb-1">المخزن الافتراضي للمبيعات</label>
+                            <select id="system-default-warehouse-field" class="form-select">
+                                <option value="">اختر مخزن...</option>
+                                <!-- Populate with warehouses -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="low-stock-threshold-field" class="block text-sm font-medium mb-1">حد تنبيه المخزون المنخفض (أيام/كمية)</label>
+                            <input type="number" id="low-stock-threshold-field" class="form-input" value="10">
+                        </div>
+                         <div class="md:col-span-2">
+                            <span class="block text-sm font-medium mb-1">إشعارات البريد الإلكتروني</span>
+                            <label class="inline-flex items-center mt-1">
+                                <input type="checkbox" id="email-new-order-notify" class="form-checkbox-input rounded">
+                                <span class="mr-2 text-sm">إشعار بطلبات البيع الجديدة</span>
+                            </label>
+                            <br>
+                            <label class="inline-flex items-center mt-1">
+                                <input type="checkbox" id="email-low-stock-notify" class="form-checkbox-input rounded">
+                                <span class="mr-2 text-sm">إشعار بالمخزون المنخفض</span>
+                            </label>
+                        </div>
+                     </div>
+                     <div class="mt-6 text-right">
+                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90">حفظ التفضيلات</button>
+                    </div>
+                </form>
+            </div>
+    
+            <!-- Taxes & Fees Tab -->
+            <div id="taxes-fees-tab" class="settings-tab-pane p-4 hidden">
+                <h4 class="text-lg font-semibold mb-4">الضرائب والرسوم</h4>
+                <form id="taxes-fees-form">
+                    <div class="mb-4">
+                        <label for="vat-percentage-field" class="block text-sm font-medium mb-1">نسبة ضريبة القيمة المضافة (%) <span class="text-red-500">*</span></label>
+                        <input type="number" id="vat-percentage-field" required class="form-input w-full md:w-1/3" value="14" min="0" step="0.01">
+                    </div>
+                    <label class="inline-flex items-center mb-6">
+                        <input type="checkbox" id="enable-vat-field" class="form-checkbox-input rounded" checked>
+                        <span class="mr-2 text-sm">تفعيل ضريبة القيمة المضافة على الفواتير</span>
+                    </label>
+                    <!-- Add table for other taxes/fees later -->
+                     <div class="mt-6 text-right">
+                        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90">حفظ إعدادات الضرائب</button>
+                    </div>
+                </form>
+            </div>
+    
+            <!-- Backup & Restore Tab -->
+            <div id="backup-restore-tab" class="settings-tab-pane p-4 hidden">
+                <h4 class="text-lg font-semibold mb-4">النسخ الاحتياطي والاستعادة</h4>
+                 <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">قم بإنشاء نسخة احتياطية لبيانات النظام أو استعادة النظام من نسخة احتياطية سابقة. (هذه الميزة تتطلب إعدادات على جانب الخادم/Firebase Functions)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" id="create-backup-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm">
+                            <i class="fas fa-download ml-1"></i> إنشاء نسخة احتياطية الآن
+                        </button>
+                        <button type="button" id="restore-backup-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 px-4 py-2 rounded-md text-sm">
+                            <i class="fas fa-upload ml-1"></i> استعادة من نسخة احتياطية
+                        </button>
+                    </div>
+                </div>
+                <!-- Table for previous backups can be added here -->
+            </div>
+        </div>
+    </div>
+    <script>
+    // Module-specific script
+    if (window.currentLoadedModule === 'settings' && typeof initSettingsModule === 'function') {
+        initSettingsModule();
+    }
+    </script>
+</div>
