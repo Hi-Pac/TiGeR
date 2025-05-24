@@ -1,10 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Firebase Initialization (TODO: Uncomment and configure) ---
-    // const firebaseConfig = { /* ... your config ... */ };
-    // firebase.initializeApp(firebaseConfig);
-    // window.auth = firebase.auth();
-    // window.db = firebase.firestore();
-    // window.storage = firebase.storage(); // If using storage
+    const firebaseConfig = {
+          apiKey: "AIzaSyCAUaKXd9bzMUfBAQTa1nSaEbR_VVLIe98",
+          authDomain: "colorflow-erp.firebaseapp.com",
+          projectId: "colorflow-erp",
+          storageBucket: "colorflow-erp.firebasestorage.app",
+          messagingSenderId: "40753390221",
+          appId: "1:40753390221:web:a032845d5891d2b510b8c4"
+        };
+    firebase.initializeApp(firebaseConfig);
+    window.auth = firebase.auth();
+    window.db = firebase.firestore();
+    window.storage = firebase.storage(); // If using storage
 
     // --- Global DOM Elements ---
     const contentArea = document.getElementById('content-area');
