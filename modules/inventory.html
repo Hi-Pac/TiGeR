@@ -1,0 +1,190 @@
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+    <div class="flex flex-wrap items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">إدارة المخازن</h3>
+        <div class="flex space-x-2 space-x-reverse">
+            <button id="add-inventory-in-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                <i class="fas fa-plus ml-2"></i> إذن إضافة (وارد)
+            </button>
+            <button id="add-inventory-transfer-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm flex items-center">
+                <i class="fas fa-exchange-alt ml-2"></i> أمر تحويل مخزني
+            </button>
+            <!-- Add button for "Stock Adjustment" or "Stock Count" later -->
+        </div>
+    </div>
+    <!-- Filters -->
+    <div class="flex flex-wrap gap-4 mb-4">
+        <div class="relative flex-grow">
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <i class="fas fa-search text-gray-400"></i>
+            </div>
+            <input type="text" id="inventory-search-input" class="form-input pr-10" placeholder="بحث عن صنف...">
+        </div>
+        <select id="inventory-warehouse-filter" class="form-select">
+            <option value="">كل المخازن</option>
+            <!-- Populate with warehouses -->
+        </select>
+        <select id="inventory-stock-status-filter" class="form-select">
+            <option value="">كل حالات المخزون</option>
+            <option value="in_stock">متوفر</option>
+            <option value="low_stock">مخزون منخفض</option>
+            <option value="out_of_stock">نفذ المخزون</option>
+        </select>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium">الصنف</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium">المخزن</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium">الكمية المتاحة</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium">وحدة القياس</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium">حد إعادة الطلب</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium">الحالة</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <!-- Inventory stock rows will be populated by JavaScript -->
+                <tr><td colspan="7" class="text-center p-4">جاري تحميل أرصدة المخزون...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- Pagination can be added here later -->
+</div>
+
+<!-- Add Inventory In (Stock In) Form - Modal Style -->
+<div id="inventory-in-form-container" class="fixed inset-0 bg-gray-800 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 overflow-y-auto hidden z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-auto max-w-3xl">
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+            <h3 id="inventory-in-form-title" class="text-xl font-bold">إذن إضافة مخزون (وارد)</h3>
+            <button id="close-inventory-in-form-btn" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">×</button>
+        </div>
+        <form id="inventory-in-form">
+            <input type="hidden" id="inventory-in-id-field">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="inventory-in-date-field" class="block text-sm font-medium mb-1">التاريخ <span class="text-red-500">*</span></label>
+                    <input type="date" id="inventory-in-date-field" required class="form-input">
+                </div>
+                <div>
+                    <label for="inventory-in-warehouse-field" class="block text-sm font-medium mb-1">المخزن المستلم <span class="text-red-500">*</span></label>
+                    <select id="inventory-in-warehouse-field" required class="form-select">
+                        <option value="">اختر المخزن...</option>
+                        <!-- Populate with warehouses -->
+                    </select>
+                </div>
+                <div>
+                    <label for="inventory-in-supplier-field" class="block text-sm font-medium mb-1">المورد (إذا كان من شراء)</label>
+                    <select id="inventory-in-supplier-field" class="form-select">
+                        <option value="">اختر المورد...</option>
+                        <!-- Populate with suppliers -->
+                    </select>
+                </div>
+                <div>
+                    <label for="inventory-in-ref-field" class="block text-sm font-medium mb-1">المرجع (فاتورة شراء/سبب)</label>
+                    <input type="text" id="inventory-in-ref-field" class="form-input">
+                </div>
+            </div>
+
+            <h4 class="text-md font-semibold mb-2 mt-6">الأصناف الواردة</h4>
+            <div class="overflow-x-auto mb-4">
+                <table class="min-w-full">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-right text-xs w-2/5">الصنف</th>
+                            <th class="px-3 py-2 text-right text-xs w-1/5">الكمية الواردة</th>
+                            <th class="px-3 py-2 text-right text-xs w-1/5">تاريخ الإنتاج (اختياري)</th>
+                            <th class="px-3 py-2 text-right text-xs w-1/5">تاريخ الانتهاء (اختياري)</th>
+                            <th class="px-1 py-2 text-center text-xs"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-in-items-table-body">
+                        <!-- Stock in item rows will be added here by JS -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="pt-2">
+                                <button type="button" id="add-inventory-in-item-btn" class="text-sm text-primary hover:underline">
+                                    <i class="fas fa-plus mr-1"></i> إضافة بند
+                                </button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+             <div class="mt-4">
+                <label for="inventory-in-notes-field" class="block text-sm font-medium mb-1">ملاحظات</label>
+                <textarea id="inventory-in-notes-field" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="flex justify-end mt-8 space-x-2 space-x-reverse">
+                <button type="button" id="cancel-inventory-in-form-btn" class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                <button type="submit" id="save-inventory-in-form-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm">حفظ الإذن</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Inventory Transfer Form - Modal Style -->
+<div id="inventory-transfer-form-container" class="fixed inset-0 bg-gray-800 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 overflow-y-auto hidden z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 mx-auto max-w-3xl">
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4 flex justify-between items-center">
+            <h3 id="inventory-transfer-form-title" class="text-xl font-bold">أمر تحويل مخزني</h3>
+            <button id="close-inventory-transfer-form-btn" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+        </div>
+        <form id="inventory-transfer-form">
+            <input type="hidden" id="inventory-transfer-id-field">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="transfer-date-field" class="block text-sm font-medium mb-1">تاريخ التحويل <span class="text-red-500">*</span></label>
+                    <input type="date" id="transfer-date-field" required class="form-input">
+                </div>
+                <div>
+                    <label for="transfer-from-warehouse-field" class="block text-sm font-medium mb-1">من مخزن <span class="text-red-500">*</span></label>
+                    <select id="transfer-from-warehouse-field" required class="form-select">
+                        <option value="">اختر المخزن المصدر...</option>
+                        <!-- Populate with warehouses -->
+                    </select>
+                </div>
+                <div>
+                    <label for="transfer-to-warehouse-field" class="block text-sm font-medium mb-1">إلى مخزن <span class="text-red-500">*</span></label>
+                    <select id="transfer-to-warehouse-field" required class="form-select">
+                        <option value="">اختر المخزن الهدف...</option>
+                        <!-- Populate with warehouses -->
+                    </select>
+                </div>
+            </div>
+
+            <h4 class="text-md font-semibold mb-2 mt-6">الأصناف المحولة</h4>
+            <div class="overflow-x-auto mb-4">
+                <table class="min-w-full">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-right text-xs w-3/5">الصنف</th>
+                            <th class="px-3 py-2 text-right text-xs w-1/5">الكمية المتاحة (بالمصدر)</th>
+                            <th class="px-3 py-2 text-right text-xs w-1/5">الكمية المحولة</th>
+                            <th class="px-1 py-2 text-center text-xs"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-transfer-items-table-body"></tbody>
+                    <tfoot>
+                        <tr><td colspan="3" class="pt-2"><button type="button" id="add-inventory-transfer-item-btn" class="text-sm text-primary hover:underline"><i class="fas fa-plus mr-1"></i> إضافة بند</button></td></tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="mt-4">
+                <label for="transfer-notes-field" class="block text-sm font-medium mb-1">ملاحظات</label>
+                <textarea id="transfer-notes-field" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="flex justify-end mt-8 space-x-2 space-x-reverse">
+                <button type="button" id="cancel-inventory-transfer-form-btn" class="bg-gray-300 px-4 py-2 rounded-md text-sm">إلغاء</button>
+                <button type="submit" id="save-inventory-transfer-form-btn" class="bg-primary text-white px-4 py-2 rounded-md text-sm">حفظ أمر التحويل</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+// Module-specific script
+if (window.currentLoadedModule === 'inventory' && typeof initInventoryModule === 'function') {
+    initInventoryModule();
+}
+</script>
