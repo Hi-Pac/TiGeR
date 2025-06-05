@@ -201,22 +201,73 @@
     if (window.currentLoadedModule === 'accounting' && typeof initAccountingModule === 'function') {
         initAccountingModule();
     }
-            document.addEventListener("DOMContentLoaded", function () {
-        const closeBtn = document.getElementById("close-account-coa-form-btn");
-        const cancelBtn = document.getElementById("cancel-account-coa-form-btn");
-        const formContainer = document.getElementById("account-coa-form-container");
+function initAccountingModule() {
+    // ... (باقي كود التهيئة الخاص بك) ...
 
-        if (closeBtn && formContainer) {
-            closeBtn.addEventListener("click", function () {
-                formContainer.classList.add("hidden");
-            });
-        }
+    const accountCoaFormContainer = document.getElementById('account-coa-form-container');
+    const openAccountCoaFormBtn = document.getElementById('add-account-btn'); // الزر الذي يفتح المودال
+    const closeAccountCoaFormBtn = document.getElementById('close-account-coa-form-btn');
+    const cancelAccountCoaFormBtn = document.getElementById('cancel-account-coa-form-btn');
+    const accountCoaForm = document.getElementById('account-coa-form');
+    const accountCoaFormTitle = document.getElementById('account-coa-form-title');
+    const accountCoaIdField = document.getElementById('account-coa-id-field');
 
-        if (cancelBtn && formContainer) {
-            cancelBtn.addEventListener("click", function () {
-                formContainer.classList.add("hidden");
-            });
+
+    if (!accountCoaFormContainer || !openAccountCoaFormBtn || !closeAccountCoaFormBtn || !cancelAccountCoaFormBtn || !accountCoaForm) {
+        console.error('Modal elements for Chart of Accounts not found. Check IDs.');
+        return; // لا تكمل إذا كانت العناصر غير موجودة
+    }
+
+    // دالة لفتح المودال
+    const openModal = () => {
+        accountCoaForm.reset(); // لإعادة تعيين الحقول عند الفتح
+        accountCoaIdField.value = ''; // مسح حقل الـ ID المخفي
+        accountCoaFormTitle.textContent = 'إضافة حساب جديد'; // تعيين عنوان المودال
+        accountCoaFormContainer.classList.remove('hidden');
+    };
+
+    // دالة لإغلاق المودال
+    const closeModal = () => {
+        accountCoaFormContainer.classList.add('hidden');
+    };
+
+    // ربط الأحداث بالأزرار
+    openAccountCoaFormBtn.addEventListener('click', openModal);
+    closeAccountCoaFormBtn.addEventListener('click', closeModal);
+    cancelAccountCoaFormBtn.addEventListener('click', closeModal);
+
+    // (اختياري) إغلاق المودال عند الضغط على مفتاح Escape
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !accountCoaFormContainer.classList.contains('hidden')) {
+            closeModal();
         }
     });
+
+    // (اختياري) إغلاق المودال عند النقر خارج محتواه (على الخلفية المعتمة)
+    accountCoaFormContainer.addEventListener('click', (event) => {
+        // تأكد أن النقر كان على الخلفية مباشرة وليس على أحد العناصر داخل المودال
+        if (event.target === accountCoaFormContainer) {
+            closeModal();
+        }
+    });
+    
+    // ... (قد تحتاج إلى إضافة منطق مشابه لمودال قيود اليومية أيضًا) ...
+}
+
+// تأكد من أن `currentLoadedModule` يتم تعيينها بشكل صحيح
+// window.currentLoadedModule = 'accounting'; // هذا يجب أن يتم تعيينه قبل استدعاء initAccountingModule
+
+// استدعاء الدالة الرئيسية (كما هو موجود في ملفك)
+if (window.currentLoadedModule === 'accounting' && typeof initAccountingModule === 'function') {
+    // تأكد أن DOM جاهز قبل محاولة الوصول للعناصر
+    document.addEventListener('DOMContentLoaded', () => {
+        initAccountingModule();
+    });
+} else if (typeof initAccountingModule === 'function') {
+    // إذا لم يكن هناك نظام تحميل وحدات، قم بالتهيئة مباشرة بعد تحميل DOM
+    document.addEventListener('DOMContentLoaded', () => {
+        initAccountingModule();
+    });
+}
     </script>
 </div>
