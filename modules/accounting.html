@@ -196,6 +196,26 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const closeBtn = document.getElementById("close-account-coa-form-btn");
+        const cancelBtn = document.getElementById("cancel-account-coa-form-btn");
+        const formContainer = document.getElementById("account-coa-form-container");
+
+        if (closeBtn && formContainer) {
+            closeBtn.addEventListener("click", function () {
+                formContainer.classList.add("hidden");
+            });
+        }
+
+        if (cancelBtn && formContainer) {
+            cancelBtn.addEventListener("click", function () {
+                formContainer.classList.add("hidden");
+            });
+        }
+    });
+</script>
+
+<script>
 // Module-specific script
 if (window.currentLoadedModule === 'accounting' && typeof initAccountingModule === 'function') {
     initAccountingModule();
