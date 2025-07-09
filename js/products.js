@@ -108,7 +108,7 @@ function initProductsModule() {
         }
 
         const categoryDisplayNames = {
-            'oils': 'زيوت', 'rice': 'أرز', 'pasta': 'مكرونة', 'canned': 'معلبات', 'spices': 'توابل'
+            'External': 'خارجي', 'Structural': 'انشائي', 'Colored': 'بلاستيك ملون', 'Cement': 'اسمنتي', 'Decorative': 'ديكوري'
         };
 
         productsToRender.forEach(product => {
