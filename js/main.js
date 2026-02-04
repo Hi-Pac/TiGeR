@@ -233,10 +233,10 @@ document.addEventListener('DOMContentLoaded', () => {
             formTitle = document.getElementById(formTitleId); // Fall back to global
         }
 
-        if (!addBtn) { console.warn(`Add button not found: ${addButtonId} for module ${currentModule}`); return () => {}; }
-        if (!formContainer) { console.warn(`Form container not found: ${formContainerId} for module ${currentModule}`); return () => {}; }
-        if (!closeBtn) { console.warn(`Close button not found: ${closeButtonId} for module ${currentModule}`); return () => {}; }
-        if (!form) { console.warn(`Form not found: ${formId} for module ${currentModule}`); return () => {}; }
+        if (!addBtn) { console.error(`Add button not found: #${addButtonId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
+        if (!formContainer) { console.error(`Form container not found: #${formContainerId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
+        if (!closeBtn) { console.error(`Close button not found: #${closeButtonId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
+        if (!form) { console.error(`Form not found: #${formId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
 
         const openForm = (editData = null) => {
             window.currentEditId = editData ? (editData.id || null) : null;
