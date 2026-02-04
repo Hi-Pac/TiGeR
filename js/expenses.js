@@ -80,8 +80,9 @@ async function initExpensesModule() {
         if (!expensesTableBody) return;
         expensesTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل المصروفات...</td></tr>`;
         try {
-            const expensesSnapshot = await db.collection('expenses').orderBy('date', 'desc').get();
+            const expensesSnapshot = await db.collection('expenses').get();
             allExpensesData = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allExpensesData.sort((a, b) => new Date(b.date) - new Date(a.date));
             console.log("Expenses loaded:", allExpensesData);
             applyExpenseFiltersAndRender();
         } catch (error) {

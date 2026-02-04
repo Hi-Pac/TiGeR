@@ -74,8 +74,9 @@ async function initUsersModule() { // Make it async
         }
         usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">جاري تحميل المستخدمين... <span class="loader ml-2"></span></td></tr>`;
         try {
-            const usersSnapshot = await db.collection('users').orderBy('name').get();
+            const usersSnapshot = await db.collection('users').get();
             allUsersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allUsersData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             console.log("Users loaded:", allUsersData);
             applyFiltersAndRender();
         } catch (error) {

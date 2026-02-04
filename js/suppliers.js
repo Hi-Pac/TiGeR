@@ -82,8 +82,9 @@ async function initSuppliersModule() {
         if (!suppliersTableBody) return;
         suppliersTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">جاري تحميل الموردين...</td></tr>`;
         try {
-            const suppliersSnapshot = await db.collection('suppliers').orderBy('companyName').get();
+            const suppliersSnapshot = await db.collection('suppliers').get();
             allSuppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allSuppliersData.sort((a, b) => (a.companyName || '').localeCompare(b.companyName || ''));
             console.log("Suppliers loaded:", allSuppliersData);
             applySupplierFiltersAndRender();
         } catch (error) {

@@ -69,8 +69,9 @@ async function initCustomersModule() {
         if (!customersTableBody) return;
         customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل العملاء...</td></tr>`;
         try {
-            const customersSnapshot = await db.collection('customers').orderBy('shopName').get();
+            const customersSnapshot = await db.collection('customers').get();
             allCustomersData = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allCustomersData.sort((a, b) => (a.shopName || '').localeCompare(b.shopName || ''));
             console.log("Customers loaded:", allCustomersData);
             populateAreaFilter(allCustomersData);
             applyCustomerFiltersAndRender();

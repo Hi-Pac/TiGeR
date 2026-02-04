@@ -61,8 +61,9 @@ async function initProductsModule() {
         if (!productsTableBody) return;
         productsTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل الأصناف...</td></tr>`;
         try {
-            const productsSnapshot = await db.collection('products').orderBy('name').get();
+            const productsSnapshot = await db.collection('products').get();
             allProductsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allProductsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             console.log("Products loaded:", allProductsData);
             applyProductFiltersAndRender();
         } catch (error) {
