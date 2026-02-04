@@ -198,42 +198,62 @@ document.addEventListener('DOMContentLoaded', () => {
     window.setupFormToggle = function(options) {
         const { addButtonId, formContainerId, closeButtonId, cancelButtonId, formId, formTitleId, addTitle, editTitle, resetFormFunction, onOpen, currentModule } = options;
 
-        // Try to find elements within the module first, then fall back to global
-        const currentModuleElement = document.getElementById(`${currentModule}-module`);
-        
-        const addBtn = currentModuleElement ? currentModuleElement.querySelector(`#${addButtonId}`) : document.getElementById(addButtonId);
-        let formContainer = currentModuleElement ? currentModuleElement.querySelector(`#${formContainerId}`) : document.getElementById(formContainerId);
-        if (!formContainer && !currentModuleElement) {
-            formContainer = document.getElementById(formContainerId); // Fall back to global
+        // Try to find elements - search globally first since forms are usually outside modules in modal pattern
+        let addBtn = document.getElementById(addButtonId);
+        if (!addBtn && currentModule) {
+            const currentModuleElement = document.getElementById(`${currentModule}-module`);
+            if (currentModuleElement) {
+                addBtn = currentModuleElement.querySelector(`#${addButtonId}`);
+            }
+        }
+
+        let formContainer = document.getElementById(formContainerId);
+        if (!formContainer && currentModule) {
+            const currentModuleElement = document.getElementById(`${currentModule}-module`);
+            if (currentModuleElement) {
+                formContainer = currentModuleElement.querySelector(`#${formContainerId}`);
+            }
         }
         
-        let closeBtn = currentModuleElement ? currentModuleElement.querySelector(`#${closeButtonId}`) : document.getElementById(closeButtonId);
-        if (!closeBtn) {
-            closeBtn = document.getElementById(closeButtonId); // Fall back to global
+        let closeBtn = document.getElementById(closeButtonId);
+        if (!closeBtn && currentModule) {
+            const currentModuleElement = document.getElementById(`${currentModule}-module`);
+            if (currentModuleElement) {
+                closeBtn = currentModuleElement.querySelector(`#${closeButtonId}`);
+            }
         }
         
         let cancelBtn = null;
         if (cancelButtonId) {
-            cancelBtn = currentModuleElement ? currentModuleElement.querySelector(`#${cancelButtonId}`) : document.getElementById(cancelButtonId);
-            if (!cancelBtn) {
-                cancelBtn = document.getElementById(cancelButtonId); // Fall back to global
+            cancelBtn = document.getElementById(cancelButtonId);
+            if (!cancelBtn && currentModule) {
+                const currentModuleElement = document.getElementById(`${currentModule}-module`);
+                if (currentModuleElement) {
+                    cancelBtn = currentModuleElement.querySelector(`#${cancelButtonId}`);
+                }
             }
         }
         
-        let form = currentModuleElement ? currentModuleElement.querySelector(`#${formId}`) : document.getElementById(formId);
-        if (!form) {
-            form = document.getElementById(formId); // Fall back to global
-        }
-        
-        let formTitle = currentModuleElement ? currentModuleElement.querySelector(`#${formTitleId}`) : document.getElementById(formTitleId);
-        if (!formTitle) {
-            formTitle = document.getElementById(formTitleId); // Fall back to global
+        let form = document.getElementById(formId);
+        if (!form && currentModule) {
+            const currentModuleElement = document.getElementById(`${currentModule}-module`);
+            if (currentModuleElement) {
+                form = currentModuleElement.querySelector(`#${formId}`);
+            }
         }
 
-        if (!addBtn) { console.error(`Add button not found: #${addButtonId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
-        if (!formContainer) { console.error(`Form container not found: #${formContainerId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
-        if (!closeBtn) { console.error(`Close button not found: #${closeButtonId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
-        if (!form) { console.error(`Form not found: #${formId} in module ${currentModule}. Current module element:`, currentModuleElement); return () => {}; }
+        let formTitle = document.getElementById(formTitleId);
+        if (!formTitle && currentModule) {
+            const currentModuleElement = document.getElementById(`${currentModule}-module`);
+            if (currentModuleElement) {
+                formTitle = currentModuleElement.querySelector(`#${formTitleId}`);
+            }
+        }
+
+        if (!addBtn) { console.error(`Add button not found: #${addButtonId}`); return () => {}; }
+        if (!formContainer) { console.error(`Form container not found: #${formContainerId}`); return () => {}; }
+        if (!closeBtn) { console.error(`Close button not found: #${closeButtonId}`); return () => {}; }
+        if (!form) { console.error(`Form not found: #${formId}`); return () => {}; }
 
         const openForm = (editData = null) => {
             window.currentEditId = editData ? (editData.id || null) : null;
