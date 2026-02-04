@@ -58,10 +58,12 @@ async function initUsersModule() { // Make it async
         editTitle: 'تعديل بيانات المستخدم',
         resetFormFunction: resetUserForm,
         onOpen: (editData) => {
-            if (!editData) {
-                userPasswordField.required = true;
-            } else {
-                userPasswordField.required = false;
+            if (userPasswordField) {
+                if (!editData) {
+                    userPasswordField.required = true;
+                } else {
+                    userPasswordField.required = false;
+                }
             }
         }
     });
