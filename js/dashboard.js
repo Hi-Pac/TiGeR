@@ -1,4 +1,4 @@
-function initDashboardModule() {
+async function initDashboardModule() {
     console.log("Dashboard Module Initialized!");
 
     const dashboardModuleNode = document.getElementById('dashboard-module');

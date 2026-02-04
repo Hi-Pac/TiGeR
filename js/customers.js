@@ -1,6 +1,6 @@
 let allCustomersData = []; // To store fetched customers for client-side filtering
 
-function initCustomersModule() {
+async function initCustomersModule() {
     console.log("Customers Module Initialized!");
 
     const customersModuleNode = document.getElementById('customers-module');

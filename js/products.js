@@ -1,6 +1,6 @@
 let allProductsData = []; // To store fetched products for client-side filtering
 
-function initProductsModule() {
+async function initProductsModule() {
     console.log("Products Module Initialized!");
 
     const productsModuleNode = document.getElementById('products-module');

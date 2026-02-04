@@ -119,36 +119,33 @@ document.addEventListener('DOMContentLoaded', () => {
             closeMobileSidebar();
 
             // Call module-specific initialization function if it exists
-            // These functions should be defined in their respective JS files (e.g., users.js, products.js)
-            // and attached to the window object or managed via an event system.
-            // For simplicity, we'll attach them to window for now.
             currentLoadedModule = moduleId;
             if (moduleId === 'users' && typeof initUsersModule === 'function') {
-                initUsersModule();
+                await initUsersModule();
             } else if (moduleId === 'products' && typeof initProductsModule === 'function') {
-                initProductsModule();
+                await initProductsModule();
             } else if (moduleId === 'customers' && typeof initCustomersModule === 'function') {
-                initCustomersModule();
+                await initCustomersModule();
             } else if (moduleId === 'dashboard' && typeof initDashboardModule === 'function') {
-                initDashboardModule();
+                await initDashboardModule();
             } else if (moduleId === 'suppliers' && typeof initSuppliersModule === 'function') {
-                initSuppliersModule();
+                await initSuppliersModule();
             } else if (moduleId === 'purchases' && typeof initPurchasesModule === 'function') {
-                initPurchasesModule();
+                await initPurchasesModule();
             } else if (moduleId === 'sales' && typeof initSalesModule === 'function') {
-                initSalesModule();
+                await initSalesModule();
             } else if (moduleId === 'inventory' && typeof initInventoryModule === 'function') {
-                initInventoryModule();
+                await initInventoryModule();
             } else if (moduleId === 'expenses' && typeof initExpensesModule === 'function') {
-                initExpensesModule();
+                await initExpensesModule();
             } else if (moduleId === 'banks' && typeof initBanksModule === 'function') {
-                initBanksModule();
+                await initBanksModule();
             } else if (moduleId === 'accounting' && typeof initAccountingModule === 'function') {
-                initAccountingModule();
+                await initAccountingModule();
             } else if (moduleId === 'settings' && typeof initSettingsModule === 'function') {
-                initSettingsModule();
+                await initSettingsModule();
             } else if (moduleId === 'help' && typeof initHelpModule === 'function') {
-                initHelpModule();
+                await initHelpModule();
             }
             // Add other `else if` for other modules here...
             

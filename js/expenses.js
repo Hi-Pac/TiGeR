@@ -1,7 +1,7 @@
 let allExpensesData = [];
 let allEmployeesForExpense = []; // For employee dropdown if needed
 
-function initExpensesModule() {
+async function initExpensesModule() {
     console.log("Expenses Module Initialized!");
 
     const expensesModuleNode = document.getElementById('expenses-module');

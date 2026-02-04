@@ -1,6 +1,6 @@
 let allSuppliersData = []; // To store fetched suppliers for client-side filtering
 
-function initSuppliersModule() {
+async function initSuppliersModule() {
     console.log("Suppliers Module Initialized!");
 
     const suppliersModuleNode = document.getElementById('suppliers-module');

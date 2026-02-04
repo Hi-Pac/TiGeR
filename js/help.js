@@ -1,4 +1,4 @@
-function initHelpModule() {
+async function initHelpModule() {
     console.log("Help Module Initialized!");
 
     const helpModuleNode = document.getElementById('help-module');

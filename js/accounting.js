@@ -2,7 +2,7 @@ let chartOfAccountsData = [];
 let journalEntriesData = [];
 let allAccountsForJournal = []; // To populate account dropdowns in journal entry form
 
-function initAccountingModule() {
+async function initAccountingModule() {
     console.log("Accounting Module Initialized!");
 
     const accountingModuleNode = document.getElementById('accounting-module');

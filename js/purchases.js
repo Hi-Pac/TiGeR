@@ -2,7 +2,7 @@ let allPurchasesData = [];
 let allSuppliersForPurchase = []; // To populate supplier dropdown
 let allProductsForPurchase = [];  // To populate product dropdown in items
 
-function initPurchasesModule() {
+async function initPurchasesModule() {
     console.log("Purchases Module Initialized!");
 
     const purchasesModuleNode = document.getElementById('purchases-module');

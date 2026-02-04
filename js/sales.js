@@ -3,7 +3,7 @@ let allCustomersForSale = []; // To populate customer dropdown
 let allProductsForSale = [];  // To populate product dropdown in items (with stock info)
 let allSalespersons = [];     // To populate salespersons dropdown
 
-function initSalesModule() {
+async function initSalesModule() {
     console.log("Sales Module Initialized!");
 
     const salesModuleNode = document.getElementById('sales-module');

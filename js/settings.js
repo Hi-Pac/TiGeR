@@ -1,4 +1,4 @@
-function initSettingsModule() {
+async function initSettingsModule() {
     console.log("Settings Module Initialized!");
 
     const settingsModuleNode = document.getElementById('settings-module');

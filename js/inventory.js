@@ -2,7 +2,7 @@ let allInventoryStockData = []; // Will hold {productId, productName, warehouseI
 let allWarehousesForInventory = []; // For dropdowns
 let allProductsForInventory = []; // For product selectors in forms
 
-function initInventoryModule() {
+async function initInventoryModule() {
     console.log("Inventory Module Initialized!");
 
     const inventoryModuleNode = document.getElementById('inventory-module');
