@@ -65,6 +65,7 @@ function initProductsModule() {
             // const productsSnapshot = await db.collection('products').orderBy('name').get();
             // allProductsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             await new Promise(resolve => setTimeout(resolve, 500));
+            // Sample product data
             allProductsData = [
                 { id: 'p1', name: 'زيت عباد الشمس 1 لتر', barcode: '622001', category: 'oils', unit: 'زجاجة', purchasePrice: 30, salePrice: 35, description: 'زيت طعام نقي', reorderLevel: 10 },
                 { id: 'p2', name: 'أرز مصري فاخر 5 كجم', barcode: '622002', category: 'rice', unit: 'كيس', purchasePrice: 120, salePrice: 135, description: 'أرز حبة طويلة', reorderLevel: 20 },
@@ -97,20 +98,17 @@ function initProductsModule() {
         renderProductsTable(filteredProducts);
     }
 
-
     function renderProductsTable(productsToRender) {
         if (!productsTableBody) return;
         productsTableBody.innerHTML = '';
-
         if (productsToRender.length === 0) {
             productsTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">لا توجد أصناف تطابق معايير البحث.</td></tr>`;
             return;
         }
-
+        // Define category display names and colors
         const categoryDisplayNames = {
             'External': 'خارجي', 'Structural': 'انشائي', 'Colored': 'بلاستيك ملون', 'Cement': 'اسمنتي', 'Decorative': 'ديكوري'
         };
-
         productsToRender.forEach(product => {
             const row = productsTableBody.insertRow();
             const categoryColors = {
@@ -121,7 +119,6 @@ function initProductsModule() {
                 'spices': 'bg-purple-100 text-purple-800 dark:bg-purple-700 dark:text-purple-100'
             };
             const categoryClass = categoryColors[product.category] || 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
-
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
@@ -149,7 +146,6 @@ function initProductsModule() {
                 </td>
             `;
         });
-
         productsModuleNode.querySelectorAll('.edit-product-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const productId = e.currentTarget.getAttribute('data-id');
@@ -159,7 +155,6 @@ function initProductsModule() {
                 }
             });
         });
-
         productsModuleNode.querySelectorAll('.delete-product-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const productId = e.currentTarget.getAttribute('data-id');
@@ -173,7 +168,6 @@ function initProductsModule() {
             e.preventDefault();
             if (!saveProductBtn) return;
             window.showButtonSpinner(saveProductBtn, true);
-
             const productData = {
                 name: productNameField.value,
                 barcode: productBarcodeField.value,
@@ -183,19 +177,13 @@ function initProductsModule() {
                 salePrice: parseFloat(productSalePriceField.value),
                 description: productDescriptionField.value,
                 reorderLevel: parseInt(productReorderLevelField.value) || 0,
-                // currentStock: 0, // Initial stock might be set via inventory module
             };
             const productId = productIdField.value;
-
             try {
                 if (productId) {
-                    // --- FIREBASE: Update product document ---
-                    // await db.collection('products').doc(productId).update(productData);
                     console.log("Updating product:", productId, productData);
                     alert('تم تحديث الصنف بنجاح (محاكاة)');
                 } else {
-                    // --- FIREBASE: Create new product document ---
-                    // await db.collection('products').add(productData);
                     console.log("Adding new product:", productData);
                     alert('تم إضافة الصنف بنجاح (محاكاة)');
                 }
@@ -211,12 +199,8 @@ function initProductsModule() {
     }
 
     async function handleDeleteProduct(productId) {
-        // TODO: Check if product is used in sales, purchases, inventory before deleting
-        // Or implement soft delete (mark as inactive)
         if (confirm('هل أنت متأكد أنك تريد حذف هذا الصنف؟')) {
             try {
-                // --- FIREBASE: Delete product ---
-                // await db.collection('products').doc(productId).delete();
                 console.log("Deleting product:", productId);
                 alert('تم حذف الصنف بنجاح (محاكاة)');
                 await loadAndRenderProducts();

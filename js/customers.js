@@ -2,13 +2,11 @@ let allCustomersData = []; // To store fetched customers for client-side filteri
 
 function initCustomersModule() {
     console.log("Customers Module Initialized!");
-
     const customersModuleNode = document.getElementById('customers-module');
     if (!customersModuleNode) {
         console.error("Customers module container not found.");
         return;
     }
-
     const customersTableBody = customersModuleNode.querySelector('#customers-table-body');
     const customerFormElement = customersModuleNode.querySelector('#customer-form');
     const customerIdField = customersModuleNode.querySelector('#customer-id-field');
@@ -24,18 +22,14 @@ function initCustomersModule() {
     const customerStatusField = customersModuleNode.querySelector('#customer-status-field');
     const customerNotesField = customersModuleNode.querySelector('#customer-notes-field');
     const saveCustomerBtn = customersModuleNode.querySelector('#save-customer-form-btn');
-
     // Filter inputs
     const customerSearchInput = customersModuleNode.querySelector('#customer-search-input');
     const customerAreaFilter = customersModuleNode.querySelector('#customer-area-filter');
     const customerStatusFilter = customersModuleNode.querySelector('#customer-status-filter');
-
-
     function resetCustomerForm(customerData = null) {
         if (!customerFormElement) return;
         customerFormElement.reset();
         customerIdField.value = '';
-
         if (customerData) {
             customerIdField.value = customerData.id;
             customerShopNameField.value = customerData.shopName || '';
@@ -51,7 +45,6 @@ function initCustomersModule() {
             customerNotesField.value = customerData.notes || '';
         }
     }
-
     const openCustomerFormForEdit = window.setupFormToggle({
         currentModule: 'customers',
         addButtonId: 'add-customer-btn',
@@ -64,21 +57,16 @@ function initCustomersModule() {
         editTitle: 'تعديل بيانات العميل',
         resetFormFunction: resetCustomerForm
     });
-
     async function loadAndRenderCustomers() {
         if (!customersTableBody) return;
         customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل العملاء...</td></tr>`;
         try {
-            // --- FIREBASE: Replace with actual data fetching ---
-            // const customersSnapshot = await db.collection('customers').orderBy('shopName').get();
-            // allCustomersData = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             await new Promise(resolve => setTimeout(resolve, 400));
             allCustomersData = [
                 { id: 'cust1', shopName: 'ماركت السعادة الكبرى', ownerName: 'علي أحمد', phone: '01001122333', phone2: '', email: 'saada@example.com', area: 'القاهرة', address: '15 شارع التحرير, الدقي', creditLimit: 10000, openingBalance: 500, currentBalance: 1200, status: 'active', notes: 'عميل جيد، يدفع في الموعد' },
                 { id: 'cust2', shopName: 'بقالة الخير والبركة', ownerName: 'فاطمة حسن', phone: '01112233444', phone2: '0127777777', email: '', area: 'الجيزة', address: 'شارع الهرم الرئيسي', creditLimit: 5000, openingBalance: -200, currentBalance: -200, status: 'active', notes: '' },
                 { id: 'cust3', shopName: 'هايبر النور', ownerName: 'محمود سعيد', phone: '01223344555', phone2: '', email: 'nour@hyper.com', area: 'الإسكندرية', address: 'طريق الكورنيش, المنتزه', creditLimit: 20000, openingBalance: 0, currentBalance: -550, status: 'inactive', notes: 'توقف عن التعامل مؤقتاً' },
             ];
-            // Populate area filter dynamically if needed
             populateAreaFilter(allCustomersData);
             applyCustomerFiltersAndRender();
         } catch (error) {
@@ -86,7 +74,6 @@ function initCustomersModule() {
             customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-red-500">فشل تحميل العملاء.</td></tr>`;
         }
     }
-    
     function populateAreaFilter(customers) {
         if (!customerAreaFilter) return;
         const existingOptions = Array.from(customerAreaFilter.options).map(opt => opt.value);
@@ -97,15 +84,12 @@ function initCustomersModule() {
             customerAreaFilter.add(option);
         });
     }
-
     function applyCustomerFiltersAndRender() {
         if(!customersTableBody) return;
         let filteredCustomers = [...allCustomersData];
-
         const searchTerm = customerSearchInput.value.toLowerCase();
         const area = customerAreaFilter.value;
         const status = customerStatusFilter.value;
-
         if (searchTerm) {
             filteredCustomers = filteredCustomers.filter(cust =>
                 cust.shopName.toLowerCase().includes(searchTerm) ||
@@ -122,22 +106,17 @@ function initCustomersModule() {
         }
         renderCustomersTable(filteredCustomers);
     }
-
     function renderCustomersTable(customersToRender) {
         if (!customersTableBody) return;
         customersTableBody.innerHTML = '';
-
         if (customersToRender.length === 0) {
             customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">لا يوجد عملاء يطابقون معايير البحث.</td></tr>`;
             return;
         }
-
         customersToRender.forEach(customer => {
             const row = customersTableBody.insertRow();
-            // currentBalance should be calculated/fetched in a real app
             const currentBalance = customer.currentBalance !== undefined ? customer.currentBalance : customer.openingBalance;
             const balanceColor = currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${customer.shopName}</div>
@@ -153,14 +132,13 @@ function initCustomersModule() {
                         ${customer.status === 'active' ? 'نشط' : 'غير نشط'}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-left"> <!-- text-left for actions -->
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-left">
                     <button class="text-primary hover:text-primary/80 ml-2 edit-customer-btn" data-id="${customer.id}" title="تعديل"><i class="fas fa-edit"></i></button>
                     <button class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 ml-2 delete-customer-btn" data-id="${customer.id}" title="حذف"><i class="fas fa-trash-alt"></i></button>
                     <button class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 view-customer-statement-btn" data-id="${customer.id}" title="كشف حساب"><i class="fas fa-file-invoice-dollar"></i></button>
                 </td>
             `;
         });
-
         customersModuleNode.querySelectorAll('.edit-customer-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const customerId = e.currentTarget.getAttribute('data-id');
@@ -170,29 +148,24 @@ function initCustomersModule() {
                 }
             });
         });
-
         customersModuleNode.querySelectorAll('.delete-customer-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const customerId = e.currentTarget.getAttribute('data-id');
                 handleDeleteCustomer(customerId);
             });
         });
-        
         customersModuleNode.querySelectorAll('.view-customer-statement-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const customerId = e.currentTarget.getAttribute('data-id');
-                // TODO: Implement logic to show customer statement (e.g., in a modal or new view)
                 alert(`عرض كشف حساب للعميل ID: ${customerId} (قيد الإنشاء)`);
             });
         });
     }
-
     if (customerFormElement) {
         customerFormElement.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!saveCustomerBtn) return;
             window.showButtonSpinner(saveCustomerBtn, true);
-
             const customerData = {
                 shopName: customerShopNameField.value,
                 ownerName: customerOwnerNameField.value,
@@ -205,22 +178,13 @@ function initCustomersModule() {
                 openingBalance: parseFloat(customerOpeningBalanceField.value) || 0,
                 status: customerStatusField.value,
                 notes: customerNotesField.value,
-                // currentBalance will be calculated based on openingBalance and transactions
             };
             const customerId = customerIdField.value;
-
             try {
                 if (customerId) {
-                    // --- FIREBASE: Update customer document ---
-                    // customerData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                    // await db.collection('customers').doc(customerId).update(customerData);
                     console.log("Updating customer:", customerId, customerData);
                     alert('تم تحديث العميل بنجاح (محاكاة)');
                 } else {
-                    // --- FIREBASE: Create new customer document ---
-                    // customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    // customerData.currentBalance = customerData.openingBalance; // Initial balance
-                    // await db.collection('customers').add(customerData);
                     console.log("Adding new customer:", customerData);
                     alert('تم إضافة العميل بنجاح (محاكاة)');
                 }
@@ -234,14 +198,9 @@ function initCustomersModule() {
             }
         });
     }
-
     async function handleDeleteCustomer(customerId) {
-        // TODO: Check if customer has transactions before deleting, or mark as inactive instead
-        // This is a critical check for data integrity.
         if (confirm('هل أنت متأكد أنك تريد حذف هذا العميل؟ قد يؤثر هذا على الفواتير والمعاملات المرتبطة به.')) {
             try {
-                // --- FIREBASE: Delete customer ---
-                // await db.collection('customers').doc(customerId).delete();
                 console.log("Deleting customer:", customerId);
                 alert('تم حذف العميل بنجاح (محاكاة)');
                 await loadAndRenderCustomers();
@@ -251,11 +210,8 @@ function initCustomersModule() {
             }
         }
     }
-
-    // Add event listeners for filters
     if (customerSearchInput) customerSearchInput.addEventListener('input', applyCustomerFiltersAndRender);
     if (customerAreaFilter) customerAreaFilter.addEventListener('change', applyCustomerFiltersAndRender);
     if (customerStatusFilter) customerStatusFilter.addEventListener('change', applyCustomerFiltersAndRender);
-
     loadAndRenderCustomers();
 }
