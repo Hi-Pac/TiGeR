@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             form = document.getElementById(formId); // Fall back to global
         }
         
-        let formTitle = currentModuleElement.querySelector(`#${formTitleId}`);
+        let formTitle = currentModuleElement ? currentModuleElement.querySelector(`#${formTitleId}`) : document.getElementById(formTitleId);
         if (!formTitle) {
             formTitle = document.getElementById(formTitleId); // Fall back to global
         }
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!addBtn) { console.warn(`Add button not found: ${addButtonId} for module ${currentModule}`); return () => {}; }
         if (!formContainer) { console.warn(`Form container not found: ${formContainerId} for module ${currentModule}`); return () => {}; }
         if (!closeBtn) { console.warn(`Close button not found: ${closeButtonId} for module ${currentModule}`); return () => {}; }
-        if (!form) { console.warn(`Form not found: ${formId} for module ${currentModule}`); return () => {};}
+        if (!form) { console.warn(`Form not found: ${formId} for module ${currentModule}`); return () => {}; }
 
         const openForm = (editData = null) => {
             window.currentEditId = editData ? (editData.id || null) : null;
