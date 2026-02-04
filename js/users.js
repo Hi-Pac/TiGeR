@@ -67,20 +67,24 @@ async function initUsersModule() { // Make it async
     });
 
     async function loadAndRenderUsers() {
+        console.log("loadAndRenderUsers called");
         if (!usersTableBody || !window.db) {
-            console.error("Users table body or Firestore (db) not found!");
+            console.error("❌ Users table body or Firestore (db) not found!");
+            console.error("usersTableBody:", usersTableBody);
+            console.error("window.db:", window.db);
             if (usersTableBody) usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">خطأ في تهيئة قاعدة البيانات.</td></tr>`;
             return;
         }
         usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">جاري تحميل المستخدمين... <span class="loader ml-2"></span></td></tr>`;
         try {
+            console.log("📥 Fetching users from Firestore...");
             const usersSnapshot = await db.collection('users').get();
             allUsersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             allUsersData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-            console.log("Users loaded:", allUsersData);
+            console.log("✅ Users loaded from Firebase:", allUsersData.length, "users");
             applyFiltersAndRender();
         } catch (error) {
-            console.error("Error loading users from Firebase:", error);
+            console.error("❌ Error loading users from Firebase:", error);
             usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">فشل تحميل المستخدمين: ${error.message}</td></tr>`;
         }
     }
@@ -233,5 +237,6 @@ async function initUsersModule() { // Make it async
     if (userRoleFilter) userRoleFilter.addEventListener('change', applyFiltersAndRender);
     if (userStatusFilter) userStatusFilter.addEventListener('change', applyFiltersAndRender);
 
-    loadAndRenderUsers();
+    await loadAndRenderUsers();
+    console.log("✅ Users module initialized successfully");
 }

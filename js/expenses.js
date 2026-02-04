@@ -209,5 +209,6 @@ async function initExpensesModule() {
     if(expenseSearchInput) expenseSearchInput.addEventListener('input', applyExpenseFiltersAndRender);
     // ...
 
-    loadAndRenderExpenses();
+    await loadAndRenderExpenses();
+    console.log("✅ Expenses module initialized successfully");
 }

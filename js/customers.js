@@ -244,5 +244,6 @@ async function initCustomersModule() {
     if (customerAreaFilter) customerAreaFilter.addEventListener('change', applyCustomerFiltersAndRender);
     if (customerStatusFilter) customerStatusFilter.addEventListener('change', applyCustomerFiltersAndRender);
 
-    loadAndRenderCustomers();
+    await loadAndRenderCustomers();
+    console.log("✅ Customers module initialized successfully");
 }

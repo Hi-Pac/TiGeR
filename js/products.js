@@ -218,5 +218,6 @@ async function initProductsModule() {
     if(productSearchInput) productSearchInput.addEventListener('input', applyProductFiltersAndRender);
     if(productCategoryFilter) productCategoryFilter.addEventListener('change', applyProductFiltersAndRender);
 
-    loadAndRenderProducts();
+    await loadAndRenderProducts();
+    console.log("✅ Products module initialized successfully");
 }

@@ -248,5 +248,6 @@ async function initSuppliersModule() {
     if (supplierCategoryFilter) supplierCategoryFilter.addEventListener('change', applySupplierFiltersAndRender);
     if (supplierStatusFilter) supplierStatusFilter.addEventListener('change', applySupplierFiltersAndRender);
 
-    loadAndRenderSuppliers();
+    await loadAndRenderSuppliers();
+    console.log("✅ Suppliers module initialized successfully");
 }
