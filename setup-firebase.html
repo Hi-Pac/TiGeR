@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعداد بيانات Firebase - TiGeR ERP</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #48bb78;
+            color: white;
+            grid-column: 1 / -1;
+        }
+        .btn-success:hover {
+            background: #38a169;
+        }
+        .log {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #2d3748;
+        }
+        .log-item {
+            margin-bottom: 8px;
+            padding: 5px;
+        }
+        .log-item.success {
+            color: #22863a;
+            background: #f0fdf4;
+        }
+        .log-item.error {
+            color: #cb2431;
+            background: #fdf0f0;
+        }
+        .log-item.info {
+            color: #0366d6;
+            background: #f0f6fc;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .status.loading {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 إعداد بيانات Firebase</h1>
+        
+        <div id="status" class="status loading">جاري الاتصال بـ Firebase...</div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="addAllData()">➕ إضافة البيانات</button>
+            <button class="btn-danger" onclick="deleteAllData()">🗑️ حذف البيانات</button>
+        </div>
+        
+        <button class="btn-success" onclick="clearLog()">مسح السجل</button>
+        
+        <div id="log" class="log">
+            <div class="log-item info">جاري التهيئة...</div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRtCWX-OcFAtMqZusMqePMX2zvlIdcRyA",
+            authDomain: "delta-hcp-fa2ba.firebaseapp.com",
+            projectId: "delta-hcp-fa2ba",
+            storageBucket: "delta-hcp-fa2ba.firebasestorage.app",
+            messagingSenderId: "649732241434",
+            appId: "1:649732241434:web:f3adddc04c9b6e9d2f39a3"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const item = document.createElement('div');
+            item.className = `log-item ${type}`;
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(item);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function setStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function addAllData() {
+            try {
+                setStatus('🔄 جاري إضافة البيانات...', 'loading');
+                log('بدء إضافة البيانات...');
+
+                // Users
+                await addUsers();
+                // Products
+                await addProducts();
+                // Customers
+                await addCustomers();
+                // Suppliers
+                await addSuppliers();
+                // Bank Accounts
+                await addBankAccounts();
+                // Expenses
+                await addExpenses();
+                // Inventory Stock
+                await addInventoryStock();
+
+                setStatus('✅ تم إضافة جميع البيانات بنجاح!', 'success');
+                log('تم إضافة جميع البيانات بنجاح!', 'success');
+            } catch (error) {
+                setStatus('❌ خطأ: ' + error.message, 'error');
+                log('خطأ: ' + error.message, 'error');
+            }
+        }
+
+        async function addUsers() {
+            const users = [
+                { name: 'أحمد محمود', phone: '01001122333', email: 'ahmed@tiger.com', role: 'admin', status: 'active' },
+                { name: 'فاطمة علي', phone: '01112233444', email: 'fatima@tiger.com', role: 'accountant', status: 'active' },
+                { name: 'محمد سعيد', phone: '01223344555', email: 'mohammad@tiger.com', role: 'sales', status: 'active' },
+                { name: 'سارة حسن', phone: '01334455666', email: 'sarah@tiger.com', role: 'warehouse', status: 'inactive' }
+            ];
+
+            for (const user of users) {
+                await db.collection('users').add(user);
+            }
+            log(`✓ تم إضافة ${users.length} مستخدم`, 'success');
+        }
+
+        async function addProducts() {
+            const products = [
+                { name: 'زيت عباد الشمس 1 لتر', barcode: '622001', category: 'oils', unit: 'زجاجة', purchasePrice: 30, salePrice: 35, description: 'زيت طعام نقي', reorderLevel: 10 },
+                { name: 'أرز مصري فاخر 5 كجم', barcode: '622002', category: 'rice', unit: 'كيس', purchasePrice: 120, salePrice: 135, description: 'أرز حبة طويلة', reorderLevel: 20 },
+                { name: 'مكرونة اسباجتي 400جم', barcode: '622003', category: 'pasta', unit: 'كيس', purchasePrice: 8, salePrice: 10, description: '', reorderLevel: 50 },
+                { name: 'صلصة طماطم معلبة', barcode: '622004', category: 'canned', unit: 'علبة', purchasePrice: 5, salePrice: 7, description: 'تركيز عالي', reorderLevel: 30 }
+            ];
+
+            for (const product of products) {
+                await db.collection('products').add(product);
+            }
+            log(`✓ تم إضافة ${products.length} صنف`, 'success');
+        }
+
+        async function addCustomers() {
+            const customers = [
+                { shopName: 'ماركت السعادة الكبرى', ownerName: 'علي أحمد', phone: '01001122333', phone2: '', email: 'saada@example.com', area: 'القاهرة', address: '15 شارع التحرير, الدقي', creditLimit: 10000, openingBalance: 500, currentBalance: 1200, status: 'active', notes: 'عميل جيد، يدفع في الموعد' },
+                { shopName: 'بقالة الخير والبركة', ownerName: 'فاطمة حسن', phone: '01112233444', phone2: '0127777777', email: '', area: 'الجيزة', address: 'شارع الهرم الرئيسي', creditLimit: 5000, openingBalance: -200, currentBalance: -200, status: 'active', notes: '' },
+                { shopName: 'هايبر النور', ownerName: 'محمود سعيد', phone: '01223344555', phone2: '', email: 'nour@hyper.com', area: 'الإسكندرية', address: 'طريق الكورنيش, المنتزه', creditLimit: 20000, openingBalance: 0, currentBalance: -550, status: 'inactive', notes: 'توقف عن التعامل مؤقتاً' }
+            ];
+
+            for (const customer of customers) {
+                await db.collection('customers').add(customer);
+            }
+            log(`✓ تم إضافة ${customers.length} عميل`, 'success');
+        }
+
+        async function addSuppliers() {
+            const suppliers = [
+                { companyName: 'شركة الأغذية المتحدة', contactPerson: 'أحمد خالد', phone: '01234567890', email: 'united@foods.com', address: 'المنطقة الصناعية، مدينة 6 أكتوبر', openingBalance: 15000, currentBalance: 12500, paymentTerms: 30, status: 'active', productCategories: ['oils', 'rice'], notes: 'مورد رئيسي للزيوت والأرز.' },
+                { companyName: 'مؤسسة الخير للتوريدات', contactPerson: 'سارة علي', phone: '01198765432', email: 'khair@supplies.net', address: 'وسط البلد، القاهرة', openingBalance: -500, currentBalance: 0, paymentTerms: 15, status: 'active', productCategories: ['pasta', 'canned', 'spices'], notes: '' },
+                { companyName: 'تجار الجملة الكبار', contactPerson: 'محمد حسن', phone: '01011223344', email: '', address: 'سوق الجملة، العبور', openingBalance: 0, currentBalance: 7800, paymentTerms: 45, status: 'inactive', productCategories: ['oils', 'rice', 'pasta', 'canned', 'spices'], notes: 'جودة متفاوتة.' }
+            ];
+
+            for (const supplier of suppliers) {
+                await db.collection('suppliers').add(supplier);
+            }
+            log(`✓ تم إضافة ${suppliers.length} مورد`, 'success');
+        }
+
+        async function addBankAccounts() {
+            const accounts = [
+                { accountName: 'البنك الأهلي - جاري', accountType: 'bank_current', bankName: 'البنك الأهلي المصري', accountNumber: '1234567890123', iban: 'EG...123', currency: 'EGP', currentBalance: 75300.50, openingBalance: 50000, openingDate: '2023-01-15', notes: 'حساب الشركة الرئيسي' },
+                { accountName: 'خزينة المكتب', accountType: 'cash_on_hand', currency: 'EGP', currentBalance: 12750.00, openingBalance: 10000, openingDate: '2023-01-01', notes: '' },
+                { accountName: 'بنك مصر - توفير دولار', accountType: 'bank_saving', bankName: 'بنك مصر', accountNumber: '98765', currency: 'USD', currentBalance: 5200.00, openingBalance: 5000, openingDate: '2023-05-10', notes: '' }
+            ];
+
+            for (const account of accounts) {
+                await db.collection('bankAccounts').add(account);
+            }
+            log(`✓ تم إضافة ${accounts.length} حساب بنكي`, 'success');
+        }
+
+        async function addExpenses() {
+            const expenses = [
+                { date: '2024-02-01', type: 'rent', description: 'إيجار مكتب شهر فبراير', amount: 5000, paymentMethod: 'bank_transfer', paidTo: 'مالك العقار', employeeId: '', attachmentName: '', attachmentUrl: '' },
+                { date: '2024-02-05', type: 'fuel', description: 'بنزين لسيارة التوزيع', amount: 350, paymentMethod: 'cash', paidTo: 'محطة وقود', employeeId: '' },
+                { date: '2024-02-10', type: 'utilities', description: 'فاتورة كهرباء المكتب', amount: 280, paymentMethod: 'cash', paidTo: 'شركة الكهرباء', employeeId: '' },
+                { date: '2024-02-15', type: 'salaries', description: 'راتب الموظفين', amount: 15000, paymentMethod: 'bank_transfer', paidTo: 'موارد بشرية', employeeId: '' }
+            ];
+
+            for (const expense of expenses) {
+                await db.collection('expenses').add(expense);
+            }
+            log(`✓ تم إضافة ${expenses.length} مصروف`, 'success');
+        }
+
+        async function addInventoryStock() {
+            const stock = [
+                { productId: 'p1', productName: 'زيت عباد الشمس 1 لتر', warehouseId: 'main_wh', warehouseName: 'المخزن الرئيسي', quantity: 40, unit: 'زجاجة', reorderLevel: 10, status: 'in_stock' },
+                { productId: 'p1', productName: 'زيت عباد الشمس 1 لتر', warehouseId: 'alex_wh', warehouseName: 'مخزن الإسكندرية', quantity: 5, unit: 'زجاجة', reorderLevel: 10, status: 'low_stock' },
+                { productId: 'p2', productName: 'أرز مصري فاخر 5 كجم', warehouseId: 'main_wh', warehouseName: 'المخزن الرئيسي', quantity: 80, unit: 'كيس', reorderLevel: 20, status: 'in_stock' },
+                { productId: 'p3', productName: 'مكرونة اسباجتي 400جم', warehouseId: 'main_wh', warehouseName: 'المخزن الرئيسي', quantity: 0, unit: 'كيس', reorderLevel: 50, status: 'out_of_stock' }
+            ];
+
+            for (const item of stock) {
+                await db.collection('inventoryStock').add(item);
+            }
+            log(`✓ تم إضافة ${stock.length} عنصر مخزون`, 'success');
+        }
+
+        async function deleteAllData() {
+            if (!confirm('هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع!')) {
+                return;
+            }
+
+            try {
+                setStatus('🔄 جاري حذف البيانات...', 'loading');
+                log('بدء حذف البيانات...');
+
+                const collections = ['users', 'products', 'customers', 'suppliers', 'bankAccounts', 'expenses', 'inventoryStock'];
+
+                for (const collection of collections) {
+                    const snapshot = await db.collection(collection).get();
+                    for (const doc of snapshot.docs) {
+                        await db.collection(collection).doc(doc.id).delete();
+                    }
+                    log(`✓ تم حذف بيانات ${collection}`, 'success');
+                }
+
+                setStatus('✅ تم حذف جميع البيانات!', 'success');
+                log('تم حذف جميع البيانات بنجاح!', 'success');
+            } catch (error) {
+                setStatus('❌ خطأ: ' + error.message, 'error');
+                log('خطأ: ' + error.message, 'error');
+            }
+        }
+
+        // Check Firebase connection
+        setTimeout(() => {
+            setStatus('✅ متصل بـ Firebase بنجاح!', 'success');
+            log('Firebase متصل وجاهز!', 'success');
+        }, 2000);
+    </script>
+</body>
+</html>
