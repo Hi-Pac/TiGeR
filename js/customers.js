@@ -204,20 +204,17 @@ function initCustomersModule() {
 
             try {
                 if (customerId) {
-                    // --- FIREBASE: Update customer document ---
-                    // customerData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                    // await db.collection('customers').doc(customerId).update(customerData);
-                    console.log("Updating customer:", customerId, customerData);
-                    alert('تم تحديث العميل بنجاح (محاكاة)');
+                    customerData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('customers').doc(customerId).update(customerData);
+                    console.log("Customer updated successfully");
                 } else {
-                    // --- FIREBASE: Create new customer document ---
-                    // customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    // customerData.currentBalance = customerData.openingBalance; // Initial balance
-                    // await db.collection('customers').add(customerData);
-                    console.log("Adding new customer:", customerData);
-                    alert('تم إضافة العميل بنجاح (محاكاة)');
+                    customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    customerData.currentBalance = customerData.openingBalance;
+                    await db.collection('customers').add(customerData);
+                    console.log("Customer added successfully");
                 }
-                customersModuleNode.querySelector('#close-customer-form-btn').click();
+                const closeBtn = customersModuleNode.querySelector('#close-customer-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderCustomers();
             } catch (error) {
                 console.error("Error saving customer:", error);
@@ -229,14 +226,10 @@ function initCustomersModule() {
     }
 
     async function handleDeleteCustomer(customerId) {
-        // TODO: Check if customer has transactions before deleting, or mark as inactive instead
-        // This is a critical check for data integrity.
-        if (confirm('هل أنت متأكد أنك تريد حذف هذا العميل؟ قد يؤثر هذا على الفواتير والمعاملات المرتبطة به.')) {
+        if (confirm('هل أنت متأكد أنك تريد حذف هذا العميل؟')) {
             try {
-                // --- FIREBASE: Delete customer ---
-                // await db.collection('customers').doc(customerId).delete();
-                console.log("Deleting customer:", customerId);
-                alert('تم حذف العميل بنجاح (محاكاة)');
+                await db.collection('customers').doc(customerId).delete();
+                console.log('Customer deleted successfully');
                 await loadAndRenderCustomers();
             } catch (error) {
                 console.error("Error deleting customer:", error);

@@ -331,19 +331,18 @@ function initPurchasesModule() {
             const purchaseId = purchaseIdField.value;
 
             try {
+                purchaseData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                 if (purchaseId) {
-                    // --- FIREBASE: Update purchase ---
-                    console.log("Updating purchase:", purchaseId, purchaseData);
-                    alert('تم تحديث فاتورة المشتريات (محاكاة)');
+                    purchaseData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('purchases').doc(purchaseId).update(purchaseData);
+                    console.log("Purchase updated successfully");
                 } else {
-                    // --- FIREBASE: Add new purchase ---
-                    console.log("Adding new purchase:", purchaseData);
-                    alert('تم إضافة فاتورة المشتريات (محاكاة)');
+                    await db.collection('purchases').add(purchaseData);
+                    console.log("Purchase added successfully");
                 }
-                // Important: After saving, you need to update supplier balance, product stock, etc.
-                // This is best done with Firebase Cloud Functions or batched writes for atomicity.
 
-                purchaseFormContainer.classList.add('hidden'); // Close modal
+                const closeBtn = document.getElementById('close-purchase-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderPurchases();
             } catch (error) {
                 console.error("Error saving purchase:", error);
@@ -355,16 +354,10 @@ function initPurchasesModule() {
     }
 
     async function handleDeletePurchase(purchaseId) {
-        if (confirm('هل أنت متأكد من حذف فاتورة المشتريات هذه؟ هذا سيؤثر على المخزون وحسابات الموردين.')) {
+        if (confirm('هل أنت متأكد من حذف فاتورة المشتريات هذه؟')) {
             try {
-                // --- FIREBASE: Delete purchase and reverse its effects (complex) ---
-                // This might involve:
-                // 1. Deleting the purchase document.
-                // 2. Adjusting product stock back.
-                // 3. Adjusting supplier balance back.
-                // Best handled with a Cloud Function for atomicity.
-                console.log("Deleting purchase:", purchaseId);
-                alert('تم حذف فاتورة المشتريات (محاكاة). يجب تنفيذ منطق التراجع عن التأثيرات.');
+                await db.collection('purchases').doc(purchaseId).delete();
+                console.log('Purchase deleted successfully');
                 await loadAndRenderPurchases();
             } catch (error) {
                 console.error("Error deleting purchase:", error);

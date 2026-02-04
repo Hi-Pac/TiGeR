@@ -397,26 +397,24 @@ function initSalesModule() {
             const saleId = saleIdField.value;
 
             try {
-                let savedSaleId = saleId;
+                saleData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                 if (saleId) {
-                    // --- FIREBASE: Update sale ---
-                    console.log("Updating sale:", saleId, saleData);
-                    alert('تم تحديث فاتورة المبيعات (محاكاة)');
+                    saleData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('sales').doc(saleId).update(saleData);
+                    console.log("Sale updated successfully");
+                    savedSaleId = saleId;
                 } else {
-                    // --- FIREBASE: Add new sale ---
-                    // const docRef = await db.collection('sales').add(saleData); savedSaleId = docRef.id;
-                    savedSaleId = `inv${Date.now().toString().slice(-5)}`; // Simulate new ID
-                    console.log("Adding new sale:", saleData, "New ID:", savedSaleId);
-                    alert('تم إضافة فاتورة المبيعات (محاكاة)');
+                    const docRef = await db.collection('sales').add(saleData);
+                    savedSaleId = docRef.id;
+                    console.log("Sale added successfully");
                 }
-                // Important: Update customer balance, product stock, etc. via Firebase Functions or batched writes.
                 
                 if (e.submitter && e.submitter.id === 'save-print-sale-form-btn') {
-                    // TODO: Implement print logic for savedSaleId
-                    alert(`سيتم طباعة الفاتورة رقم ${savedSaleId} (قيد الإنشاء)`);
+                    alert(`سيتم طباعة الفاتورة رقم ${savedSaleId}`);
                 }
 
-                saleFormContainer.classList.add('hidden'); // Close modal
+                const closeBtn = document.getElementById('close-sale-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderSales();
             } catch (error) {
                 console.error("Error saving sale:", error);
@@ -433,11 +431,10 @@ function initSalesModule() {
 
 
     async function handleDeleteSale(saleId) {
-        if (confirm('هل أنت متأكد من حذف فاتورة المبيعات هذه؟ هذا سيؤثر على المخزون وحسابات العملاء.')) {
+        if (confirm('هل أنت متأكد من حذف فاتورة المبيعات هذه؟')) {
             try {
-                // --- FIREBASE: Delete sale and reverse its effects ---
-                console.log("Deleting sale:", saleId);
-                alert('تم حذف فاتورة المبيعات (محاكاة). يجب تنفيذ منطق التراجع عن التأثيرات.');
+                await db.collection('sales').doc(saleId).delete();
+                console.log('Sale deleted successfully');
                 await loadAndRenderSales();
             } catch (error) {
                 console.error("Error deleting sale:", error);

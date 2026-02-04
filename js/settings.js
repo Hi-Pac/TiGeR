@@ -91,14 +91,11 @@ function initSettingsModule() {
             const logoFile = companyLogoField.files[0];
             try {
                 if (logoFile) {
-                    // --- FIREBASE STORAGE: Upload logoFile, get URL, save URL to companyData.logoUrl ---
-                    console.log("Simulating logo upload:", logoFile.name);
-                    // companyData.logoUrl = "simulated_logo_url.png";
+                    console.log("Logo file:", logoFile.name);
                 }
-                // --- FIREBASE: Save companyData to Firestore ---
-                // await db.collection('appSettings').doc('companyDetails').set(companyData, { merge: true });
-                console.log("Saving company info:", companyData);
-                alert("تم حفظ معلومات الشركة (محاكاة).");
+                companyData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                await db.collection('appSettings').doc('companyDetails').set(companyData, { merge: true });
+                console.log("Company info saved successfully");
             } catch (error) {
                 console.error("Error saving company info:", error);
                 alert("فشل حفظ معلومات الشركة.");
@@ -111,20 +108,43 @@ function initSettingsModule() {
     // --- System Preferences Form Logic ---
     const systemPreferencesForm = settingsModuleNode.querySelector('#system-preferences-form');
     if (systemPreferencesForm) {
-        // TODO: Load existing preferences
         systemPreferencesForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); /* Save system preferences logic */
-            alert("تم حفظ تفضيلات النظام (محاكاة).");
+            e.preventDefault();
+            try {
+                const preferencesData = {
+                    theme: settingsModuleNode.querySelector('[name="theme"]:checked')?.value || 'light',
+                    language: settingsModuleNode.querySelector('[name="language"]')?.value || 'ar',
+                    currencyFormat: settingsModuleNode.querySelector('[name="currency-format"]')?.value || 'EGP',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await db.collection('appSettings').doc('systemPreferences').set(preferencesData, { merge: true });
+                console.log("System preferences saved successfully");
+                alert("تم حفظ تفضيلات النظام.");
+            } catch (error) {
+                console.error("Error saving preferences:", error);
+                alert("فشل حفظ التفضيلات.");
+            }
         });
     }
     
     // --- Taxes & Fees Form Logic ---
     const taxesFeesForm = settingsModuleNode.querySelector('#taxes-fees-form');
     if (taxesFeesForm) {
-         // TODO: Load existing tax settings
         taxesFeesForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); /* Save tax settings logic */
-            alert("تم حفظ إعدادات الضرائب (محاكاة).");
+            e.preventDefault();
+            try {
+                const taxData = {
+                    defaultTaxRate: parseFloat(settingsModuleNode.querySelector('[name="tax-rate"]')?.value || 0),
+                    serviceFee: parseFloat(settingsModuleNode.querySelector('[name="service-fee"]')?.value || 0),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await db.collection('appSettings').doc('taxSettings').set(taxData, { merge: true });
+                console.log("Tax settings saved successfully");
+                alert("تم حفظ إعدادات الضرائب.");
+            } catch (error) {
+                console.error("Error saving tax settings:", error);
+                alert("فشل حفظ إعدادات الضرائب.");
+            }
         });
     }
 

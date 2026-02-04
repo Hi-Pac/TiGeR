@@ -234,7 +234,6 @@ function initBanksModule() {
     if (bankAccountFormElement) {
         bankAccountFormElement.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // ... Save bank account logic (add/update)
             const isBank = accountTypeField.value.startsWith('bank_');
             const accountData = {
                 accountName: accountNameField.value,
@@ -245,29 +244,52 @@ function initBanksModule() {
                 currency: accountCurrencyField.value,
                 openingBalance: parseFloat(accountOpeningBalanceField.value),
                 openingDate: accountOpeningDateField.value,
-                notes: accountNotesField.value,
-                // currentBalance will be openingBalance initially, then updated by transactions
+                notes: accountNotesField.value
             };
             const accountId = accountIdField.value;
-            if(accountId){
-                console.log("Updating account:", accountId, accountData); alert("تحديث الحساب (محاكاة)");
-            } else {
-                 console.log("Adding account:", accountData); alert("إضافة حساب (محاكاة)");
+            try {
+                if (accountId) {
+                    accountData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('bankAccounts').doc(accountId).update(accountData);
+                    console.log("Bank account updated successfully");
+                } else {
+                    accountData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    accountData.currentBalance = accountData.openingBalance;
+                    await db.collection('bankAccounts').add(accountData);
+                    console.log("Bank account added successfully");
+                }
+                const closeBtn = banksModuleNode.querySelector('#close-bank-account-form-btn');
+                if (closeBtn) closeBtn.click();
+                await loadAndRenderBankAccounts();
+            } catch (error) {
+                console.error("Error saving bank account:", error);
+                alert(`فشل حفظ الحساب: ${error.message}`);
             }
-            bankAccountFormContainer.classList.add('hidden');
-            await loadAndRenderBankAccounts();
         });
     }
     
     if (bankTransactionFormElement) {
         bankTransactionFormElement.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // ... Save bank transaction logic
-            // This should update the currentBalance of the selected bank account
-            alert("حفظ المعاملة البنكية (محاكاة)");
-            bankTransactionFormContainer.classList.add('hidden');
-            await loadAndRenderBankAccounts(); // To reflect balance changes
-            // Optionally, load and display transactions for the affected account
+            try {
+                const transactionData = {
+                    accountId: transactionAccountField.value,
+                    date: transactionDateField.value,
+                    type: transactionTypeField.value,
+                    amount: parseFloat(transactionAmountField.value),
+                    description: transactionDescriptionField.value,
+                    referenceNumber: transactionReferenceField.value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await db.collection('bankTransactions').add(transactionData);
+                console.log('Bank transaction saved successfully');
+                const closeBtn = banksModuleNode.querySelector('#close-bank-transaction-form-btn');
+                if (closeBtn) closeBtn.click();
+                await loadAndRenderBankAccounts();
+            } catch (error) {
+                console.error('Error saving bank transaction:', error);
+                alert(`فشل حفظ المعاملة: ${error.message}`);
+            }
         });
     }
     

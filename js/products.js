@@ -182,17 +182,14 @@ function initProductsModule() {
 
             try {
                 if (productId) {
-                    // --- FIREBASE: Update product document ---
-                    // await db.collection('products').doc(productId).update(productData);
-                    console.log("Updating product:", productId, productData);
-                    alert('تم تحديث الصنف بنجاح (محاكاة)');
+                    await db.collection('products').doc(productId).update(productData);
+                    console.log("Product updated successfully");
                 } else {
-                    // --- FIREBASE: Create new product document ---
-                    // await db.collection('products').add(productData);
-                    console.log("Adding new product:", productData);
-                    alert('تم إضافة الصنف بنجاح (محاكاة)');
+                    await db.collection('products').add(productData);
+                    console.log("Product added successfully");
                 }
-                productsModuleNode.querySelector('#close-product-form-btn').click();
+                const closeBtn = productsModuleNode.querySelector('#close-product-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderProducts();
             } catch (error) {
                 console.error("Error saving product:", error);
@@ -204,14 +201,10 @@ function initProductsModule() {
     }
 
     async function handleDeleteProduct(productId) {
-        // TODO: Check if product is used in sales, purchases, inventory before deleting
-        // Or implement soft delete (mark as inactive)
         if (confirm('هل أنت متأكد أنك تريد حذف هذا الصنف؟')) {
             try {
-                // --- FIREBASE: Delete product ---
-                // await db.collection('products').doc(productId).delete();
-                console.log("Deleting product:", productId);
-                alert('تم حذف الصنف بنجاح (محاكاة)');
+                await db.collection('products').doc(productId).delete();
+                console.log('Product deleted successfully');
                 await loadAndRenderProducts();
             } catch (error) {
                 console.error("Error deleting product:", error);

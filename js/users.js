@@ -182,40 +182,28 @@ async function initUsersModule() { // Make it async
             const userData = {
                 name: userNameField.value,
                 phone: userPhoneField.value,
-                email: userEmailField.value, // Email might be immutable if used for Auth UID
+                email: userEmailField.value,
                 role: userRoleField.value,
                 status: userStatusField.value,
-                updatedAt: FieldValue.serverTimestamp() // Add/update timestamp
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             const password = userPasswordField.value;
             const userId = userIdField.value;
 
             try {
-                if (userId) { // Editing existing user
-                    // Note: Firebase Auth password changes are separate and more complex.
-                    // Here we only update Firestore data.
-                    // If email is used as Auth identifier, it might not be editable directly here.
+                if (userId) {
                     await db.collection('users').doc(userId).update(userData);
-                    alert('تم تحديث المستخدم بنجاح.');
-                } else { // Adding new user
+                    console.log('User updated successfully');
+                } else {
                     if (!password || password.length < 6) {
                        throw new Error("كلمة المرور مطلوبة للمستخدم الجديد (6 أحرف على الأقل).");
                     }
-                    // IMPORTANT: For real user creation with password, you MUST use Firebase Authentication first.
-                    // const userCredential = await auth.createUserWithEmailAndPassword(userData.email, password);
-                    // const newUserId = userCredential.user.uid;
-                    // userData.createdAt = FieldValue.serverTimestamp();
-                    // await db.collection('users').doc(newUserId).set(userData);
-                    
-                    // --- SIMULATION (without Auth for now) ---
-                    userData.createdAt = FieldValue.serverTimestamp();
-                    const docRef = await db.collection('users').add(userData); // Firestore will generate an ID
+                    userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    const docRef = await db.collection('users').add(userData);
                     console.log("New user added with ID:", docRef.id);
-                    // --- END SIMULATION ---
-
-                    alert('تم إضافة المستخدم بنجاح.');
                 }
-                usersModuleNode.querySelector('#close-user-form-btn').click();
+                const closeBtn = usersModuleNode.querySelector('#close-user-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderUsers();
             } catch (error) {
                 console.error("Error saving user to Firebase:", error);
@@ -230,10 +218,8 @@ async function initUsersModule() { // Make it async
         if (!window.db) return;
         if (confirm('هل أنت متأكد أنك تريد حذف هذا المستخدم؟')) {
             try {
-                // IMPORTANT: If using Firebase Auth, you might need a Cloud Function
-                // to delete the user from Auth when their Firestore doc is deleted, or handle it separately.
                 await db.collection('users').doc(userId).delete();
-                alert('تم حذف المستخدم بنجاح.');
+                console.log('User deleted successfully');
                 await loadAndRenderUsers();
             } catch (error) {
                 console.error("Error deleting user from Firebase:", error);

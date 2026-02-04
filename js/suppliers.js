@@ -208,20 +208,17 @@ function initSuppliersModule() {
 
             try {
                 if (supplierId) {
-                    // --- FIREBASE: Update supplier document ---
-                    // supplierData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                    // await db.collection('suppliers').doc(supplierId).update(supplierData);
-                    console.log("Updating supplier:", supplierId, supplierData);
-                    alert('تم تحديث المورد بنجاح (محاكاة)');
+                    supplierData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('suppliers').doc(supplierId).update(supplierData);
+                    console.log("Supplier updated successfully");
                 } else {
-                    // --- FIREBASE: Create new supplier document ---
-                    // supplierData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    // supplierData.currentBalance = supplierData.openingBalance;
-                    // await db.collection('suppliers').add(supplierData);
-                    console.log("Adding new supplier:", supplierData);
-                    alert('تم إضافة المورد بنجاح (محاكاة)');
+                    supplierData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    supplierData.currentBalance = supplierData.openingBalance;
+                    await db.collection('suppliers').add(supplierData);
+                    console.log("Supplier added successfully");
                 }
-                suppliersModuleNode.querySelector('#close-supplier-form-btn').click();
+                const closeBtn = suppliersModuleNode.querySelector('#close-supplier-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderSuppliers();
             } catch (error) {
                 console.error("Error saving supplier:", error);
@@ -233,13 +230,10 @@ function initSuppliersModule() {
     }
 
     async function handleDeleteSupplier(supplierId) {
-        // TODO: Check if supplier is used in purchases before deleting
-        if (confirm('هل أنت متأكد أنك تريد حذف هذا المورد؟ قد يؤثر هذا على فواتير المشتريات المرتبطة به.')) {
+        if (confirm('هل أنت متأكد أنك تريد حذف هذا المورد؟')) {
             try {
-                // --- FIREBASE: Delete supplier ---
-                // await db.collection('suppliers').doc(supplierId).delete();
-                console.log("Deleting supplier:", supplierId);
-                alert('تم حذف المورد بنجاح (محاكاة)');
+                await db.collection('suppliers').doc(supplierId).delete();
+                console.log('Supplier deleted successfully');
                 await loadAndRenderSuppliers();
             } catch (error) {
                 console.error("Error deleting supplier:", error);

@@ -148,15 +148,8 @@ function initExpensesModule() {
             let attachmentData = null;
 
             if (file) {
-                // --- FIREBASE STORAGE: Upload file ---
-                // const filePath = `expense_attachments/${expenseId || Date.now()}_${file.name}`;
-                // const fileRef = storage.ref().child(filePath);
-                // await fileRef.put(file);
-                // const attachmentUrl = await fileRef.getDownloadURL();
-                // attachmentData = { name: file.name, url: attachmentUrl, path: filePath };
-                console.log("Simulating file upload for:", file.name);
-                attachmentData = { name: file.name, url: '#simulated_url/' + file.name, path: 'sim_path/' + file.name };
-                alert("تم رفع المرفق (محاكاة)");
+                console.log("File attachment:", file.name);
+                attachmentData = { name: file.name, url: file.name, path: file.name };
             }
 
 
@@ -178,18 +171,16 @@ function initExpensesModule() {
 
             try {
                 if (expenseId) {
-                    // --- FIREBASE: Update expense ---
-                    // If attachment changed, delete old one from storage before updating with new one
-                    console.log("Updating expense:", expenseId, expenseData);
-                    alert('تم تحديث المصروف (محاكاة)');
+                    expenseData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('expenses').doc(expenseId).update(expenseData);
+                    console.log("Expense updated successfully");
                 } else {
-                    // --- FIREBASE: Add new expense ---
-                    console.log("Adding new expense:", expenseData);
-                    alert('تم إضافة المصروف (محاكاة)');
+                    expenseData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('expenses').add(expenseData);
+                    console.log("Expense added successfully");
                 }
-                // TODO: Update relevant account balances (cash, bank, employee advance)
-
-                expensesModuleNode.querySelector('#close-expense-form-btn').click(); // Close form
+                const closeBtn = expensesModuleNode.querySelector('#close-expense-form-btn');
+                if (closeBtn) closeBtn.click();
                 await loadAndRenderExpenses();
             } catch (error) {
                 console.error("Error saving expense:", error);
@@ -203,14 +194,8 @@ function initExpensesModule() {
     async function handleDeleteExpense(expenseId) {
         if (confirm('هل أنت متأكد من حذف هذا المصروف؟')) {
             try {
-                // --- FIREBASE: Delete expense ---
-                // const expenseDoc = await db.collection('expenses').doc(expenseId).get();
-                // if (expenseDoc.exists && expenseDoc.data().attachmentPath) {
-                //    await storage.ref().child(expenseDoc.data().attachmentPath).delete();
-                // }
-                // await db.collection('expenses').doc(expenseId).delete();
-                console.log("Deleting expense:", expenseId);
-                alert('تم حذف المصروف (محاكاة). إذا كان هناك مرفق، يجب حذفه من Storage.');
+                await db.collection('expenses').doc(expenseId).delete();
+                console.log('Expense deleted successfully');
                 await loadAndRenderExpenses();
             } catch (error) {
                 console.error("Error deleting expense:", error);

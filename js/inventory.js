@@ -128,10 +128,28 @@ function initInventoryModule() {
     
     if(inventoryInFormElement) inventoryInFormElement.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... Save stock-in logic (update inventory table, create transaction log)
-        alert("حفظ إذن الإضافة (محاكاة)");
-        inventoryInFormContainer.classList.add('hidden');
-        await loadAndRenderInventoryStock();
+        try {
+            const inventoryInData = {
+                date: inventoryInDateField.valueAsDate || new Date(),
+                supplier: inventoryInSupplierField.value,
+                notes: inventoryInNotesField.value,
+                items: Array.from(inventoryInItemsTableBody.querySelectorAll('.inventory-in-item-row')).map(row => ({
+                    productId: row.querySelector('.product-selector').value,
+                    quantity: parseInt(row.querySelector('.quantity-input').value) || 0,
+                    productionDate: row.querySelector('.production-date-input').value,
+                    expiryDate: row.querySelector('.expiry-date-input').value
+                })),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection('inventoryTransactions').add(inventoryInData);
+            console.log('Inventory stock-in saved successfully');
+            const closeBtn = inventoryModuleNode.querySelector('#close-inventory-in-form-btn');
+            if (closeBtn) closeBtn.click();
+            await loadAndRenderInventoryStock();
+        } catch (error) {
+            console.error('Error saving inventory stock-in:', error);
+            alert(`فشل حفظ إذن الإضافة: ${error.message}`);
+        }
     });
 
 
@@ -208,10 +226,27 @@ function initInventoryModule() {
 
     if(inventoryTransferFormElement) inventoryTransferFormElement.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // ... Save transfer logic (update stock in both warehouses, create transaction log)
-        alert("حفظ أمر التحويل (محاكاة)");
-        inventoryTransferFormContainer.classList.add('hidden');
-        await loadAndRenderInventoryStock();
+        try {
+            const transferData = {
+                date: transferDateField.valueAsDate || new Date(),
+                fromWarehouse: transferFromWarehouseField.value,
+                toWarehouse: transferToWarehouseField.value,
+                notes: transferNotesField.value,
+                items: Array.from(inventoryTransferItemsTableBody.querySelectorAll('.inventory-transfer-item-row')).map(row => ({
+                    productId: row.querySelector('.product-selector').value,
+                    quantity: parseInt(row.querySelector('.quantity-input').value) || 0
+                })),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection('inventoryTransactions').add(transferData);
+            console.log('Inventory transfer saved successfully');
+            const closeBtn = inventoryModuleNode.querySelector('#close-inventory-transfer-form-btn');
+            if (closeBtn) closeBtn.click();
+            await loadAndRenderInventoryStock();
+        } catch (error) {
+            console.error('Error saving inventory transfer:', error);
+            alert(`فشل حفظ أمر التحويل: ${error.message}`);
+        }
     });
 
 
