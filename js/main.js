@@ -129,13 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 initCustomersModule();
             } else if (moduleId === 'dashboard' && typeof initDashboardModule === 'function') {
                 initDashboardModule();
-            } else if (moduleId === 'customers' && typeof initCustomersModule === 'function') {
-                initCustomersModule();
             } else if (moduleId === 'suppliers' && typeof initSuppliersModule === 'function') {
                 initSuppliersModule();
             } else if (moduleId === 'purchases' && typeof initPurchasesModule === 'function') {
                 initPurchasesModule();
-            }else if (moduleId === 'sales' && typeof initSalesModule === 'function') {
+            } else if (moduleId === 'sales' && typeof initSalesModule === 'function') {
                 initSalesModule();
             } else if (moduleId === 'inventory' && typeof initInventoryModule === 'function') {
                 initInventoryModule();
@@ -150,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (moduleId === 'help' && typeof initHelpModule === 'function') {
                 initHelpModule();
             }
-            // expenses Add other `else if` for other modules here...
+            // Add other `else if` for other modules here...
             
         } catch (error) {
             console.error('Error loading module:', error);
