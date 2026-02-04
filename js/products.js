@@ -61,16 +61,9 @@ function initProductsModule() {
         if (!productsTableBody) return;
         productsTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل الأصناف...</td></tr>`;
         try {
-            // --- FIREBASE: Replace with actual data fetching ---
-            // const productsSnapshot = await db.collection('products').orderBy('name').get();
-            // allProductsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            await new Promise(resolve => setTimeout(resolve, 500));
-            allProductsData = [
-                { id: 'p1', name: 'زيت عباد الشمس 1 لتر', barcode: '622001', category: 'oils', unit: 'زجاجة', purchasePrice: 30, salePrice: 35, description: 'زيت طعام نقي', reorderLevel: 10 },
-                { id: 'p2', name: 'أرز مصري فاخر 5 كجم', barcode: '622002', category: 'rice', unit: 'كيس', purchasePrice: 120, salePrice: 135, description: 'أرز حبة طويلة', reorderLevel: 20 },
-                { id: 'p3', name: 'مكرونة اسباجتي 400جم', barcode: '622003', category: 'pasta', unit: 'كيس', purchasePrice: 8, salePrice: 10, description: '', reorderLevel: 50 },
-                { id: 'p4', name: 'صلصة طماطم معلبة', barcode: '622004', category: 'canned', unit: 'علبة', purchasePrice: 5, salePrice: 7, description: 'تركيز عالي', reorderLevel: 30 },
-            ];
+            const productsSnapshot = await db.collection('products').orderBy('name').get();
+            allProductsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Products loaded:", allProductsData);
             applyProductFiltersAndRender();
         } catch (error) {
             console.error("Error loading products:", error);

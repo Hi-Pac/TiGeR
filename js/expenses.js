@@ -80,14 +80,9 @@ function initExpensesModule() {
         if (!expensesTableBody) return;
         expensesTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل المصروفات...</td></tr>`;
         try {
-            // --- FIREBASE: Fetch expenses ---
-            await new Promise(resolve => setTimeout(resolve, 450));
-            allExpensesData = [
-                { id: 'exp1', date: '2023-10-01', type: 'rent', description: 'إيجار مكتب شهر أكتوبر', amount: 5000, paymentMethod: 'bank_transfer', paidTo: 'مالك العقار', employeeId: '', attachmentName: 'عقد_الايجار.pdf', attachmentUrl: '#' },
-                { id: 'exp2', date: '2023-10-05', type: 'fuel', description: 'بنزين لسيارة التوزيع رقم 123', amount: 350, paymentMethod: 'cash', paidTo: 'محطة وقود X', employeeId: 'user2' },
-                { id: 'exp3', date: '2023-10-10', type: 'utilities', description: 'فاتورة كهرباء المكتب', amount: 280, paymentMethod: 'cash', paidTo: 'شركة الكهرباء', employeeId: '' },
-                { id: 'exp4', date: '2023-10-15', type: 'salaries', description: 'راتب الموظف أحمد (جزئي)', amount: 1500, paymentMethod: 'bank_account_1', paidTo: 'أحمد محمد', employeeId: 'user1', attachmentName: 'كشف_راتب.xls', attachmentUrl: '#' },
-            ];
+            const expensesSnapshot = await db.collection('expenses').orderBy('date', 'desc').get();
+            allExpensesData = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Expenses loaded:", allExpensesData);
             applyExpenseFiltersAndRender();
         } catch (error) {
             console.error("Error loading expenses:", error);

@@ -1,17 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Firebase Initialization (TODO: Uncomment and configure) ---
+    // --- Firebase Initialization ---
     const firebaseConfig = {
-          apiKey: "AIzaSyCAUaKXd9bzMUfBAQTa1nSaEbR_VVLIe98",
-          authDomain: "colorflow-erp.firebaseapp.com",
-          projectId: "colorflow-erp",
-          storageBucket: "colorflow-erp.firebasestorage.app",
-          messagingSenderId: "40753390221",
-          appId: "1:40753390221:web:a032845d5891d2b510b8c4"
+          apiKey: "AIzaSyBRtCWX-OcFAtMqZusMqePMX2zvlIdcRyA",
+          authDomain: "delta-hcp-fa2ba.firebaseapp.com",
+          projectId: "delta-hcp-fa2ba",
+          storageBucket: "delta-hcp-fa2ba.firebasestorage.app",
+          messagingSenderId: "649732241434",
+          appId: "1:649732241434:web:f3adddc04c9b6e9d2f39a3",
+          measurementId: "G-G3JEXBE9KZ"
         };
     firebase.initializeApp(firebaseConfig);
     window.auth = firebase.auth();
     window.db = firebase.firestore();
-    window.storage = firebase.storage(); // If using storage
+    window.storage = firebase.storage();
+    console.log("Firebase Initialized Successfully!");
 
     // --- Global DOM Elements ---
     const contentArea = document.getElementById('content-area');

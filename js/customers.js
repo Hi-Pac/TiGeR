@@ -69,16 +69,9 @@ function initCustomersModule() {
         if (!customersTableBody) return;
         customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل العملاء...</td></tr>`;
         try {
-            // --- FIREBASE: Replace with actual data fetching ---
-            // const customersSnapshot = await db.collection('customers').orderBy('shopName').get();
-            // allCustomersData = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            await new Promise(resolve => setTimeout(resolve, 400));
-            allCustomersData = [
-                { id: 'cust1', shopName: 'ماركت السعادة الكبرى', ownerName: 'علي أحمد', phone: '01001122333', phone2: '', email: 'saada@example.com', area: 'القاهرة', address: '15 شارع التحرير, الدقي', creditLimit: 10000, openingBalance: 500, currentBalance: 1200, status: 'active', notes: 'عميل جيد، يدفع في الموعد' },
-                { id: 'cust2', shopName: 'بقالة الخير والبركة', ownerName: 'فاطمة حسن', phone: '01112233444', phone2: '0127777777', email: '', area: 'الجيزة', address: 'شارع الهرم الرئيسي', creditLimit: 5000, openingBalance: -200, currentBalance: -200, status: 'active', notes: '' },
-                { id: 'cust3', shopName: 'هايبر النور', ownerName: 'محمود سعيد', phone: '01223344555', phone2: '', email: 'nour@hyper.com', area: 'الإسكندرية', address: 'طريق الكورنيش, المنتزه', creditLimit: 20000, openingBalance: 0, currentBalance: -550, status: 'inactive', notes: 'توقف عن التعامل مؤقتاً' },
-            ];
-            // Populate area filter dynamically if needed
+            const customersSnapshot = await db.collection('customers').orderBy('shopName').get();
+            allCustomersData = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Customers loaded:", allCustomersData);
             populateAreaFilter(allCustomersData);
             applyCustomerFiltersAndRender();
         } catch (error) {

@@ -220,18 +220,11 @@ function initInventoryModule() {
         if (!inventoryTableBody) return;
         inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل أرصدة المخزون...</td></tr>`;
         try {
-            // --- FIREBASE: Fetch aggregated stock data (productId, productName, warehouseId, warehouseName, quantity, unit, reorderLevel) ---
-            // This might involve joining 'products' and 'inventoryStock' collections or having denormalized data.
-            await new Promise(resolve => setTimeout(resolve, 500));
-            allInventoryStockData = [
-                { productId: 'p1', productName: 'زيت عباد الشمس 1 لتر', warehouseId: 'main_wh', warehouseName: 'المخزن الرئيسي', quantity: 40, unit: 'زجاجة', reorderLevel: 10, status: 'in_stock' },
-                { productId: 'p1', productName: 'زيت عباد الشمس 1 لتر', warehouseId: 'alex_wh', warehouseName: 'مخزن الإسكندرية', quantity: 5, unit: 'زجاجة', reorderLevel: 10, status: 'low_stock' },
-                { productId: 'p2', productName: 'أرز مصري فاخر 5 كجم', warehouseId: 'main_wh', warehouseName: 'المخزن الرئيسي', quantity: 80, unit: 'كيس', reorderLevel: 20, status: 'in_stock' },
-                { productId: 'p3', productName: 'مكرونة اسباجتي 400جم', warehouseId: 'main_wh', warehouseName: 'المخزن الرئيسي', quantity: 0, unit: 'كيس', reorderLevel: 50, status: 'out_of_stock' },
-            ];
-            renderInventoryTable(allInventoryStockData); // Initially render all
-             // Populate warehouse filter after data load (if not already done)
-            if (inventoryWarehouseFilter.options.length <= 1) { // only placeholder exists
+            const inventorySnapshot = await db.collection('inventoryStock').get();
+            allInventoryStockData = inventorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Inventory Stock loaded:", allInventoryStockData);
+            renderInventoryTable(allInventoryStockData);
+            if (inventoryWarehouseFilter.options.length <= 1) {
                 const distinctWarehouses = [...new Map(allInventoryStockData.map(item => [item.warehouseId, {id: item.warehouseId, name: item.warehouseName}])).values()];
                 distinctWarehouses.forEach(wh => {
                      if(Array.from(inventoryWarehouseFilter.options).find(opt => opt.value === wh.id) == null)

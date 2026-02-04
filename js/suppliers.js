@@ -82,15 +82,9 @@ function initSuppliersModule() {
         if (!suppliersTableBody) return;
         suppliersTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">جاري تحميل الموردين...</td></tr>`;
         try {
-            // --- FIREBASE: Replace with actual data fetching ---
-            // const suppliersSnapshot = await db.collection('suppliers').orderBy('companyName').get();
-            // allSuppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            await new Promise(resolve => setTimeout(resolve, 300));
-            allSuppliersData = [
-                { id: 'sup1', companyName: 'شركة الأغذية المتحدة', contactPerson: 'أحمد خالد', phone: '01234567890', email: 'united@foods.com', address: 'المنطقة الصناعية، مدينة 6 أكتوبر', openingBalance: 15000, currentBalance: 12500, paymentTerms: 30, status: 'active', productCategories: ['oils', 'rice'], notes: 'مورد رئيسي للزيوت والأرز.' },
-                { id: 'sup2', companyName: 'مؤسسة الخير للتوريدات', contactPerson: 'سارة علي', phone: '01198765432', email: 'khair@supplies.net', address: 'وسط البلد، القاهرة', openingBalance: -500, currentBalance: 0, paymentTerms: 15, status: 'active', productCategories: ['pasta', 'canned', 'spices'], notes: '' },
-                { id: 'sup3', companyName: 'تجار الجملة الكبار', contactPerson: 'محمد حسن', phone: '01011223344', email: '', address: 'سوق الجملة، العبور', openingBalance: 0, currentBalance: 7800, paymentTerms: 45, status: 'inactive', productCategories: ['oils', 'rice', 'pasta', 'canned', 'spices'], notes: 'جودة متفاوتة.' },
-            ];
+            const suppliersSnapshot = await db.collection('suppliers').orderBy('companyName').get();
+            allSuppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Suppliers loaded:", allSuppliersData);
             applySupplierFiltersAndRender();
         } catch (error) {
             console.error("Error loading suppliers:", error);

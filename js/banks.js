@@ -134,18 +134,13 @@ function initBanksModule() {
         bankAccountsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">جاري تحميل الحسابات...</td></tr>`;
         if (bankSummaryCardsContainer) bankSummaryCardsContainer.innerHTML = '<div class="animate-pulse"><div class="h-16 bg-gray-300 dark:bg-gray-700 rounded"></div></div>'.repeat(3);
 
-
         try {
-            // --- FIREBASE: Fetch bank accounts ---
-            await new Promise(resolve => setTimeout(resolve, 600));
-            allBankAccountsData = [
-                { id: 'ba1', accountName: 'البنك الأهلي - جاري', accountType: 'bank_current', bankName: 'البنك الأهلي المصري', accountNumber: '1234567890123', iban: 'EG...123', currency: 'EGP', currentBalance: 75300.50, openingBalance: 50000, openingDate: '2023-01-15', notes: 'حساب الشركة الرئيسي' },
-                { id: 'ba2', accountName: 'خزينة المكتب', accountType: 'cash_on_hand', currency: 'EGP', currentBalance: 12750.00, openingBalance: 10000, openingDate: '2023-01-01', notes: '' },
-                { id: 'ba3', accountName: 'بنك مصر - توفير دولار', accountType: 'bank_saving', bankName: 'بنك مصر', accountNumber: '98765', currency: 'USD', currentBalance: 5200.00, openingBalance: 5000, openingDate: '2023-05-10', notes: '' },
-            ];
+            const accountsSnapshot = await db.collection('bankAccounts').get();
+            allBankAccountsData = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Bank Accounts loaded:", allBankAccountsData);
             renderBankAccountsTable(allBankAccountsData);
             renderBankSummaryCards(allBankAccountsData);
-            await populateAccountsForTransactionDropdown(); // Make sure it's populated after load
+            await populateAccountsForTransactionDropdown();
         } catch (error) {
             console.error("Error loading bank accounts:", error);
             bankAccountsTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-red-500">فشل تحميل الحسابات.</td></tr>`;
