@@ -74,8 +74,20 @@ async function initUsersModule() { // Make it async
         }
         usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">جاري تحميل المستخدمين... <span class="loader ml-2"></span></td></tr>`;
         try {
-            const usersSnapshot = await db.collection('users').orderBy('name').get(); // Order by name
-            allUsersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // --- FIREBASE: Replace with actual data fetching ---
+            // const usersSnapshot = await db.collection('users').orderBy('name').get();
+            // allUsersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // --- SIMULATION with dummy data (without Firebase for now) ---
+            await new Promise(resolve => setTimeout(resolve, 500));
+            allUsersData = [
+                { id: 'user1', name: 'أحمد محمود', phone: '01001122333', email: 'ahmed@tiger.com', role: 'admin', status: 'active' },
+                { id: 'user2', name: 'فاطمة علي', phone: '01112233444', email: 'fatima@tiger.com', role: 'accountant', status: 'active' },
+                { id: 'user3', name: 'محمد سعيد', phone: '01223344555', email: 'mohammad@tiger.com', role: 'sales', status: 'active' },
+                { id: 'user4', name: 'سارة حسن', phone: '01334455666', email: 'sarah@tiger.com', role: 'warehouse', status: 'inactive' },
+            ];
+            // --- END SIMULATION ---
+            
             applyFiltersAndRender();
         } catch (error) {
             console.error("Error loading users from Firebase:", error);
