@@ -1,18 +1,9 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- Firebase Initialization (TODO: Uncomment and configure) ---
-    const firebaseConfig = {
-          apiKey: "AIzaSyCAUaKXd9bzMUfBAQTa1nSaEbR_VVLIe98",
-          authDomain: "colorflow-erp.firebaseapp.com",
-          projectId: "colorflow-erp",
-          storageBucket: "colorflow-erp.firebasestorage.app",
-          messagingSenderId: "40753390221",
-          appId: "1:40753390221:web:a032845d5891d2b510b8c4"
-        };
-    firebase.initializeApp(firebaseConfig);
-    window.auth = firebase.auth();
-    window.db = firebase.firestore();
-    window.storage = firebase.storage(); // If using storage
+// Main application logic.
+// Firebase initialization has been moved to `firebaseConfig.js`.
+// This script handles theme toggling, sidebar interaction, module loading,
+// and utility functions for the ERP system.
 
+document.addEventListener('DOMContentLoaded', () => {
     // --- Global DOM Elements ---
     const contentArea = document.getElementById('content-area');
     const pageTitleElement = document.getElementById('page-title');
@@ -46,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Sidebar and Mobile Navigation ---
     const desktopSidebar = document.getElementById('sidebar');
     const mobileSidebarElement = document.getElementById('mobile-sidebar');
-    const mobileSidebarAside = mobileSidebarElement.querySelector('aside');
+    const mobileSidebarAside = mobileSidebarElement ? mobileSidebarElement.querySelector('aside') : null;
     const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn'); // Main toggle button
     const closeMobileSidebarBtn = document.getElementById('close-mobile-sidebar-btn');
     const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
@@ -57,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const allModuleButtons = document.querySelectorAll('.module-btn');
 
-
     function setActiveSidebarButton(moduleId) {
         allModuleButtons.forEach(btn => {
             btn.classList.remove('sidebar-btn-active');
@@ -66,17 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     function openMobileSidebar() {
+        if (!mobileSidebarElement || !mobileSidebarAside) return;
         mobileSidebarElement.classList.remove('hidden');
         setTimeout(() => mobileSidebarAside.style.transform = 'translateX(0)', 10); // For RTL
     }
 
     function closeMobileSidebar() {
+        if (!mobileSidebarElement || !mobileSidebarAside) return;
         mobileSidebarAside.style.transform = 'translateX(100%)'; // For RTL
         setTimeout(() => mobileSidebarElement.classList.add('hidden'), 300);
     }
-    
+
     // Toggle for main sidebar (desktop collapse/expand and mobile show)
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', () => {
@@ -93,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (closeMobileSidebarBtn) closeMobileSidebarBtn.addEventListener('click', closeMobileSidebar);
     if (mobileSidebarOverlay) mobileSidebarOverlay.addEventListener('click', closeMobileSidebar);
-
 
     // --- Module Loading and Navigation ---
     window.currentLoadedModule = null; // To keep track of the currently loaded module's specific JS functions
@@ -118,8 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Call module-specific initialization function if it exists
             // These functions should be defined in their respective JS files (e.g., users.js, products.js)
-            // and attached to the window object or managed via an event system.
-            // For simplicity, we'll attach them to window for now.
             currentLoadedModule = moduleId;
             if (moduleId === 'users' && typeof initUsersModule === 'function') {
                 initUsersModule();
@@ -129,13 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 initCustomersModule();
             } else if (moduleId === 'dashboard' && typeof initDashboardModule === 'function') {
                 initDashboardModule();
-            } else if (moduleId === 'customers' && typeof initCustomersModule === 'function') {
-                initCustomersModule();
             } else if (moduleId === 'suppliers' && typeof initSuppliersModule === 'function') {
                 initSuppliersModule();
             } else if (moduleId === 'purchases' && typeof initPurchasesModule === 'function') {
                 initPurchasesModule();
-            }else if (moduleId === 'sales' && typeof initSalesModule === 'function') {
+            } else if (moduleId === 'sales' && typeof initSalesModule === 'function') {
                 initSalesModule();
             } else if (moduleId === 'inventory' && typeof initInventoryModule === 'function') {
                 initInventoryModule();
@@ -150,11 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (moduleId === 'help' && typeof initHelpModule === 'function') {
                 initHelpModule();
             }
-            // expenses Add other `else if` for other modules here...
-            
         } catch (error) {
             console.error('Error loading module:', error);
-            contentArea.innerHTML = `<div class="p-4 text-red-500">فشل تحميل الوحدة: ${error.message}</div>`;
+            contentArea.innerHTML = `<div class=\"p-4 text-red-500\">فشل تحميل الوحدة: ${error.message}</div>`;
         } finally {
             if (globalLoader) globalLoader.classList.add('hidden');
         }
@@ -184,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 spinner.className = 'btn-spinner';
                 // Adjust insertion for RTL: icon before text
                 if (buttonElement.firstChild && buttonElement.firstChild.nodeName === '#text') {
-                     buttonElement.insertBefore(spinner, buttonElement.firstChild.nextSibling); // after first text node
+                    buttonElement.insertBefore(spinner, buttonElement.firstChild.nextSibling); // after first text node
                 } else {
                     buttonElement.prepend(spinner);
                 }
@@ -204,20 +189,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const addBtn = document.getElementById(addButtonId);
         const formContainer = document.getElementById(formContainerId);
         // Important: Query within the contentArea or specific module container if IDs are not unique globally
-        const currentModuleElement = document.getElementById(`${currentModule}-module`); 
-        
+        const currentModuleElement = document.getElementById(`${currentModule}-module`);
+
         // Fallback to global scope if not found in module (less ideal)
         const closeBtn = currentModuleElement ? currentModuleElement.querySelector(`#${closeButtonId}`) : document.getElementById(closeButtonId);
         const cancelBtn = cancelButtonId && currentModuleElement ? currentModuleElement.querySelector(`#${cancelButtonId}`) : (cancelButtonId ? document.getElementById(cancelButtonId) : null);
         const form = currentModuleElement ? currentModuleElement.querySelector(`#${formId}`) : document.getElementById(formId);
         const formTitle = currentModuleElement ? currentModuleElement.querySelector(`#${formTitleId}`) : document.getElementById(formTitleId);
 
-
         if (!addBtn) { console.warn(`Add button not found: ${addButtonId} for module ${currentModule}`); return () => {}; }
         if (!formContainer) { console.warn(`Form container not found: ${formContainerId} for module ${currentModule}`); return () => {}; }
         if (!closeBtn) { console.warn(`Close button not found: ${closeButtonId} for module ${currentModule}`); return () => {}; }
         if (!form) { console.warn(`Form not found: ${formId} for module ${currentModule}`); return () => {};}
-
 
         const openForm = (editData = null) => {
             window.currentEditId = editData ? (editData.id || null) : null;
@@ -239,14 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return openForm;
     };
-    
+
     window.showGlobalLoader = function(show = true) {
         if (globalLoader) {
             if (show) globalLoader.classList.remove('hidden');
             else globalLoader.classList.add('hidden');
         }
     };
-
 
     // --- Initial Load ---
     loadModule('dashboard'); // Load dashboard by default

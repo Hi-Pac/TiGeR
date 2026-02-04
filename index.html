@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css"> <!-- ربط ملف الأنماط المخصص -->
 
-    <!-- Firebase SDK (أبقها معلقة الآن، سنفعلها لاحقًا) -->
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (تم تفعيلها) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
@@ -139,23 +138,20 @@
                         <div class="relative">
                             <button id="user-menu-button" class="flex items-center space-x-2 space-x-reverse">
                                 <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center" id="user-avatar-initial">
-                                    <span>م</span> <!-- سيتم تحديثها ببيانات المستخدم لاحقًا -->
+                                    <span>م</span>
                                 </div>
-                                <span class="hidden md:block" id="user-display-name">مدير النظام</span> <!-- سيتم تحديثها ببيانات المستخدم لاحقًا -->
+                                <span class="hidden md:block" id="user-display-name">مدير النظام</span>
                             </button>
-                            <!-- User Menu Dropdown (Optional - يمكن إضافته لاحقًا) -->
                         </div>
                     </div>
                 </div>
             </header>
 
-            <!-- Content Area - سيتم تحميل محتوى الوحدات هنا -->
-            <div id="content-area" class="flex-1 overflow-auto p-4">
-                <!-- المحتوى الديناميكي للوحدات -->
-            </div>
+            <!-- Content Area -->
+            <div id="content-area" class="flex-1 overflow-auto p-4"></div>
         </main>
 
-        <!-- Mobile Sidebar (Hidden by default) -->
+        <!-- Mobile Sidebar -->
         <div id="mobile-sidebar" class="fixed inset-0 z-40 hidden">
             <div class="absolute inset-0 bg-gray-600 dark:bg-gray-900 opacity-75" id="mobile-sidebar-overlay"></div>
             <aside class="absolute inset-y-0 right-0 max-w-xs w-full bg-white dark:bg-gray-800 shadow-xl flex flex-col transition-transform transform translate-x-full">
@@ -166,27 +162,25 @@
                     </button>
                 </div>
                 <nav class="p-4 flex-1 overflow-y-auto">
-                    <ul class="space-y-2" id="mobile-nav-menu">
-                        <!-- سيتم نسخ أزرار الشريط الجانبي هنا بواسطة JavaScript -->
-                    </ul>
+                    <ul class="space-y-2" id="mobile-nav-menu"></ul>
                 </nav>
             </aside>
         </div>
     </div>
 
-    <!-- Spinner Overlay for general loading (optional) -->
+    <!-- Spinner Overlay -->
     <div id="global-loader" class="fixed inset-0 bg-gray-500 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
     </div>
 
-
     <!-- JavaScript Files -->
+    <!-- Firebase configuration file to initialize Firebase -->
+    <script src="js/firebaseConfig.js"></script>
+    <!-- Main logic of the app -->
     <script src="js/main.js"></script>
     <script src="js/users.js"></script>
     <script src="js/products.js"></script>
     <script src="js/customers.js"></script>
-    <!-- أضف هنا روابط لملفات JS للوحدات الأخرى عندما تنشئها -->
-    
     <script src="js/suppliers.js"></script>
     <script src="js/purchases.js"></script>
     <script src="js/sales.js"></script>
@@ -196,6 +190,5 @@
     <script src="js/accounting.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/help.js"></script>
-   
 </body>
 </html>
