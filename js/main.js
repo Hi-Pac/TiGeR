@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.storage = firebase.storage();
     console.log("Firebase Initialized Successfully!");
 
+    // Sign in anonymously to bypass auth requirements
+    firebase.auth().signInAnonymously().catch((error) => {
+        console.error("Anonymous auth failed:", error);
+    });
+
     // --- Global DOM Elements ---
     const contentArea = document.getElementById('content-area');
     const pageTitleElement = document.getElementById('page-title');
