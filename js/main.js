@@ -199,23 +199,42 @@ document.addEventListener('DOMContentLoaded', () => {
     window.setupFormToggle = function(options) {
         const { addButtonId, formContainerId, closeButtonId, cancelButtonId, formId, formTitleId, addTitle, editTitle, resetFormFunction, onOpen, currentModule } = options;
 
-        const addBtn = document.getElementById(addButtonId);
-        const formContainer = document.getElementById(formContainerId);
-        // Important: Query within the contentArea or specific module container if IDs are not unique globally
-        const currentModuleElement = document.getElementById(`${currentModule}-module`); 
+        // Try to find elements within the module first, then fall back to global
+        const currentModuleElement = document.getElementById(`${currentModule}-module`);
         
-        // Fallback to global scope if not found in module (less ideal)
-        const closeBtn = currentModuleElement ? currentModuleElement.querySelector(`#${closeButtonId}`) : document.getElementById(closeButtonId);
-        const cancelBtn = cancelButtonId && currentModuleElement ? currentModuleElement.querySelector(`#${cancelButtonId}`) : (cancelButtonId ? document.getElementById(cancelButtonId) : null);
-        const form = currentModuleElement ? currentModuleElement.querySelector(`#${formId}`) : document.getElementById(formId);
-        const formTitle = currentModuleElement ? currentModuleElement.querySelector(`#${formTitleId}`) : document.getElementById(formTitleId);
-
+        const addBtn = currentModuleElement ? currentModuleElement.querySelector(`#${addButtonId}`) : document.getElementById(addButtonId);
+        let formContainer = currentModuleElement ? currentModuleElement.querySelector(`#${formContainerId}`) : document.getElementById(formContainerId);
+        if (!formContainer && !currentModuleElement) {
+            formContainer = document.getElementById(formContainerId); // Fall back to global
+        }
+        
+        let closeBtn = currentModuleElement ? currentModuleElement.querySelector(`#${closeButtonId}`) : document.getElementById(closeButtonId);
+        if (!closeBtn) {
+            closeBtn = document.getElementById(closeButtonId); // Fall back to global
+        }
+        
+        let cancelBtn = null;
+        if (cancelButtonId) {
+            cancelBtn = currentModuleElement ? currentModuleElement.querySelector(`#${cancelButtonId}`) : document.getElementById(cancelButtonId);
+            if (!cancelBtn) {
+                cancelBtn = document.getElementById(cancelButtonId); // Fall back to global
+            }
+        }
+        
+        let form = currentModuleElement ? currentModuleElement.querySelector(`#${formId}`) : document.getElementById(formId);
+        if (!form) {
+            form = document.getElementById(formId); // Fall back to global
+        }
+        
+        let formTitle = currentModuleElement.querySelector(`#${formTitleId}`);
+        if (!formTitle) {
+            formTitle = document.getElementById(formTitleId); // Fall back to global
+        }
 
         if (!addBtn) { console.warn(`Add button not found: ${addButtonId} for module ${currentModule}`); return () => {}; }
         if (!formContainer) { console.warn(`Form container not found: ${formContainerId} for module ${currentModule}`); return () => {}; }
         if (!closeBtn) { console.warn(`Close button not found: ${closeButtonId} for module ${currentModule}`); return () => {}; }
         if (!form) { console.warn(`Form not found: ${formId} for module ${currentModule}`); return () => {};}
-
 
         const openForm = (editData = null) => {
             window.currentEditId = editData ? (editData.id || null) : null;

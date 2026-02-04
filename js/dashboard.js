@@ -7,48 +7,87 @@ function initDashboardModule() {
         return;
     }
 
-    // --- Load Dashboard Data and Render Stats ---
     loadDashboardStats();
 
     async function loadDashboardStats() {
         try {
-            // --- FIREBASE: Fetch real data from collections ---
-            // const totalSales = await db.collection('sales').get().then(snapshot => snapshot.size * somePrice);
-            // const totalCustomers = await db.collection('customers').get().then(snapshot => snapshot.size);
-            // ... etc
-
-            // --- SIMULATION with dummy data ---
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             const dashboardStats = {
                 totalSales: 125650.75,
-                totalOrders: 348,
+                totalPurchases: 98500.00,
                 totalCustomers: 156,
-                totalUsers: 12,
-                topProducts: [
-                    { name: 'زيت عباد الشمس 1 لتر', sales: 450 },
-                    { name: 'أرز مصري فاخر 5 كجم', sales: 380 },
-                    { name: 'مكرونة اسباجتي 400جم', sales: 290 }
+                netProfit: 27150.75,
+                salesChange: 12.5,
+                purchasesChange: 8.3,
+                customersChange: 5.2,
+                profitChange: 15.8,
+                recentSales: [
+                    { invoiceNo: 'INV-001', customer: 'ماركت السعادة', amount: 2500, status: 'مكتملة' },
+                    { invoiceNo: 'INV-002', customer: 'بقالة الخير', amount: 1800, status: 'مكتملة' },
+                    { invoiceNo: 'INV-003', customer: 'هايبر النور', amount: 3200, status: 'معلقة' }
                 ],
-                recentTransactions: [
-                    { date: '2023-10-15', type: 'sale', amount: 2500, description: 'مبيعات يومية' },
-                    { date: '2023-10-14', type: 'purchase', amount: 5000, description: 'شراء من مورد' },
-                    { date: '2023-10-13', type: 'expense', amount: 350, description: 'وقود سيارة' }
+                lowStockItems: [
+                    { productName: 'زيت عباد الشمس 1 لتر', warehouse: 'مخزن الإسكندرية', quantity: 5, status: 'منخفضة' },
+                    { productName: 'مكرونة اسباجتي 400جم', warehouse: 'المخزن الرئيسي', quantity: 0, status: 'غير متوفر' }
                 ]
             };
 
-            // Update stat cards (if they exist in the HTML)
-            const totalSalesEl = dashboardModuleNode.querySelector('[data-stat="total-sales"]');
-            const totalOrdersEl = dashboardModuleNode.querySelector('[data-stat="total-orders"]');
-            const totalCustomersEl = dashboardModuleNode.querySelector('[data-stat="total-customers"]');
-            const totalUsersEl = dashboardModuleNode.querySelector('[data-stat="total-users"]');
+            const totalSalesEl = document.getElementById('dashboard-total-sales');
+            const totalPurchasesEl = document.getElementById('dashboard-total-purchases');
+            const totalCustomersEl = document.getElementById('dashboard-total-customers');
+            const netProfitEl = document.getElementById('dashboard-net-profit');
+            
+            const salesChangeEl = document.getElementById('dashboard-sales-change');
+            const purchasesChangeEl = document.getElementById('dashboard-purchases-change');
+            const customersChangeEl = document.getElementById('dashboard-customers-change');
+            const profitChangeEl = document.getElementById('dashboard-profit-change');
 
-            if (totalSalesEl) totalSalesEl.textContent = dashboardStats.totalSales.toFixed(2);
-            if (totalOrdersEl) totalOrdersEl.textContent = dashboardStats.totalOrders;
+            if (totalSalesEl) totalSalesEl.textContent = dashboardStats.totalSales.toFixed(2) + ' ج.م';
+            if (totalPurchasesEl) totalPurchasesEl.textContent = dashboardStats.totalPurchases.toFixed(2) + ' ج.م';
             if (totalCustomersEl) totalCustomersEl.textContent = dashboardStats.totalCustomers;
-            if (totalUsersEl) totalUsersEl.textContent = dashboardStats.totalUsers;
+            if (netProfitEl) netProfitEl.textContent = dashboardStats.netProfit.toFixed(2) + ' ج.م';
+            
+            if (salesChangeEl) salesChangeEl.textContent = dashboardStats.salesChange.toFixed(1);
+            if (purchasesChangeEl) purchasesChangeEl.textContent = dashboardStats.purchasesChange.toFixed(1);
+            if (customersChangeEl) customersChangeEl.textContent = dashboardStats.customersChange.toFixed(1);
+            if (profitChangeEl) profitChangeEl.textContent = dashboardStats.profitChange.toFixed(1);
 
-            // Update charts if needed (with Chart.js or similar)
-            // renderTopProductsChart(dashboardStats.topProducts);
-            // renderRecentTransactionsTable(dashboardStats.recentTransactions);
+            const recentSalesTableBody = document.getElementById('dashboard-recent-sales-table');
+            if (recentSalesTableBody) {
+                recentSalesTableBody.innerHTML = '';
+                dashboardStats.recentSales.forEach(sale => {
+                    const row = recentSalesTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-200">${sale.invoiceNo}</td>
+                        <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-200">${sale.customer}</td>
+                        <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-200">${sale.amount} ج.م</td>
+                        <td class="px-4 py-2 text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${sale.status === 'مكتملة' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}">
+                                ${sale.status}
+                            </span>
+                        </td>
+                    `;
+                });
+            }
+
+            const lowStockTableBody = document.getElementById('dashboard-low-stock-table');
+            if (lowStockTableBody) {
+                lowStockTableBody.innerHTML = '';
+                dashboardStats.lowStockItems.forEach(item => {
+                    const row = lowStockTableBody.insertRow();
+                    row.innerHTML = `
+                        <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-200">${item.productName}</td>
+                        <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-200">${item.warehouse}</td>
+                        <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-200">${item.quantity}</td>
+                        <td class="px-4 py-2 text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${item.quantity > 0 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">
+                                ${item.status}
+                            </span>
+                        </td>
+                    `;
+                });
+            }
 
         } catch (error) {
             console.error("Error loading dashboard stats:", error);
