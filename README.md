@@ -21,10 +21,10 @@
   - JavaScript (Vanilla)
   - Font Awesome Icons
   
-- **Backend (مستقبلاً):**
-  - Firebase Firestore
-  - Firebase Authentication
-  - Firebase Storage
+- **Backend:**
+  - [Supabase](https://supabase.com) (PostgreSQL + REST API)
+  - Supabase Auth (المصادقة)
+  - Supabase Storage (تخزين الملفات)
 
 ## 📦 التثبيت
 
@@ -34,7 +34,13 @@ git clone https://github.com/Hi-Pac/TiGeR.git
 cd TiGeR
 ```
 
-2. فتح التطبيق:
+2. إعداد Supabase:
+   - راجع ملف [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) للتعليمات التفصيلية
+   - أنشئ مشروعاً على [https://app.supabase.com](https://app.supabase.com)
+   - نفِّذ SQL scripts الموجودة في `SUPABASE_SETUP.md` لإنشاء الجداول
+   - ضع `SUPABASE_URL` و `SUPABASE_ANON_KEY` في `js/supabase-client.js`
+
+3. تشغيل التطبيق:
 ```bash
 # باستخدام Python 3
 python -m http.server 8000
@@ -49,7 +55,9 @@ http://localhost:8000
 TiGeR/
 ├── index.html           # الصفحة الرئيسية
 ├── style.css            # الأنماط المخصصة
+├── SUPABASE_SETUP.md    # دليل إعداد Supabase + SQL schemas
 ├── js/                  # ملفات JavaScript
+│   ├── supabase-client.js  # Supabase client + Firestore compatibility wrapper
 │   ├── main.js          # ملف التحكم الرئيسي
 │   ├── dashboard.js     # لوحة التحكم
 │   ├── users.js         # إدارة المستخدمين
@@ -64,9 +72,9 @@ TiGeR/
 
 ## 🔐 الأمان
 
-الملفات الحساسة:
-- لا تحتفظ ببيانات حقيقية حالياً
-- يتم استخدام Firebase للبيانات الفعلية
+- المصادقة: Supabase Auth
+- حماية البيانات: Row Level Security (RLS) في PostgreSQL
+- لا تضع بيانات اعتماد Supabase في المستودع العام
 
 ## 📝 الترخيص
 
@@ -78,4 +86,4 @@ TiGeR/
 
 ---
 
-**تم آخر تحديث:** فبراير 2026
+**تم آخر تحديث:** مارس 2026

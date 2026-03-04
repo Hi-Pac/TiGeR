@@ -1,24 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Firebase Initialization ---
-    const firebaseConfig = {
-          apiKey: "AIzaSyBRtCWX-OcFAtMqZusMqePMX2zvlIdcRyA",
-          authDomain: "delta-hcp-fa2ba.firebaseapp.com",
-          projectId: "delta-hcp-fa2ba",
-          storageBucket: "delta-hcp-fa2ba.firebasestorage.app",
-          messagingSenderId: "649732241434",
-          appId: "1:649732241434:web:f3adddc04c9b6e9d2f39a3",
-          measurementId: "G-G3JEXBE9KZ"
-        };
-    firebase.initializeApp(firebaseConfig);
-    window.auth = firebase.auth();
-    window.db = firebase.firestore();
-    window.storage = firebase.storage();
-    console.log("Firebase Initialized Successfully!");
-
-    // Sign in anonymously to bypass auth requirements
-    firebase.auth().signInAnonymously().catch((error) => {
-        console.error("Anonymous auth failed:", error);
-    });
+    // تهيئة Supabase تمت في js/supabase-client.js المُحمَّل قبل هذا الملف.
+    // window.db  → طبقة التوافق مع Firestore API
+    // window.supabaseClient → عميل Supabase الأصلي
+    console.log("Main.js loaded — Supabase backend active.");
 
     // --- Global DOM Elements ---
     const contentArea = document.getElementById('content-area');
