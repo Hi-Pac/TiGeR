@@ -10,20 +10,20 @@ async function initCustomersModule() {
     }
 
     const customersTableBody = customersModuleNode.querySelector('#customers-table-body');
-    const customerFormElement = customersModuleNode.querySelector('#customer-form');
-    const customerIdField = customersModuleNode.querySelector('#customer-id-field');
-    const customerShopNameField = customersModuleNode.querySelector('#customer-shop-name-field');
-    const customerOwnerNameField = customersModuleNode.querySelector('#customer-owner-name-field');
-    const customerPhoneField = customersModuleNode.querySelector('#customer-phone-field');
-    const customerPhone2Field = customersModuleNode.querySelector('#customer-phone2-field');
-    const customerEmailField = customersModuleNode.querySelector('#customer-email-field');
-    const customerAreaField = customersModuleNode.querySelector('#customer-area-field');
-    const customerAddressField = customersModuleNode.querySelector('#customer-address-field');
-    const customerCreditLimitField = customersModuleNode.querySelector('#customer-credit-limit-field');
-    const customerOpeningBalanceField = customersModuleNode.querySelector('#customer-opening-balance-field');
-    const customerStatusField = customersModuleNode.querySelector('#customer-status-field');
-    const customerNotesField = customersModuleNode.querySelector('#customer-notes-field');
-    const saveCustomerBtn = customersModuleNode.querySelector('#save-customer-form-btn');
+    const customerFormElement = document.getElementById('customer-form');
+    const customerIdField = document.getElementById('customer-id-field');
+    const customerShopNameField = document.getElementById('customer-shop-name-field');
+    const customerOwnerNameField = document.getElementById('customer-owner-name-field');
+    const customerPhoneField = document.getElementById('customer-phone-field');
+    const customerPhone2Field = document.getElementById('customer-phone2-field');
+    const customerEmailField = document.getElementById('customer-email-field');
+    const customerAreaField = document.getElementById('customer-area-field');
+    const customerAddressField = document.getElementById('customer-address-field');
+    const customerCreditLimitField = document.getElementById('customer-credit-limit-field');
+    const customerOpeningBalanceField = document.getElementById('customer-opening-balance-field');
+    const customerStatusField = document.getElementById('customer-status-field');
+    const customerNotesField = document.getElementById('customer-notes-field');
+    const saveCustomerBtn = document.getElementById('save-customer-form-btn');
 
     // Filter inputs
     const customerSearchInput = customersModuleNode.querySelector('#customer-search-input');
@@ -214,7 +214,7 @@ async function initCustomersModule() {
                     await db.collection('customers').add(customerData);
                     console.log("Customer added successfully");
                 }
-                const closeBtn = customersModuleNode.querySelector('#close-customer-form-btn');
+                const closeBtn = document.getElementById('close-customer-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderCustomers();
             } catch (error) {

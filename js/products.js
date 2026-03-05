@@ -10,17 +10,17 @@ async function initProductsModule() {
     }
 
     const productsTableBody = productsModuleNode.querySelector('#products-table-body');
-    const productFormElement = productsModuleNode.querySelector('#product-form');
-    const productIdField = productsModuleNode.querySelector('#product-id-field');
-    const productNameField = productsModuleNode.querySelector('#product-name-field');
-    const productBarcodeField = productsModuleNode.querySelector('#product-barcode-field');
-    const productCategoryField = productsModuleNode.querySelector('#product-category-field');
-    const productUnitField = productsModuleNode.querySelector('#product-unit-field');
-    const productPurchasePriceField = productsModuleNode.querySelector('#product-purchase-price-field');
-    const productSalePriceField = productsModuleNode.querySelector('#product-sale-price-field');
-    const productDescriptionField = productsModuleNode.querySelector('#product-description-field');
-    const productReorderLevelField = productsModuleNode.querySelector('#product-reorder-level-field');
-    const saveProductBtn = productsModuleNode.querySelector('#save-product-form-btn');
+    const productFormElement = document.getElementById('product-form');
+    const productIdField = document.getElementById('product-id-field');
+    const productNameField = document.getElementById('product-name-field');
+    const productBarcodeField = document.getElementById('product-barcode-field');
+    const productCategoryField = document.getElementById('product-category-field');
+    const productUnitField = document.getElementById('product-unit-field');
+    const productPurchasePriceField = document.getElementById('product-purchase-price-field');
+    const productSalePriceField = document.getElementById('product-sale-price-field');
+    const productDescriptionField = document.getElementById('product-description-field');
+    const productReorderLevelField = document.getElementById('product-reorder-level-field');
+    const saveProductBtn = document.getElementById('save-product-form-btn');
 
     // Filter inputs
     const productSearchInput = productsModuleNode.querySelector('#product-search-input');
@@ -189,7 +189,7 @@ async function initProductsModule() {
                     await db.collection('products').add(productData);
                     console.log("Product added successfully");
                 }
-                const closeBtn = productsModuleNode.querySelector('#close-product-form-btn');
+                const closeBtn = document.getElementById('close-product-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderProducts();
             } catch (error) {

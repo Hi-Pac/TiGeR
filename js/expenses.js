@@ -8,18 +8,18 @@ async function initExpensesModule() {
     if (!expensesModuleNode) return;
 
     const expensesTableBody = expensesModuleNode.querySelector('#expenses-table-body');
-    const expenseFormElement = expensesModuleNode.querySelector('#expense-form'); // Form is not modal here
-    const expenseIdField = expensesModuleNode.querySelector('#expense-id-field');
-    const expenseDateField = expensesModuleNode.querySelector('#expense-date-field');
-    const expenseTypeField = expensesModuleNode.querySelector('#expense-type-field');
-    const expenseDescriptionField = expensesModuleNode.querySelector('#expense-description-field');
-    const expenseAmountField = expensesModuleNode.querySelector('#expense-amount-field');
-    const expensePaymentMethodField = expensesModuleNode.querySelector('#expense-payment-method-field');
-    const expensePaidToField = expensesModuleNode.querySelector('#expense-paid-to-field');
-    const expenseEmployeeField = expensesModuleNode.querySelector('#expense-employee-field');
-    const expenseAttachmentField = expensesModuleNode.querySelector('#expense-attachment-field');
-    const expenseCurrentAttachmentEl = expensesModuleNode.querySelector('#expense-current-attachment');
-    const saveExpenseBtn = expensesModuleNode.querySelector('#save-expense-form-btn');
+    const expenseFormElement = document.getElementById('expense-form');
+    const expenseIdField = document.getElementById('expense-id-field');
+    const expenseDateField = document.getElementById('expense-date-field');
+    const expenseTypeField = document.getElementById('expense-type-field');
+    const expenseDescriptionField = document.getElementById('expense-description-field');
+    const expenseAmountField = document.getElementById('expense-amount-field');
+    const expensePaymentMethodField = document.getElementById('expense-payment-method-field');
+    const expensePaidToField = document.getElementById('expense-paid-to-field');
+    const expenseEmployeeField = document.getElementById('expense-employee-field');
+    const expenseAttachmentField = document.getElementById('expense-attachment-field');
+    const expenseCurrentAttachmentEl = document.getElementById('expense-current-attachment');
+    const saveExpenseBtn = document.getElementById('save-expense-form-btn');
 
     // Filter inputs
     const expenseSearchInput = expensesModuleNode.querySelector('#expense-search-input');
@@ -180,7 +180,7 @@ async function initExpensesModule() {
                     await db.collection('expenses').add(expenseData);
                     console.log("Expense added successfully");
                 }
-                const closeBtn = expensesModuleNode.querySelector('#close-expense-form-btn');
+                const closeBtn = document.getElementById('close-expense-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderExpenses();
             } catch (error) {

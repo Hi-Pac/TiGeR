@@ -10,19 +10,19 @@ async function initSuppliersModule() {
     }
 
     const suppliersTableBody = suppliersModuleNode.querySelector('#suppliers-table-body');
-    const supplierFormElement = suppliersModuleNode.querySelector('#supplier-form');
-    const supplierIdField = suppliersModuleNode.querySelector('#supplier-id-field');
-    const supplierCompanyNameField = suppliersModuleNode.querySelector('#supplier-company-name-field');
-    const supplierContactPersonField = suppliersModuleNode.querySelector('#supplier-contact-person-field');
-    const supplierPhoneField = suppliersModuleNode.querySelector('#supplier-phone-field');
-    const supplierEmailField = suppliersModuleNode.querySelector('#supplier-email-field');
-    const supplierAddressField = suppliersModuleNode.querySelector('#supplier-address-field');
-    const supplierOpeningBalanceField = suppliersModuleNode.querySelector('#supplier-opening-balance-field');
-    const supplierPaymentTermsField = suppliersModuleNode.querySelector('#supplier-payment-terms-field');
-    const supplierStatusField = suppliersModuleNode.querySelector('#supplier-status-field');
-    const supplierProductCategoriesCheckboxesContainer = suppliersModuleNode.querySelector('#supplier-product-categories-checkboxes');
-    const supplierNotesField = suppliersModuleNode.querySelector('#supplier-notes-field');
-    const saveSupplierBtn = suppliersModuleNode.querySelector('#save-supplier-form-btn');
+    const supplierFormElement = document.getElementById('supplier-form');
+    const supplierIdField = document.getElementById('supplier-id-field');
+    const supplierCompanyNameField = document.getElementById('supplier-company-name-field');
+    const supplierContactPersonField = document.getElementById('supplier-contact-person-field');
+    const supplierPhoneField = document.getElementById('supplier-phone-field');
+    const supplierEmailField = document.getElementById('supplier-email-field');
+    const supplierAddressField = document.getElementById('supplier-address-field');
+    const supplierOpeningBalanceField = document.getElementById('supplier-opening-balance-field');
+    const supplierPaymentTermsField = document.getElementById('supplier-payment-terms-field');
+    const supplierStatusField = document.getElementById('supplier-status-field');
+    const supplierProductCategoriesCheckboxesContainer = document.getElementById('supplier-product-categories-checkboxes');
+    const supplierNotesField = document.getElementById('supplier-notes-field');
+    const saveSupplierBtn = document.getElementById('save-supplier-form-btn');
 
     // Filter inputs
     const supplierSearchInput = suppliersModuleNode.querySelector('#supplier-search-input');
@@ -218,7 +218,7 @@ async function initSuppliersModule() {
                     await db.collection('suppliers').add(supplierData);
                     console.log("Supplier added successfully");
                 }
-                const closeBtn = suppliersModuleNode.querySelector('#close-supplier-form-btn');
+                const closeBtn = document.getElementById('close-supplier-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderSuppliers();
             } catch (error) {
