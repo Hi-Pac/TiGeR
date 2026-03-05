@@ -12,15 +12,15 @@ async function initUsersModule() { // Make it async
     }
 
     const usersTableBody = usersModuleNode.querySelector('#users-table-body');
-    const userFormElement = usersModuleNode.querySelector('#user-form');
-    const userIdField = usersModuleNode.querySelector('#user-id-field');
-    const userNameField = usersModuleNode.querySelector('#user-name-field');
-    const userPhoneField = usersModuleNode.querySelector('#user-phone-field');
-    const userEmailField = usersModuleNode.querySelector('#user-email-field');
-    const userPasswordField = usersModuleNode.querySelector('#user-password-field');
-    const userRoleField = usersModuleNode.querySelector('#user-role-field');
-    const userStatusField = usersModuleNode.querySelector('#user-status-field');
-    const saveUserBtn = usersModuleNode.querySelector('#save-user-form-btn');
+    const userFormElement = document.getElementById('user-form');
+    const userIdField = document.getElementById('user-id-field');
+    const userNameField = document.getElementById('user-name-field');
+    const userPhoneField = document.getElementById('user-phone-field');
+    const userEmailField = document.getElementById('user-email-field');
+    const userPasswordField = document.getElementById('user-password-field');
+    const userRoleField = document.getElementById('user-role-field');
+    const userStatusField = document.getElementById('user-status-field');
+    const saveUserBtn = document.getElementById('save-user-form-btn');
 
     const userSearchInput = usersModuleNode.querySelector('#user-search-input');
     const userRoleFilter = usersModuleNode.querySelector('#user-role-filter');
@@ -209,7 +209,7 @@ async function initUsersModule() { // Make it async
                     const docRef = await db.collection('users').add(userData);
                     console.log("New user added with ID:", docRef.id);
                 }
-                const closeBtn = usersModuleNode.querySelector('#close-user-form-btn');
+                const closeBtn = document.getElementById('close-user-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderUsers();
             } catch (error) {
