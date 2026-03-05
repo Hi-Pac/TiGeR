@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Module Loading and Navigation ---
     window.currentLoadedModule = null; // To keep track of the currently loaded module's specific JS functions
 
-    async function loadModule(moduleId) {
+    const loadModule = window.loadModule = async function(moduleId) {
         if (globalLoader) globalLoader.classList.remove('hidden');
         try {
             const response = await fetch(`modules/${moduleId}.html`);
