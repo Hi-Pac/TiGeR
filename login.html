@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - نظام ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Supabase Client -->
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-md px-4">
+        <!-- Logo / Title -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
+                <i class="fas fa-tiger text-white text-2xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-primary">نظام ERP</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">شركة النمر للتجارة والتوزيع</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h2 class="text-xl font-bold mb-6 text-center">تسجيل الدخول</h2>
+
+            <!-- Error Message -->
+            <div id="login-error" class="hidden mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 rounded-lg text-sm flex items-center gap-2">
+                <i class="fas fa-exclamation-circle flex-shrink-0"></i>
+                <span id="login-error-text"></span>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" novalidate>
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <i class="fas fa-envelope ml-1 text-gray-400"></i>البريد الإلكتروني
+                    </label>
+                    <input
+                        type="email"
+                        id="login-email"
+                        autocomplete="email"
+                        required
+                        class="form-input"
+                        placeholder="example@company.com"
+                    >
+                </div>
+
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <i class="fas fa-lock ml-1 text-gray-400"></i>كلمة المرور
+                    </label>
+                    <div class="relative">
+                        <input
+                            type="password"
+                            id="login-password"
+                            autocomplete="current-password"
+                            required
+                            class="form-input"
+                            placeholder="••••••••"
+                        >
+                        <button
+                            type="button"
+                            id="toggle-password-btn"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            tabindex="-1"
+                            title="إظهار/إخفاء كلمة المرور"
+                        >
+                            <i class="fas fa-eye" id="toggle-password-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    id="login-submit-btn"
+                    class="w-full bg-primary hover:bg-primary/90 text-white py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>دخول</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Theme Toggle -->
+        <div class="text-center mt-4">
+            <button id="toggle-theme-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm">
+                <i class="fas fa-moon dark:hidden ml-1"></i>
+                <i class="fas fa-sun hidden dark:inline ml-1"></i>
+                <span class="dark:hidden">الوضع المظلم</span>
+                <span class="hidden dark:inline">الوضع الفاتح</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Apply saved theme
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+
+            // Theme toggle
+            document.getElementById('toggle-theme-btn').addEventListener('click', () => {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+
+            // Password visibility toggle
+            const passwordInput = document.getElementById('login-password');
+            const toggleIcon = document.getElementById('toggle-password-icon');
+            document.getElementById('toggle-password-btn').addEventListener('click', () => {
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                toggleIcon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+            });
+
+            // If already logged in, redirect to main app
+            if (window.supabaseClient) {
+                window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                    if (session) {
+                        window.location.replace('index.html');
+                    }
+                });
+            }
+
+            // Login form submission
+            const loginForm = document.getElementById('login-form');
+            const loginSubmitBtn = document.getElementById('login-submit-btn');
+            const loginError = document.getElementById('login-error');
+            const loginErrorText = document.getElementById('login-error-text');
+
+            function showError(message) {
+                loginErrorText.textContent = message;
+                loginError.classList.remove('hidden');
+            }
+
+            function hideError() {
+                loginError.classList.add('hidden');
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideError();
+
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+
+                if (!email || !password) {
+                    showError('الرجاء إدخال البريد الإلكتروني وكلمة المرور.');
+                    return;
+                }
+
+                // Show loading state
+                loginSubmitBtn.disabled = true;
+                loginSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>جاري التحقق...</span>';
+
+                try {
+                    await window.loginUser(email, password);
+                    // On success, loginUser redirects to index.html
+                } catch (error) {
+                    let msg = 'فشل تسجيل الدخول. تحقق من بياناتك وحاول مرة أخرى.';
+                    if (error.message) {
+                        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
+                            msg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+                        } else if (error.message.includes('Email not confirmed')) {
+                            msg = 'البريد الإلكتروني لم يُفعَّل بعد. تحقق من بريدك الوارد.';
+                        } else if (error.message.includes('حساب غير نشط')) {
+                            msg = error.message;
+                        }
+                    }
+                    showError(msg);
+                    loginSubmitBtn.disabled = false;
+                    loginSubmitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>دخول</span>';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
