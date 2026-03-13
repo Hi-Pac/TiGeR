@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <!-- Supabase Client & Firestore Compatibility Wrapper -->
     <script src="js/supabase-client.js"></script>
+    <!-- Auth Module -->
+    <script src="js/auth.js"></script>
 
     <script>
         tailwind.config = {
@@ -135,13 +137,27 @@
                             <i class="fas fa-sun hidden dark:block"></i>
                         </button>
                         <div class="relative">
-                            <button id="user-menu-button" class="flex items-center space-x-2 space-x-reverse">
-                                <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center" id="user-avatar-initial">
-                                    <span>م</span> <!-- سيتم تحديثها ببيانات المستخدم لاحقًا -->
+                            <button id="user-menu-button" class="flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm" id="user-avatar-initial">
+                                    م
                                 </div>
-                                <span class="hidden md:block" id="user-display-name">مدير النظام</span> <!-- سيتم تحديثها ببيانات المستخدم لاحقًا -->
+                                <div class="hidden md:block text-right">
+                                    <div class="text-sm font-medium leading-none" id="user-display-name">مدير النظام</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" id="user-role-label">مدير</div>
+                                </div>
+                                <i class="fas fa-chevron-down text-xs text-gray-400 hidden md:block"></i>
                             </button>
-                            <!-- User Menu Dropdown (Optional - يمكن إضافته لاحقًا) -->
+                            <!-- User Dropdown Menu -->
+                            <div id="user-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                                <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                                    <p class="text-sm font-medium truncate" id="user-dropdown-name">مدير النظام</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="user-dropdown-email"></p>
+                                </div>
+                                <button id="logout-btn" class="w-full text-right px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>تسجيل الخروج</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
