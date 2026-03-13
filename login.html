@@ -137,8 +137,8 @@
             });
 
             // If already logged in, redirect to main app
-            if (window.auth) {
-                window.auth.getSession().then(({ data: { session } }) => {
+            if (window.supabaseClient) {
+                window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     if (session) {
                         window.location.replace('index.html');
                     }

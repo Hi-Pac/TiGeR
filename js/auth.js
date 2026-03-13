@@ -79,7 +79,7 @@ window.fetchAndCacheUserProfile = async function(authUser) {
         const { data, error } = await window.supabaseClient
             .from('users')
             .select('id, doc_data')
-            .filter('doc_data->>email', 'eq', authUser.email)
+            .filter("doc_data->>'email'", 'eq', authUser.email)
             .maybeSingle();
 
         if (!error && data) {

@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (nameEl) nameEl.textContent = user.name;
         if (avatarEl) avatarEl.textContent = user.name ? user.name.charAt(0).toUpperCase() : 'م';
-        if (roleEl) roleEl.textContent = window.ROLE_LABELS[user.role] || user.role;
+        if (roleEl) roleEl.textContent = window.ROLE_LABELS[user.role] || 'مستخدم';
         if (dropdownNameEl) dropdownNameEl.textContent = user.name;
         if (dropdownEmailEl) dropdownEmailEl.textContent = user.email;
     }
