@@ -11,8 +11,8 @@
 // ============================================================
 // ⚙️  إعدادات Supabase — استبدلها بقيم مشروعك
 // ============================================================
-const SUPABASE_URL = 'https://osvtuwkrdmgqsxhntzir.supabase.co';          // مثال: https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zdnR1d2tyZG1ncXN4aG50emlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NTgwNjEsImV4cCI6MjA4ODIzNDA2MX0.aBiSiJOXn-_4UFHSb5cZJqF4hOrbxakSZ8MZARdNizE'; // anon/public key من لوحة تحكم Supabase
+const SUPABASE_URL = 'https://jseyyzhvmtmbdanvylcx.supabase.co/rest/v1/';          // مثال: https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZXl5emh2bXRtYmRhbnZ5bGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyODI1MzMsImV4cCI6MjA5Mjg1ODUzM30.12P6UpsDYBa_KpDDr8oObAv6pKnrjSzTie3AJTCULbk'; // anon/public key من لوحة تحكم Supabase
 // ============================================================
 
 // تعيين أسماء Collections (Firestore) → أسماء الجداول في Supabase
