@@ -661,7 +661,7 @@ CREATE TABLE public.payments (
     customer_id         UUID          REFERENCES public.customers(id) ON DELETE SET NULL,
     supplier_id         UUID          REFERENCES public.suppliers(id) ON DELETE SET NULL,
     -- The account cash / bank was credited or debited from:
-    bank_account_id     UUID          REFERENCES public.bank_accounts(id) ON DELETE SET NULL,
+    bank_account_id     UUID,
     reference_type      TEXT          CHECK (reference_type IN ('sales_invoice', 'purchase_invoice', 'advance', 'other')),
     reference_id        UUID,                             -- FK to the invoice being settled
     payment_method      TEXT          NOT NULL DEFAULT 'cash'
@@ -727,6 +727,12 @@ SELECT attach_updated_at_trigger('bank_accounts');
 CREATE INDEX idx_bank_accounts_company ON public.bank_accounts(company_id);
 
 ALTER TABLE public.bank_accounts ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.payments
+    ADD CONSTRAINT fk_payments_bank_account
+    FOREIGN KEY (bank_account_id)
+    REFERENCES public.bank_accounts(id)
+    ON DELETE SET NULL;
 
 
 -- -----------------------------------------------------------
