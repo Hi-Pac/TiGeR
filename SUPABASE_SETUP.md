@@ -1,5 +1,11 @@
 # 🚀 دليل إعداد Supabase لنظام TiGeR ERP
 
+> ⚠️ **تحديث مهم (Schema الجديد):**
+> لا تستخدم سكريبت الجداول القديمة المبنية على `users` + `doc_data`.
+> السكريبت الصحيح الحالي موجود في: `supabase/schema.sql`
+> وبعده شغّل: `supabase/migrations/20260507_phase2_auth.sql`
+> لأن الكود الحالي يعتمد على جدول `profiles` المرتبط بـ `auth.users`.
+
 ## المتطلبات
 - حساب على [Supabase](https://supabase.com) (مجاني)
 
