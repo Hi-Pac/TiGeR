@@ -62,7 +62,8 @@ async function initUsersModule() {
         resetFormFunction: resetUserForm,
     });
 
-    function isValidUUID(value) {
+    // Validates RFC 4122 UUID versions 1-5.
+    function isValidUUIDv1to5(value) {
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
     }
 
@@ -79,7 +80,7 @@ async function initUsersModule() {
         try {
             const { data, error } = await window.supabaseClient
                 .from('profiles')
-                .select('*')
+                .select('id, full_name, phone, role, status')
                 .order('full_name', { ascending: true });
 
             if (error) throw error;
@@ -204,7 +205,7 @@ async function initUsersModule() {
 
                     if (error) throw error;
                 } else {
-                    if (!isValidUUID(authIdInput)) {
+                    if (!isValidUUIDv1to5(authIdInput)) {
                         throw new Error('معرف Auth UID غير صالح. يجب أن يكون UUID بصيغة مثل: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
                     }
 
