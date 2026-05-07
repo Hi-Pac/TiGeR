@@ -1,4 +1,10 @@
 let allCustomersData = []; // To store fetched customers for client-side filtering
+const CUSTOMER_STATUS_LABEL_BY_VALUE = { active: 'نشط', inactive: 'غير نشط', blocked: 'محظور' };
+const CUSTOMER_STATUS_CLASS_BY_VALUE = {
+    active: 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100',
+    inactive: 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100',
+    blocked: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100'
+};
 
 async function initCustomersModule() {
     console.log("Customers Module Initialized!");
@@ -29,6 +35,22 @@ async function initCustomersModule() {
     const customerSearchInput = customersModuleNode.querySelector('#customer-search-input');
     const customerAreaFilter = customersModuleNode.querySelector('#customer-area-filter');
     const customerStatusFilter = customersModuleNode.querySelector('#customer-status-filter');
+
+    const mapCustomerRowToViewModel = (row) => ({
+        id: row.id,
+        shopName: row.shop_name || '',
+        ownerName: row.owner_name || '',
+        phone: row.phone || '',
+        phone2: row.phone2 || '',
+        email: row.email || '',
+        area: row.area || '',
+        address: row.address || '',
+        creditLimit: Number(row.credit_limit || 0),
+        openingBalance: Number(row.opening_balance || 0),
+        currentBalance: Number(row.current_balance || 0),
+        status: row.status || 'active',
+        notes: row.notes || ''
+    });
 
 
     function resetCustomerForm(customerData = null) {
@@ -69,8 +91,12 @@ async function initCustomersModule() {
         if (!customersTableBody) return;
         customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل العملاء...</td></tr>`;
         try {
-            const customersSnapshot = await db.collection('customers').get();
-            allCustomersData = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const { data } = await DB
+                .from('customers')
+                .select('*')
+                .order('shop_name', { ascending: true })
+                .get();
+            allCustomersData = (data || []).map(mapCustomerRowToViewModel);
             allCustomersData.sort((a, b) => (a.shopName || '').localeCompare(b.shopName || ''));
             console.log("Customers loaded:", allCustomersData);
             populateAreaFilter(allCustomersData);
@@ -102,10 +128,10 @@ async function initCustomersModule() {
 
         if (searchTerm) {
             filteredCustomers = filteredCustomers.filter(cust =>
-                cust.shopName.toLowerCase().includes(searchTerm) ||
-                (cust.ownerName && cust.ownerName.toLowerCase().includes(searchTerm)) ||
-                cust.phone.includes(searchTerm) ||
-                (cust.phone2 && cust.phone2.includes(searchTerm))
+                (cust.shopName || '').toLowerCase().includes(searchTerm) ||
+                (cust.ownerName || '').toLowerCase().includes(searchTerm) ||
+                (cust.phone || '').includes(searchTerm) ||
+                (cust.phone2 || '').includes(searchTerm)
             );
         }
         if (area) {
@@ -131,6 +157,8 @@ async function initCustomersModule() {
             // currentBalance should be calculated/fetched in a real app
             const currentBalance = customer.currentBalance !== undefined ? customer.currentBalance : customer.openingBalance;
             const balanceColor = currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+            const customerStatusClass = CUSTOMER_STATUS_CLASS_BY_VALUE[customer.status] || CUSTOMER_STATUS_CLASS_BY_VALUE.inactive;
+            const customerStatusLabel = CUSTOMER_STATUS_LABEL_BY_VALUE[customer.status] || customer.status;
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -142,9 +170,8 @@ async function initCustomersModule() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${balanceColor}">${currentBalance} ج.م</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${customer.creditLimit} ج.م</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${customer.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100'}">
-                        ${customer.status === 'active' ? 'نشط' : 'غير نشط'}
+                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${customerStatusClass}">
+                        ${customerStatusLabel}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-left"> <!-- text-left for actions -->
@@ -188,30 +215,30 @@ async function initCustomersModule() {
             window.showButtonSpinner(saveCustomerBtn, true);
 
             const customerData = {
-                shopName: customerShopNameField.value,
-                ownerName: customerOwnerNameField.value,
-                phone: customerPhoneField.value,
-                phone2: customerPhone2Field.value,
-                email: customerEmailField.value,
-                area: customerAreaField.value,
-                address: customerAddressField.value,
-                creditLimit: parseFloat(customerCreditLimitField.value) || 0,
-                openingBalance: parseFloat(customerOpeningBalanceField.value) || 0,
+                shop_name: customerShopNameField.value.trim(),
+                owner_name: customerOwnerNameField.value.trim(),
+                phone: customerPhoneField.value.trim(),
+                phone2: customerPhone2Field.value.trim(),
+                email: customerEmailField.value.trim(),
+                area: customerAreaField.value.trim(),
+                address: customerAddressField.value.trim(),
+                credit_limit: parseFloat(customerCreditLimitField.value) || 0,
+                opening_balance: parseFloat(customerOpeningBalanceField.value) || 0,
                 status: customerStatusField.value,
-                notes: customerNotesField.value,
-                // currentBalance will be calculated based on openingBalance and transactions
+                notes: customerNotesField.value.trim()
             };
             const customerId = customerIdField.value;
 
             try {
                 if (customerId) {
-                    customerData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                    await db.collection('customers').doc(customerId).update(customerData);
+                    await DB
+                        .from('customers')
+                        .eq('id', customerId)
+                        .update(customerData);
                     console.log("Customer updated successfully");
                 } else {
-                    customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    customerData.currentBalance = customerData.openingBalance;
-                    await db.collection('customers').add(customerData);
+                    customerData.current_balance = customerData.opening_balance;
+                    await DB.from('customers').insert(customerData);
                     console.log("Customer added successfully");
                 }
                 const closeBtn = document.getElementById('close-customer-form-btn');
@@ -229,7 +256,10 @@ async function initCustomersModule() {
     async function handleDeleteCustomer(customerId) {
         if (confirm('هل أنت متأكد أنك تريد حذف هذا العميل؟')) {
             try {
-                await db.collection('customers').doc(customerId).delete();
+                await DB
+                    .from('customers')
+                    .eq('id', customerId)
+                    .softDelete();
                 console.log('Customer deleted successfully');
                 await loadAndRenderCustomers();
             } catch (error) {

@@ -1,4 +1,8 @@
 let allProductsData = []; // To store fetched products for client-side filtering
+let productCategoriesOptions = [];
+const productCategoryNameById = new Map();
+let productUnitsOptions = [];
+const productUnitNameById = new Map();
 
 async function initProductsModule() {
     console.log("Products Module Initialized!");
@@ -26,6 +30,77 @@ async function initProductsModule() {
     const productSearchInput = productsModuleNode.querySelector('#product-search-input');
     const productCategoryFilter = productsModuleNode.querySelector('#product-category-filter');
 
+    function renderCategoryOptions() {
+        const defaultFilterOption = '<option value="">كل التصنيفات</option>';
+        if (productCategoryFilter) {
+            productCategoryFilter.innerHTML = defaultFilterOption;
+            productCategoriesOptions.forEach((category) => {
+                productCategoryFilter.add(new Option(category.displayName, category.id));
+            });
+        }
+        if (productCategoryField) {
+            productCategoryField.innerHTML = '<option value="">اختر التصنيف</option>';
+            productCategoriesOptions.forEach((category) => {
+                productCategoryField.add(new Option(category.displayName, category.id));
+            });
+        }
+    }
+
+    async function loadCategoryMetadata() {
+        const { data } = await DB
+            .from('product_categories')
+            .select('id,name,name_ar')
+            .order('name', { ascending: true })
+            .get();
+        if (!Array.isArray(data)) throw new Error('فشل تحميل تصنيفات الأصناف.');
+
+        productCategoryNameById.clear();
+        productCategoriesOptions = data.map((category) => {
+            const displayName = category.name_ar || category.name;
+            productCategoryNameById.set(category.id, displayName);
+            return { id: category.id, displayName };
+        });
+        renderCategoryOptions();
+    }
+
+    async function loadUnitsMetadata() {
+        const { data } = await DB
+            .from('product_units')
+            .select('id,name,name_ar')
+            .order('name', { ascending: true })
+            .get();
+        if (!Array.isArray(data)) throw new Error('فشل تحميل وحدات الأصناف.');
+
+        productUnitNameById.clear();
+        productUnitsOptions = data.map((unit) => {
+            const displayName = unit.name_ar || unit.name;
+            productUnitNameById.set(unit.id, displayName);
+            return { id: unit.id, displayName };
+        });
+    }
+
+    async function resolveUnitId(unitNameRaw) {
+        const unitName = (unitNameRaw || '').trim();
+        if (!unitName) return null;
+
+        const existingUnit = productUnitsOptions.find(
+            (unit) => unit.displayName.toLowerCase() === unitName.toLowerCase()
+        );
+        if (existingUnit) return existingUnit.id;
+
+        const createdUnit = await DB.from('product_units').insert({
+            name: unitName,
+            name_ar: unitName
+        });
+        if (!createdUnit?.id) {
+            throw new Error('تعذر إنشاء وحدة جديدة للصنف.');
+        }
+        const displayName = createdUnit.name_ar || createdUnit.name || unitName;
+        productUnitsOptions.push({ id: createdUnit.id, displayName });
+        productUnitNameById.set(createdUnit.id, displayName);
+        return createdUnit.id;
+    }
+
     function resetProductForm(productData = null) {
         if (!productFormElement) return;
         productFormElement.reset();
@@ -35,8 +110,8 @@ async function initProductsModule() {
             productIdField.value = productData.id;
             productNameField.value = productData.name || '';
             productBarcodeField.value = productData.barcode || '';
-            productCategoryField.value = productData.category || '';
-            productUnitField.value = productData.unit || '';
+            productCategoryField.value = productData.categoryId || '';
+            productUnitField.value = productData.unitName || '';
             productPurchasePriceField.value = productData.purchasePrice || '';
             productSalePriceField.value = productData.salePrice || '';
             productDescriptionField.value = productData.description || '';
@@ -61,8 +136,26 @@ async function initProductsModule() {
         if (!productsTableBody) return;
         productsTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل الأصناف...</td></tr>`;
         try {
-            const productsSnapshot = await db.collection('products').get();
-            allProductsData = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const { data } = await DB
+                .from('products')
+                .select('*')
+                .order('name', { ascending: true })
+                .get();
+            if (!Array.isArray(data)) throw new Error('فشل تحميل الأصناف.');
+            allProductsData = data.map((row) => ({
+                id: row.id,
+                name: row.name || '',
+                barcode: row.barcode || '',
+                categoryId: row.category_id || '',
+                categoryName: productCategoryNameById.get(row.category_id) || 'غير مصنف',
+                unitId: row.unit_id || '',
+                unitName: productUnitNameById.get(row.unit_id) || '',
+                purchasePrice: Number(row.purchase_price || 0),
+                salePrice: Number(row.sale_price || 0),
+                description: row.description || '',
+                reorderLevel: Number(row.reorder_level || 0),
+                status: row.status || 'active'
+            }));
             allProductsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             console.log("Products loaded:", allProductsData);
             applyProductFiltersAndRender();
@@ -81,12 +174,12 @@ async function initProductsModule() {
 
         if (searchTerm) {
             filteredProducts = filteredProducts.filter(product =>
-                product.name.toLowerCase().includes(searchTerm) ||
-                (product.barcode && product.barcode.toLowerCase().includes(searchTerm))
+                (product.name || '').toLowerCase().includes(searchTerm) ||
+                (product.barcode || '').toLowerCase().includes(searchTerm)
             );
         }
         if (categoryFilter) {
-            filteredProducts = filteredProducts.filter(product => product.category === categoryFilter);
+            filteredProducts = filteredProducts.filter(product => product.categoryId === categoryFilter);
         }
         renderProductsTable(filteredProducts);
     }
@@ -101,20 +194,9 @@ async function initProductsModule() {
             return;
         }
 
-        const categoryDisplayNames = {
-            'External': 'خارجي', 'Structural': 'انشائي', 'Colored': 'بلاستيك ملون', 'Cement': 'اسمنتي', 'Decorative': 'ديكوري'
-        };
-
         productsToRender.forEach(product => {
             const row = productsTableBody.insertRow();
-            const categoryColors = {
-                'oils': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100',
-                'rice': 'bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100',
-                'pasta': 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100',
-                'canned': 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100',
-                'spices': 'bg-purple-100 text-purple-800 dark:bg-purple-700 dark:text-purple-100'
-            };
-            const categoryClass = categoryColors[product.category] || 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
+            const categoryClass = 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -131,10 +213,10 @@ async function initProductsModule() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${product.barcode || 'N/A'}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${categoryClass}">
-                        ${categoryDisplayNames[product.category] || product.category}
+                        ${product.categoryName}
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${product.unit}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${product.unitName || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${product.purchasePrice} ج.م</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${product.salePrice} ج.م</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -168,25 +250,24 @@ async function initProductsModule() {
             if (!saveProductBtn) return;
             window.showButtonSpinner(saveProductBtn, true);
 
-            const productData = {
-                name: productNameField.value,
-                barcode: productBarcodeField.value,
-                category: productCategoryField.value,
-                unit: productUnitField.value,
-                purchasePrice: parseFloat(productPurchasePriceField.value),
-                salePrice: parseFloat(productSalePriceField.value),
-                description: productDescriptionField.value,
-                reorderLevel: parseInt(productReorderLevelField.value) || 0,
-                // currentStock: 0, // Initial stock might be set via inventory module
-            };
             const productId = productIdField.value;
 
             try {
+                const productData = {
+                    name: productNameField.value.trim(),
+                    barcode: productBarcodeField.value.trim(),
+                    category_id: productCategoryField.value || null,
+                    unit_id: await resolveUnitId(productUnitField.value),
+                    purchase_price: parseFloat(productPurchasePriceField.value) || 0,
+                    sale_price: parseFloat(productSalePriceField.value) || 0,
+                    description: productDescriptionField.value.trim(),
+                    reorder_level: parseInt(productReorderLevelField.value, 10) || 0
+                };
                 if (productId) {
-                    await db.collection('products').doc(productId).update(productData);
+                    await DB.from('products').eq('id', productId).update(productData);
                     console.log("Product updated successfully");
                 } else {
-                    await db.collection('products').add(productData);
+                    await DB.from('products').insert(productData);
                     console.log("Product added successfully");
                 }
                 const closeBtn = document.getElementById('close-product-form-btn');
@@ -204,7 +285,7 @@ async function initProductsModule() {
     async function handleDeleteProduct(productId) {
         if (confirm('هل أنت متأكد أنك تريد حذف هذا الصنف؟')) {
             try {
-                await db.collection('products').doc(productId).delete();
+                await DB.from('products').eq('id', productId).softDelete();
                 console.log('Product deleted successfully');
                 await loadAndRenderProducts();
             } catch (error) {
@@ -218,6 +299,7 @@ async function initProductsModule() {
     if(productSearchInput) productSearchInput.addEventListener('input', applyProductFiltersAndRender);
     if(productCategoryFilter) productCategoryFilter.addEventListener('change', applyProductFiltersAndRender);
 
+    await Promise.all([loadCategoryMetadata(), loadUnitsMetadata()]);
     await loadAndRenderProducts();
     console.log("✅ Products module initialized successfully");
 }

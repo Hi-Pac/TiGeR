@@ -1,4 +1,6 @@
 let allSuppliersData = []; // To store fetched suppliers for client-side filtering
+let supplierCategoryOptions = [];
+const categoryNameById = new Map();
 
 async function initSuppliersModule() {
     console.log("Suppliers Module Initialized!");
@@ -28,6 +30,71 @@ async function initSuppliersModule() {
     const supplierSearchInput = suppliersModuleNode.querySelector('#supplier-search-input');
     const supplierCategoryFilter = suppliersModuleNode.querySelector('#supplier-category-filter');
     const supplierStatusFilter = suppliersModuleNode.querySelector('#supplier-status-filter');
+
+    const mapSupplierRowToViewModel = (row) => ({
+        id: row.id,
+        companyName: row.company_name || '',
+        contactPerson: row.contact_person || '',
+        phone: row.phone || '',
+        email: row.email || '',
+        address: row.address || '',
+        openingBalance: Number(row.opening_balance || 0),
+        currentBalance: Number(row.current_balance || 0),
+        paymentTerms: row.payment_terms_days,
+        status: row.status || 'active',
+        notes: row.notes || '',
+        productCategories: []
+    });
+
+    function getCategoryDisplayName(categoryId) {
+        return categoryNameById.get(categoryId) || 'غير محدد';
+    }
+
+    function renderCategoryInputs() {
+        if (supplierCategoryFilter) {
+            supplierCategoryFilter.innerHTML = '<option value="">كل التصنيفات (التي يوردها)</option>';
+            supplierCategoryOptions.forEach((cat) => {
+                supplierCategoryFilter.add(new Option(cat.displayName, cat.id));
+            });
+        }
+
+        if (supplierProductCategoriesCheckboxesContainer) {
+            supplierProductCategoriesCheckboxesContainer.innerHTML = '';
+            supplierCategoryOptions.forEach((cat) => {
+                const label = document.createElement('label');
+                label.className = 'inline-flex items-center';
+                label.innerHTML = `<input type="checkbox" value="${cat.id}" class="form-checkbox-input rounded"> <span class="mr-2">${cat.displayName}</span>`;
+                supplierProductCategoriesCheckboxesContainer.appendChild(label);
+            });
+        }
+    }
+
+    async function loadCategoryMetadata() {
+        try {
+            const { data } = await DB
+                .from('product_categories')
+                .select('id,name,name_ar')
+                .order('name', { ascending: true })
+                .get();
+            if (!Array.isArray(data)) {
+                throw new Error('نتيجة تصنيفات الأصناف غير صالحة.');
+            }
+
+            categoryNameById.clear();
+            supplierCategoryOptions = data.map((category) => {
+                const displayName = category.name_ar || category.name;
+                categoryNameById.set(category.id, displayName);
+                return { id: category.id, displayName };
+            });
+            renderCategoryInputs();
+        } catch (error) {
+            console.error('Error loading product categories for suppliers:', error);
+            supplierCategoryOptions = [];
+            categoryNameById.clear();
+            renderCategoryInputs();
+            alert('تعذر تحميل تصنيفات الأصناف حالياً. يمكنك حفظ المورد بدون تصنيفات والمحاولة لاحقاً.');
+        }
+    }
 
     function getSelectedCategories() {
         const checkboxes = supplierProductCategoriesCheckboxesContainer.querySelectorAll('input[type="checkbox"]:checked');
@@ -82,8 +149,30 @@ async function initSuppliersModule() {
         if (!suppliersTableBody) return;
         suppliersTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">جاري تحميل الموردين...</td></tr>`;
         try {
-            const suppliersSnapshot = await db.collection('suppliers').get();
-            allSuppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const [{ data: suppliersRows }, { data: supplierCategoryRows }] = await Promise.all([
+                DB.from('suppliers').select('*').order('company_name', { ascending: true }).get(),
+                DB.from('supplier_categories').select('supplier_id,category_id').get()
+            ]);
+            if (!Array.isArray(suppliersRows)) {
+                throw new Error('فشل تحميل بيانات الموردين.');
+            }
+            if (!Array.isArray(supplierCategoryRows)) {
+                throw new Error('فشل تحميل تصنيفات الموردين.');
+            }
+
+            const categoriesBySupplier = new Map();
+            supplierCategoryRows.forEach((linkRow) => {
+                if (!categoriesBySupplier.has(linkRow.supplier_id)) {
+                    categoriesBySupplier.set(linkRow.supplier_id, []);
+                }
+                categoriesBySupplier.get(linkRow.supplier_id).push(linkRow.category_id);
+            });
+
+            allSuppliersData = suppliersRows.map((row) => {
+                const supplier = mapSupplierRowToViewModel(row);
+                supplier.productCategories = categoriesBySupplier.get(row.id) || [];
+                return supplier;
+            });
             allSuppliersData.sort((a, b) => (a.companyName || '').localeCompare(b.companyName || ''));
             console.log("Suppliers loaded:", allSuppliersData);
             applySupplierFiltersAndRender();
@@ -103,9 +192,9 @@ async function initSuppliersModule() {
 
         if (searchTerm) {
             filteredSuppliers = filteredSuppliers.filter(sup =>
-                sup.companyName.toLowerCase().includes(searchTerm) ||
-                (sup.contactPerson && sup.contactPerson.toLowerCase().includes(searchTerm)) ||
-                sup.phone.includes(searchTerm)
+                (sup.companyName || '').toLowerCase().includes(searchTerm) ||
+                (sup.contactPerson || '').toLowerCase().includes(searchTerm) ||
+                (sup.phone || '').includes(searchTerm)
             );
         }
         if (category) {
@@ -126,10 +215,6 @@ async function initSuppliersModule() {
             suppliersTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">لا يوجد موردون يطابقون معايير البحث.</td></tr>`;
             return;
         }
-        const categoryDisplayNames = {
-            'oils': 'زيوت', 'rice': 'أرز', 'pasta': 'مكرونة', 'canned': 'معلبات', 'spices': 'توابل'
-        };
-
         suppliersToRender.forEach(supplier => {
             const row = suppliersTableBody.insertRow();
             const currentBalance = supplier.currentBalance !== undefined ? supplier.currentBalance : supplier.openingBalance;
@@ -137,7 +222,7 @@ async function initSuppliersModule() {
             const balanceColor = currentBalance >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
             
             const categoriesHtml = supplier.productCategories && supplier.productCategories.length > 0
-                ? supplier.productCategories.map(cat => `<span class="text-xs bg-gray-200 dark:bg-gray-600 px-1.5 py-0.5 rounded-full mr-1 mb-1 inline-block">${categoryDisplayNames[cat] || cat}</span>`).join('')
+                ? supplier.productCategories.map(cat => `<span class="text-xs bg-gray-200 dark:bg-gray-600 px-1.5 py-0.5 rounded-full mr-1 mb-1 inline-block">${getCategoryDisplayName(cat)}</span>`).join('')
                 : 'غير محدد';
 
             row.innerHTML = `
@@ -193,29 +278,32 @@ async function initSuppliersModule() {
             window.showButtonSpinner(saveSupplierBtn, true);
 
             const supplierData = {
-                companyName: supplierCompanyNameField.value,
-                contactPerson: supplierContactPersonField.value,
-                phone: supplierPhoneField.value,
-                email: supplierEmailField.value,
-                address: supplierAddressField.value,
-                openingBalance: parseFloat(supplierOpeningBalanceField.value) || 0,
-                paymentTerms: parseInt(supplierPaymentTermsField.value) || null, // Allow null if not set
+                company_name: supplierCompanyNameField.value.trim(),
+                contact_person: supplierContactPersonField.value.trim(),
+                phone: supplierPhoneField.value.trim(),
+                email: supplierEmailField.value.trim(),
+                address: supplierAddressField.value.trim(),
+                opening_balance: parseFloat(supplierOpeningBalanceField.value) || 0,
+                payment_terms_days: parseInt(supplierPaymentTermsField.value, 10) || null,
                 status: supplierStatusField.value,
-                productCategories: getSelectedCategories(),
-                notes: supplierNotesField.value,
-                // currentBalance should be initialized and updated by transactions
+                notes: supplierNotesField.value.trim()
             };
+            const selectedCategoryIds = getSelectedCategories();
             const supplierId = supplierIdField.value;
 
             try {
                 if (supplierId) {
-                    supplierData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                    await db.collection('suppliers').doc(supplierId).update(supplierData);
+                    await DB.from('suppliers').eq('id', supplierId).update(supplierData);
+                    await syncSupplierCategories(supplierId, selectedCategoryIds);
                     console.log("Supplier updated successfully");
                 } else {
-                    supplierData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    supplierData.currentBalance = supplierData.openingBalance;
-                    await db.collection('suppliers').add(supplierData);
+                    supplierData.current_balance = supplierData.opening_balance;
+                    const createdSupplier = await DB.from('suppliers').insert(supplierData);
+                    if (!createdSupplier?.id) {
+                        console.error('Supplier insert returned invalid payload:', createdSupplier);
+                        throw new Error('لم يتم إرجاع معرّف المورد بعد الحفظ. يرجى التحقق من صلاحيات RLS وإعداد قاعدة البيانات.');
+                    }
+                    await syncSupplierCategories(createdSupplier.id, selectedCategoryIds);
                     console.log("Supplier added successfully");
                 }
                 const closeBtn = document.getElementById('close-supplier-form-btn');
@@ -233,7 +321,7 @@ async function initSuppliersModule() {
     async function handleDeleteSupplier(supplierId) {
         if (confirm('هل أنت متأكد أنك تريد حذف هذا المورد؟')) {
             try {
-                await db.collection('suppliers').doc(supplierId).delete();
+                await DB.from('suppliers').eq('id', supplierId).softDelete();
                 console.log('Supplier deleted successfully');
                 await loadAndRenderSuppliers();
             } catch (error) {
@@ -248,6 +336,54 @@ async function initSuppliersModule() {
     if (supplierCategoryFilter) supplierCategoryFilter.addEventListener('change', applySupplierFiltersAndRender);
     if (supplierStatusFilter) supplierStatusFilter.addEventListener('change', applySupplierFiltersAndRender);
 
+    async function syncSupplierCategories(supplierId, selectedCategoryIds) {
+        // DB abstraction currently does not expose hard delete, while supplier_categories
+        // needs row-level sync (insert/delete) to mirror checkbox selections.
+        if (!supplierId) return;
+        if (!window.supabaseClient) {
+            throw new Error('تعذر تهيئة اتصال قاعدة البيانات لتحديث تصنيفات المورد.');
+        }
+
+        const { data: existingRows, error: existingError } = await window.supabaseClient
+            .from('supplier_categories')
+            .select('category_id')
+            .eq('supplier_id', supplierId);
+        if (existingError) {
+            console.error('Failed to load existing supplier categories:', existingError);
+            throw new Error(`تعذر تحميل تصنيفات المورد الحالية (${supplierId}): ${existingError.message}`);
+        }
+
+        const existingCategoryIds = new Set((existingRows || []).map((row) => row.category_id));
+        const desiredCategoryIds = new Set(selectedCategoryIds.filter(Boolean));
+
+        const toInsert = [...desiredCategoryIds].filter((categoryId) => !existingCategoryIds.has(categoryId));
+        const toDelete = [...existingCategoryIds].filter((categoryId) => !desiredCategoryIds.has(categoryId));
+
+        if (toDelete.length) {
+            const { error: deleteError } = await window.supabaseClient
+                .from('supplier_categories')
+                .delete()
+                .eq('supplier_id', supplierId)
+                .in('category_id', toDelete);
+            if (deleteError) {
+                console.error('Failed to delete supplier categories:', deleteError);
+                throw new Error(`تعذر حذف تصنيفات المورد (${supplierId}): ${deleteError.message}`);
+            }
+        }
+
+        if (toInsert.length) {
+            const rows = toInsert.map((categoryId) => ({ supplier_id: supplierId, category_id: categoryId }));
+            const { error: insertError } = await window.supabaseClient
+                .from('supplier_categories')
+                .insert(rows);
+            if (insertError) {
+                console.error('Failed to insert supplier categories:', insertError);
+                throw new Error(`تعذر إضافة تصنيفات المورد (${supplierId}): ${insertError.message}`);
+            }
+        }
+    }
+
+    await loadCategoryMetadata();
     await loadAndRenderSuppliers();
     console.log("✅ Suppliers module initialized successfully");
 }
