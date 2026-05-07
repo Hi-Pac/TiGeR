@@ -1,71 +1,339 @@
 /**
- * Supabase Client & Firestore Compatibility Wrapper
- * 
- * يوفر هذا الملف:
- * 1. اتصال Supabase
- * 2. طبقة توافق مع Firestore API القديمة لتقليل التغييرات في باقي الملفات
- * 
- * للضبط: استبدل SUPABASE_URL و SUPABASE_ANON_KEY بقيم مشروعك على Supabase
+ * js/supabase-client.js
+ *
+ * Supabase Data Access Layer — Phase 1
+ *
+ * Changes from the previous version:
+ *  - Removed the doc_data JSONB wrapper entirely.
+ *  - Added window.DB  — a clean _TableQuery builder (new API, use this going forward).
+ *  - Updated window.db — the Firestore-compat shim now reads/writes real normalized
+ *    columns instead of a single JSONB blob. Existing modules continue to work
+ *    via automatic camelCase ↔ snake_case conversion.
+ *  - Added soft-delete support: tables with a deleted_at column are never hard-deleted.
+ *  - Added auto company_id injection on every INSERT so RLS policies are satisfied.
+ *  - Fixed SUPABASE_URL: removed the /rest/v1/ suffix that the JS library adds itself.
+ *
+ * Modules that will require further updates in Phase 2+:
+ *  - settings.js  — uses string doc IDs incompatible with UUID primary keys
+ *  - users.js     — needs Supabase Auth integration; profiles.full_name ≠ name
+ *  - banks.js     — bank_transactions requires balance_before / balance_after
+ *  - sales.js / purchases.js — items arrays live in separate child tables
  */
 
 // ============================================================
-// ⚙️  إعدادات Supabase — استبدلها بقيم مشروعك
+// ⚙️  Supabase credentials — replace with your project values
+//
+//     The ANON key is intentionally public (designed for browser use).
+//     Supabase RLS policies on every table restrict what the anon key
+//     can actually read or write — it cannot bypass row-level security.
+//     NEVER put the service_role key here.
 // ============================================================
-const SUPABASE_URL = 'https://jseyyzhvmtmbdanvylcx.supabase.co/rest/v1/';          // مثال: https://xxxx.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZXl5emh2bXRtYmRhbnZ5bGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyODI1MzMsImV4cCI6MjA5Mjg1ODUzM30.12P6UpsDYBa_KpDDr8oObAv6pKnrjSzTie3AJTCULbk'; // anon/public key من لوحة تحكم Supabase
+const SUPABASE_URL      = 'https://jseyyzhvmtmbdanvylcx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZXl5emh2bXRtYmRhbnZ5bGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyODI1MzMsImV4cCI6MjA5Mjg1ODUzM30.12P6UpsDYBa_KpDDr8oObAv6pKnrjSzTie3AJTCULbk';
 // ============================================================
 
-// تعيين أسماء Collections (Firestore) → أسماء الجداول في Supabase
+// ---------------------------------------------------------------------------
+// Table name map — legacy camelCase collection names → real snake_case tables
+// ---------------------------------------------------------------------------
 const TABLE_NAME_MAP = {
-    'bankAccounts':           'bank_accounts',
-    'bankTransactions':       'bank_transactions',
-    'inventoryStock':         'inventory_stock',
-    'inventoryTransactions':  'inventory_transactions',
-    'appSettings':            'app_settings',
+    'bankAccounts':          'bank_accounts',
+    'bankTransactions':      'bank_transactions',
+    'inventoryStock':        'inventory_stock',
+    'inventoryTransactions': 'stock_movements',   // schema table is stock_movements
+    'appSettings':           'app_settings',
+    'sales':                 'sales_invoices',
+    'purchases':             'purchase_invoices',
+    'users':                 'profiles',
 };
 
-// الأعمدة الموجودة في الجدول مباشرةً (وليس داخل doc_data)
-const TOP_LEVEL_COLUMNS = new Set(['id', 'created_at', 'updated_at']);
+// ---------------------------------------------------------------------------
+// Tables that support soft-delete via deleted_at (no hard deletes on these)
+// ---------------------------------------------------------------------------
+const SOFT_DELETE_TABLES = new Set(['customers', 'suppliers', 'products']);
 
-function _isTopLevelColumn(field) {
-    return TOP_LEVEL_COLUMNS.has(field);
+// ---------------------------------------------------------------------------
+// Fields to strip before INSERT / UPDATE because they live in a separate
+// child table or have no matching column yet (fixed per-module in Phase 2+).
+// ---------------------------------------------------------------------------
+const FIELDS_TO_IGNORE_BY_TABLE = {
+    suppliers:         ['product_categories', 'productCategories'],
+    sales_invoices:    ['items'],
+    purchase_invoices: ['items'],
+    stock_movements:   ['warehouseName', 'productName'],
+};
+
+// ---------------------------------------------------------------------------
+// camelCase ↔ snake_case utilities
+// ---------------------------------------------------------------------------
+function _camelToSnake(str) {
+    return str.replace(/([A-Z])/g, ch => '_' + ch.toLowerCase());
+}
+
+function _snakeToCamel(str) {
+    return str.replace(/_([a-z])/g, (_, ch) => ch.toUpperCase());
+}
+
+/**
+ * Return a copy of obj with keys converted to snake_case.
+ * Strips fields listed in FIELDS_TO_IGNORE_BY_TABLE for the given table.
+ * Does NOT strip id — callers handle that explicitly when needed.
+ */
+function _keysToSnake(obj, tableName) {
+    if (!obj || typeof obj !== 'object') return obj;
+    const ignored = new Set(FIELDS_TO_IGNORE_BY_TABLE[tableName] || []);
+    const result  = {};
+    for (const [key, val] of Object.entries(obj)) {
+        const snakeKey = _camelToSnake(key);
+        if (ignored.has(key) || ignored.has(snakeKey)) continue;
+        result[snakeKey] = val;
+    }
+    return result;
+}
+
+/**
+ * Return a copy of obj with keys converted to camelCase.
+ * Used by the compat layer so existing modules receive camelCase field names.
+ */
+function _keysToCamel(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+    const result = {};
+    for (const [key, val] of Object.entries(obj)) {
+        result[_snakeToCamel(key)] = val;
+    }
+    return result;
+}
+
+/** Convert firebase.firestore.FieldValue.serverTimestamp() placeholders to ISO strings. */
+function _processTimestamps(data) {
+    if (!data || typeof data !== 'object') return data;
+    const result = {};
+    for (const [key, value] of Object.entries(data)) {
+        result[key] = (value && value._isServerTimestamp) ? new Date().toISOString() : value;
+    }
+    return result;
 }
 
 function _toTableName(collectionName) {
     return TABLE_NAME_MAP[collectionName] || collectionName;
 }
 
-// تحويل قيم ServerTimestamp إلى ISO string
-function _processTimestamps(data) {
-    if (!data || typeof data !== 'object') return data;
-    const result = {};
-    for (const [key, value] of Object.entries(data)) {
-        if (value && value._isServerTimestamp) {
-            result[key] = new Date().toISOString();
-        } else {
-            result[key] = value;
-        }
+// ---------------------------------------------------------------------------
+// company_id helper
+// Fetches and caches the current user's company_id from the profiles table.
+// Auto-injected into every INSERT so RLS WITH CHECK (company_id = fn_my_company_id())
+// is satisfied without requiring every module to know about multi-tenancy.
+// ---------------------------------------------------------------------------
+let _cachedCompanyId = null;
+
+async function _getMyCompanyId(client) {
+    if (_cachedCompanyId) return _cachedCompanyId;
+    try {
+        const { data: { user } } = await client.auth.getUser();
+        if (!user) return null;
+        const { data } = await client
+            .from('profiles')
+            .select('company_id')
+            .eq('id', user.id)
+            .maybeSingle();
+        _cachedCompanyId = data?.company_id || null;
+    } catch (_ignored) {
+        // Not authenticated yet — callers will get a descriptive DB error
+        _cachedCompanyId = null;
     }
-    return result;
+    return _cachedCompanyId;
 }
 
-// -------------------------------------------------------
-// DocumentSnapshot  — يحاكي نتيجة قراءة مستند Firestore
-// -------------------------------------------------------
+// ===========================================================================
+// _TableQuery — clean query builder (new API, exposed as window.DB.from)
+// ===========================================================================
+class _TableQuery {
+    constructor(client, table) {
+        this._client  = client;
+        this._table   = table;
+        this._cols    = '*';
+        this._filters = [];
+        this._ord     = null;
+        this._rng     = null;
+        this._single  = false;
+        this._maybe   = false;
+        this._cnt     = null;
+    }
+
+    // ── Column selection ──────────────────────────────────────────────────
+    select(cols = '*', { count } = {}) {
+        const q = this._clone(); q._cols = cols;
+        if (count) q._cnt = count;
+        return q;
+    }
+
+    // ── Filters ───────────────────────────────────────────────────────────
+    eq(col, val)    { return this._f('eq',    col, val); }
+    neq(col, val)   { return this._f('neq',   col, val); }
+    gt(col, val)    { return this._f('gt',    col, val); }
+    gte(col, val)   { return this._f('gte',   col, val); }
+    lt(col, val)    { return this._f('lt',    col, val); }
+    lte(col, val)   { return this._f('lte',   col, val); }
+    like(col, pat)  { return this._f('like',  col, pat); }
+    ilike(col, pat) { return this._f('ilike', col, pat); }
+    in(col, vals)   { return this._f('in',    col, vals); }
+    is(col, val)    { return this._f('is',    col, val); }
+    isNull(col)     { return this._f('is',    col, null); }
+    isNotNull(col)  { return this._f('not.is', col, null); }
+
+    // ── Ordering & Pagination ─────────────────────────────────────────────
+    order(col, { ascending = true } = {}) {
+        const q = this._clone(); q._ord = { col, ascending }; return q;
+    }
+    range(from, to) {
+        const q = this._clone(); q._rng = { from, to }; return q;
+    }
+    limit(n) { return this.range(0, n - 1); }
+    /** page(1, 30) → rows 0-29 with exact count */
+    page(pageNum, pageSize = 30) {
+        const from = (pageNum - 1) * pageSize;
+        return this.range(from, from + pageSize - 1).select(this._cols, { count: 'exact' });
+    }
+    single()      { const q = this._clone(); q._single = true;  return q; }
+    maybeSingle() { const q = this._clone(); q._maybe  = true;  return q; }
+
+    // ── Terminal: SELECT ──────────────────────────────────────────────────
+    /** Execute a SELECT. Returns { data, count }. */
+    async get() {
+        let q = this._client.from(this._table)
+            .select(this._cols, this._cnt ? { count: this._cnt } : undefined);
+        q = this._applyFilters(q);
+        if (this._ord) q = q.order(this._ord.col, { ascending: this._ord.ascending });
+        if (this._rng) q = q.range(this._rng.from, this._rng.to);
+        if (this._single) q = q.single();
+        else if (this._maybe) q = q.maybeSingle();
+        const { data, error, count } = await q;
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        return { data, count };
+    }
+
+    // ── Terminal: INSERT ──────────────────────────────────────────────────
+    /** Insert one record. Auto-injects company_id. Returns the created row. */
+    async insert(record) {
+        const payload = { ...record };
+        if (!payload.company_id) {
+            const cid = await _getMyCompanyId(this._client);
+            if (cid) payload.company_id = cid;
+        }
+        delete payload.id; // let DB generate the UUID
+        const { data, error } = await this._client
+            .from(this._table).insert(payload).select().single();
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        return data;
+    }
+
+    /** Insert multiple records. Returns created rows. */
+    async insertMany(records) {
+        const cid = await _getMyCompanyId(this._client);
+        const payloads = records.map(r => {
+            const p = { ...r };
+            if (!p.company_id && cid) p.company_id = cid;
+            delete p.id;
+            return p;
+        });
+        const { data, error } = await this._client
+            .from(this._table).insert(payloads).select();
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        return data;
+    }
+
+    // ── Terminal: UPDATE ──────────────────────────────────────────────────
+    /** Update rows matching the current filters. Always stamps updated_at. */
+    async update(updates) {
+        const payload = { ...updates, updated_at: new Date().toISOString() };
+        let q = this._client.from(this._table).update(payload);
+        q = this._applyFilters(q);
+        const { error } = await q;
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+    }
+
+    // ── Terminal: SOFT-DELETE / CANCEL ────────────────────────────────────
+    /**
+     * Soft-delete a record.
+     * - Tables in SOFT_DELETE_TABLES  → sets deleted_at.
+     * - All other ERP tables          → sets status = 'cancelled'.
+     * Hard delete is intentionally not exposed; use supabaseClient directly
+     * only for non-ERP data (sessions, temp records).
+     */
+    async softDelete() {
+        if (SOFT_DELETE_TABLES.has(this._table)) {
+            return this.update({ deleted_at: new Date().toISOString() });
+        }
+        return this.update({ status: 'cancelled' });
+    }
+
+    // ── Terminal: UPSERT ─────────────────────────────────────────────────
+    /** Upsert a record. Returns the upserted row. */
+    async upsert(record) {
+        const { data, error } = await this._client
+            .from(this._table).upsert(record).select().single();
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        return data;
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────
+    _f(type, col, val) {
+        const q = this._clone();
+        q._filters = [...this._filters, { type, col, val }];
+        return q;
+    }
+    _applyFilters(q) {
+        for (const f of this._filters) {
+            switch (f.type) {
+                case 'eq':      q = q.eq(f.col, f.val);               break;
+                case 'neq':     q = q.neq(f.col, f.val);              break;
+                case 'gt':      q = q.gt(f.col, f.val);               break;
+                case 'gte':     q = q.gte(f.col, f.val);              break;
+                case 'lt':      q = q.lt(f.col, f.val);               break;
+                case 'lte':     q = q.lte(f.col, f.val);              break;
+                case 'like':    q = q.like(f.col, f.val);             break;
+                case 'ilike':   q = q.ilike(f.col, f.val);            break;
+                case 'in':      q = q.in(f.col, f.val);               break;
+                case 'is':      q = q.is(f.col, f.val);               break;
+                case 'not.is':  q = q.not(f.col, 'is', f.val);        break;
+            }
+        }
+        return q;
+    }
+    _clone() {
+        const q = new _TableQuery(this._client, this._table);
+        q._cols = this._cols; q._filters = [...this._filters];
+        q._ord  = this._ord;  q._rng     = this._rng;
+        q._single = this._single; q._maybe = this._maybe; q._cnt = this._cnt;
+        return q;
+    }
+}
+
+// Envelope fields added by the DB that existing modules don't expect inside data().
+const SNAPSHOT_STRIP_FIELDS = new Set(['id', 'created_at', 'updated_at', 'deleted_at', 'company_id', 'branch_id']);
 class _DocumentSnapshot {
     constructor(row) {
-        this.id      = row.id;
-        this.exists  = true;
-        this._docData = row.doc_data || {};
+        this.id     = row.id;
+        this.exists = true;
+        this._row   = row;
     }
+    /**
+     * Returns the row data as camelCase so existing modules continue to work
+     * without field-name changes (those happen in Phase 2+).
+     * Strips envelope fields (id, timestamps, company_id) because existing
+     * modules don't expect them inside data().
+     */
     data() {
-        return { ...this._docData };
+        const rest = {};
+        for (const [k, v] of Object.entries(this._row)) {
+            if (!SNAPSHOT_STRIP_FIELDS.has(k)) rest[k] = v;
+        }
+        return _keysToCamel(rest);
     }
 }
 
-// -------------------------------------------------------
-// DocumentRef — يحاكي db.collection('x').doc('id')
-// -------------------------------------------------------
+// ===========================================================================
+// _DocumentRef — compat for db.collection('x').doc('id')
+// ===========================================================================
 class _DocumentRef {
     constructor(client, table, id) {
         this._client = client;
@@ -75,121 +343,113 @@ class _DocumentRef {
 
     async get() {
         const { data, error } = await this._client
-            .from(this._table)
-            .select('id, doc_data')
-            .eq('id', this._id)
-            .maybeSingle();
-
-        if (error) throw new Error(error.message);
+            .from(this._table).select('*').eq('id', this._id).maybeSingle();
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         if (!data) return { exists: false, id: this._id, data: () => null };
         return new _DocumentSnapshot(data);
     }
 
     async update(updateFields) {
-        const processed = _processTimestamps(updateFields);
-
-        // جلب البيانات الحالية ثم دمج التحديث
-        const { data: existing, error: fetchErr } = await this._client
-            .from(this._table)
-            .select('doc_data')
-            .eq('id', this._id)
-            .single();
-
-        if (fetchErr) throw new Error(fetchErr.message);
-
-        const merged = { ...(existing.doc_data || {}), ...processed };
-
+        const processed  = _processTimestamps(updateFields);
+        const snakeFields = _keysToSnake(processed, this._table);
         const { error } = await this._client
             .from(this._table)
-            .update({ doc_data: merged, updated_at: new Date().toISOString() })
+            .update({ ...snakeFields, updated_at: new Date().toISOString() })
             .eq('id', this._id);
-
-        if (error) throw new Error(error.message);
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
     }
 
     async delete() {
-        const { error } = await this._client
-            .from(this._table)
-            .delete()
-            .eq('id', this._id);
-
-        if (error) throw new Error(error.message);
+        // ERP rule: never hard-delete financial / inventory records
+        if (SOFT_DELETE_TABLES.has(this._table)) {
+            const { error } = await this._client
+                .from(this._table)
+                .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+                .eq('id', this._id);
+            if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        } else {
+            // For tables without deleted_at, mark as cancelled
+            const { error } = await this._client
+                .from(this._table)
+                .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                .eq('id', this._id);
+            if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        }
     }
 
     async set(docData, options = {}) {
-        const processed = _processTimestamps(docData);
+        const processed   = _processTimestamps(docData);
+        const snakeFields = _keysToSnake(processed, this._table);
 
         if (options.merge) {
+            // Read-then-write merge (used by settings.js etc.)
             const { data: existing } = await this._client
-                .from(this._table)
-                .select('id, doc_data')
-                .eq('id', this._id)
-                .maybeSingle();
-
-            const merged = existing
-                ? { ...(existing.doc_data || {}), ...processed }
-                : processed;
-
+                .from(this._table).select('*').eq('id', this._id).maybeSingle();
             if (existing) {
                 const { error } = await this._client
                     .from(this._table)
-                    .update({ doc_data: merged, updated_at: new Date().toISOString() })
+                    .update({ ...snakeFields, updated_at: new Date().toISOString() })
                     .eq('id', this._id);
-                if (error) throw new Error(error.message);
+                if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
             } else {
                 const { error } = await this._client
-                    .from(this._table)
-                    .insert({ id: this._id, doc_data: merged });
-                if (error) throw new Error(error.message);
+                    .from(this._table).insert({ id: this._id, ...snakeFields });
+                if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
             }
         } else {
             const { error } = await this._client
-                .from(this._table)
-                .upsert({ id: this._id, doc_data: processed });
-            if (error) throw new Error(error.message);
+                .from(this._table).upsert({ id: this._id, ...snakeFields });
+            if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         }
     }
 }
 
-// -------------------------------------------------------
-// CollectionRef — يحاكي db.collection('x')
-// -------------------------------------------------------
+// ===========================================================================
+// _CollectionRef — compat for db.collection('x')
+// ===========================================================================
 class _CollectionRef {
     constructor(client, table) {
-        this._client  = client;
-        this._table   = table;
-        this._filters = [];
+        this._client     = client;
+        this._table      = table;
+        this._filters    = [];
         this._orderField = null;
         this._orderDir   = 'asc';
     }
 
     async get() {
-        let query = this._client.from(this._table).select('id, doc_data');
+        let q = this._client.from(this._table).select('*');
+
+        // Automatically exclude soft-deleted records
+        if (SOFT_DELETE_TABLES.has(this._table)) {
+            q = q.is('deleted_at', null);
+        }
 
         for (const f of this._filters) {
-            query = this._applyFilter(query, f);
+            q = this._applyFilter(q, f);
         }
         if (this._orderField) {
-            query = query.order(this._orderField, { ascending: this._orderDir === 'asc' });
+            q = q.order(this._orderField, { ascending: this._orderDir === 'asc' });
         }
 
-        const { data, error } = await query;
-        if (error) throw new Error(error.message);
-
-        return {
-            docs: (data || []).map(row => new _DocumentSnapshot(row))
-        };
+        const { data, error } = await q;
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
+        return { docs: (data || []).map(row => new _DocumentSnapshot(row)) };
     }
 
     async add(docData) {
-        const processed = _processTimestamps(docData);
-        const { data, error } = await this._client
-            .from(this._table)
-            .insert({ doc_data: processed })
-            .select('id')
-            .single();
+        const processed   = _processTimestamps(docData);
+        const snakeFields = _keysToSnake(processed, this._table);
 
-        if (error) throw new Error(error.message);
+        // Auto-inject company_id required by RLS INSERT policies
+        if (!snakeFields.company_id) {
+            const cid = await _getMyCompanyId(this._client);
+            if (cid) snakeFields.company_id = cid;
+        }
+        delete snakeFields.id; // let DB generate the UUID
+
+        const { data, error } = await this._client
+            .from(this._table).insert(snakeFields).select('id').single();
+        if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         return { id: data.id };
     }
 
@@ -199,7 +459,8 @@ class _CollectionRef {
 
     where(field, operator, value) {
         const clone = new _CollectionRef(this._client, this._table);
-        clone._filters    = [...this._filters, { field, operator, value }];
+        // Convert camelCase field names to snake_case for the real schema
+        clone._filters    = [...this._filters, { field: _camelToSnake(field), operator, value }];
         clone._orderField = this._orderField;
         clone._orderDir   = this._orderDir;
         return clone;
@@ -208,89 +469,87 @@ class _CollectionRef {
     orderBy(field, direction = 'asc') {
         const clone = new _CollectionRef(this._client, this._table);
         clone._filters    = [...this._filters];
-        // If the field is a top-level column use it directly; otherwise reference doc_data
-        clone._orderField = _isTopLevelColumn(field) ? field : `doc_data->>${field}`;
+        clone._orderField = _camelToSnake(field); // real column name
         clone._orderDir   = direction;
         return clone;
     }
 
-    _applyFilter(query, { field, operator, value }) {
-        // Business data lives inside doc_data JSONB; use ->> to extract as text for comparison.
-        // Only id, created_at, updated_at are top-level columns.
-        const col = _isTopLevelColumn(field) ? field : `doc_data->>${field}`;
+    _applyFilter(q, { field, operator, value }) {
+        // All fields are now real top-level columns (no doc_data path)
         switch (operator) {
-            case '==':  return query.filter(col, 'eq', String(value));
-            case '!=':  return query.filter(col, 'neq', String(value));
-            case '<':   return query.filter(col, 'lt', String(value));
-            case '<=':  return query.filter(col, 'lte', String(value));
-            case '>':   return query.filter(col, 'gt', String(value));
-            case '>=':  return query.filter(col, 'gte', String(value));
+            case '==':  return q.eq(field, value);
+            case '!=':  return q.neq(field, value);
+            case '<':   return q.lt(field, value);
+            case '<=':  return q.lte(field, value);
+            case '>':   return q.gt(field, value);
+            case '>=':  return q.gte(field, value);
             case 'array-contains':
-                // JSONB array containment: doc_data->'field' @> '["value"]'
-                return query.contains(field === 'doc_data' ? field : `doc_data->${field}`, [value]);
-            default:    return query;
+                // Supabase's .contains() maps to PostgreSQL's @> (array/JSONB containment).
+                // Wrapping value in an array matches the semantics of Firestore's
+                // array-contains: the column array must contain this single element.
+                return q.contains(field, [value]);
+            default:    return q;
         }
     }
 }
 
-// -------------------------------------------------------
-// FirestoreCompatWrapper — يحاكي firebase.firestore()
-// -------------------------------------------------------
+// ===========================================================================
+// _FirestoreCompatWrapper — same external interface, real columns underneath
+// ===========================================================================
 class _FirestoreCompatWrapper {
-    constructor(client) {
-        this._client = client;
-    }
+    constructor(client) { this._client = client; }
     collection(collectionName) {
         return new _CollectionRef(this._client, _toTableName(collectionName));
     }
 }
 
-// -------------------------------------------------------
-// ServerTimestamp placeholder
-// -------------------------------------------------------
+// ===========================================================================
+// ServerTimestamp shim
+// ===========================================================================
 class _ServerTimestamp {
     constructor() { this._isServerTimestamp = true; }
 }
 
 // ============================================================
-// التهيئة الرئيسية
+// Initialization
 // ============================================================
 (function initSupabase() {
     if (!window.supabase) {
-        console.error('❌ Supabase JS library not loaded. تأكد من تضمين Supabase CDN في index.html');
+        console.error('❌ Supabase JS library not loaded. Make sure the Supabase CDN is included in index.html.');
         return;
     }
 
-    if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-        console.warn(
-            '⚠️  لم يتم ضبط بيانات Supabase بعد.\n' +
-            'افتح js/supabase-client.js واستبدل SUPABASE_URL و SUPABASE_ANON_KEY بقيم مشروعك.\n' +
-            'راجع ملف SUPABASE_SETUP.md للتفاصيل.'
-        );
-    }
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // إنشاء عميل Supabase
-    const supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Expose the raw Supabase client for advanced use (auth listeners, storage, etc.)
+    window.supabaseClient = client;
 
-    // تعريض العميل الأصلي للاستخدام المباشر عند الحاجة
-    window.supabaseClient = supabaseClientInstance;
+    // ── New clean data-access API (Phase 1+) ──────────────────────────────
+    // Usage: const { data } = await DB.from('customers').eq('status','active').get();
+    window.DB = {
+        from: (tableName) => new _TableQuery(client, _toTableName(tableName))
+    };
 
-    // طبقة التوافق مع Firestore
-    window.db = new _FirestoreCompatWrapper(supabaseClientInstance);
+    // ── Backward-compat Firestore shim (Phase 0 legacy) ───────────────────
+    // Usage: await db.collection('customers').get()  /  .add()  /  .doc(id).update()
+    // Will be replaced module-by-module in Phase 2+.
+    window.db = new _FirestoreCompatWrapper(client);
 
-    // محاكاة مؤقتة لكائن firebase لدعم firebase.firestore.FieldValue.serverTimestamp()
+    // ── firebase shim — keeps firebase.firestore.FieldValue.serverTimestamp() alive ──
     window.firebase = {
         firestore: {
-            FieldValue: {
-                serverTimestamp: () => new _ServerTimestamp()
-            }
+            FieldValue: { serverTimestamp: () => new _ServerTimestamp() }
         }
     };
 
-    // auth و storage: متاحان عبر Supabase SDK الأصلي
-    window.auth    = supabaseClientInstance.auth;
-    window.storage = supabaseClientInstance.storage;
+    window.auth    = client.auth;
+    window.storage = client.storage;
 
-    console.log('✅ Supabase client initialized successfully!');
-    console.log('🔗 Project URL:', SUPABASE_URL);
+    // Clear cached company_id when the user signs out
+    client.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') _cachedCompanyId = null;
+    });
+
+    console.log('✅ Supabase client initialized (Phase 1 — real columns, no doc_data)');
+    console.log('🔗 Project:', SUPABASE_URL);
 })();
