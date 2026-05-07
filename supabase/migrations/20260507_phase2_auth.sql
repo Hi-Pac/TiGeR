@@ -65,6 +65,10 @@ DECLARE
     v_admin_name    TEXT := 'المدير العام';                           -- Replace admin display name
     v_company_id    UUID;
 BEGIN
+    IF v_admin_user_id = '00000000-0000-0000-0000-000000000000'::UUID THEN
+        RAISE EXCEPTION 'Replace v_admin_user_id with the real UUID from Supabase Authentication → Users before running this block.';
+    END IF;
+
     -- Validate auth user exists first
     IF NOT EXISTS (
         SELECT 1 FROM auth.users WHERE id = v_admin_user_id

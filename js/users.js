@@ -67,7 +67,7 @@ async function initUsersModule() {
     }
 
     async function loadAndRenderUsers() {
-        if (!usersTableBody || !window.DB) {
+        if (!usersTableBody || !window.supabaseClient) {
             if (usersTableBody) {
                 usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">خطأ في تهيئة قاعدة البيانات.</td></tr>`;
             }
@@ -205,7 +205,7 @@ async function initUsersModule() {
                     if (error) throw error;
                 } else {
                     if (!isValidAuthUID(authIdInput)) {
-                        throw new Error('Auth UID غير صالح. يجب أن يكون UUID بصيغة مثل: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+                        throw new Error('Auth UID غير صالح. مثال صحيح: 790ee7d3-5ad5-4748-b73e-3cea9aeaa32f');
                     }
 
                     const companyId = window.AppAuth?.companyId();
