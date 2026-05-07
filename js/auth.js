@@ -224,6 +224,11 @@
                 // Re-fetch the profile on every token refresh so that server-side
                 // changes (role update, status set to inactive) take effect within
                 // one token lifetime (~1 hour) rather than requiring a manual re-login.
+                //
+                // Performance note: Supabase tokens refresh roughly once per hour.
+                // For an ERP with tens of concurrent users this is one lightweight
+                // SELECT per user per hour — acceptable overhead for the security
+                // benefit of detecting profile deactivation without a forced logout.
                 const refreshedProfile = await _loadProfile(_user.id);
                 if (!refreshedProfile || refreshedProfile.status !== 'active') {
                     // Profile gone or deactivated — force sign-out.

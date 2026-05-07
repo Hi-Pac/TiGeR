@@ -73,7 +73,8 @@ $$;
 INSERT INTO public.companies (name, currency, status)
 VALUES ('شركة النمر للتجارة والتوزيع', 'EGP', 'active')
 RETURNING id;
--- ☝️ Copy the returned UUID — it is your company_id for the next INSERT.
+-- ☝️ The query result panel will show a UUID in the 'id' column.
+--    Copy that UUID — you will need to paste it as <COMPANY_UUID> in Step 2 below.
 
 
 -- Step 2: Insert the first admin profile.

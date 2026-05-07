@@ -283,6 +283,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Auth event listeners ---
+    // These two events are mutually exclusive:
+    //   'auth:ready' (authenticated=true) fires only during the session bootstrap
+    //     on page load when a valid session already exists.  It does NOT fire after
+    //     a login-form submission.
+    //   'auth:signedIn' fires only after a successful login-form submission.
+    //     _bootstrapSession() does not dispatch this event.
+    // Therefore loadModule('dashboard') is called exactly once per login.
+
     // Load dashboard once the session bootstrap completes and user is authenticated.
     window.addEventListener('auth:ready', (e) => {
         if (e.detail.authenticated) {
