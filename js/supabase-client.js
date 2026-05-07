@@ -36,7 +36,7 @@
 //     NEVER put the service_role key here.
 // ============================================================
 const SUPABASE_URL      = 'https://xjemuwlimwhcpiabbxfr.supabase.co';
-const SUPABASE_ANON_KEY = 'REPLACE_WITH_ANON_KEY_FROM_SUPABASE_DASHBOARD';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqZW11d2xpbXdoY3BpYWJieGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzg2OTgsImV4cCI6MjA5Mzc1NDY5OH0.WVQWvP40HGz1qM6co7cB7ZIxNqkf1L6XQoVAJgmZUp4';
 // ============================================================
 
 // ---------------------------------------------------------------------------
