@@ -35,8 +35,8 @@
 //     can actually read or write — it cannot bypass row-level security.
 //     NEVER put the service_role key here.
 // ============================================================
-const SUPABASE_URL      = 'https://jseyyzhvmtmbdanvylcx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZXl5emh2bXRtYmRhbnZ5bGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyODI1MzMsImV4cCI6MjA5Mjg1ODUzM30.12P6UpsDYBa_KpDDr8oObAv6pKnrjSzTie3AJTCULbk';
+const SUPABASE_URL      = 'https://xjemuwlimwhcpiabbxfr.supabase.co';
+const SUPABASE_ANON_KEY = 'REPLACE_WITH_ANON_KEY_FROM_SUPABASE_DASHBOARD';
 // ============================================================
 
 // ---------------------------------------------------------------------------
