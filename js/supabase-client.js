@@ -10,6 +10,13 @@
  *    columns instead of a single JSONB blob. Existing modules continue to work
  *    via automatic camelCase ↔ snake_case conversion.
  *  - Added soft-delete support: tables with a deleted_at column are never hard-deleted.
+ *  - Fixed softDelete() / delete() to use invoice_status for sales_invoices /
+ *    purchase_invoices (previously used the wrong column 'status').
+ *  - Added TABLES_WITHOUT_COMPANY_ID: child tables (sales_invoice_items, etc.)
+ *    are skipped during company_id auto-injection to prevent DB column errors.
+ *  - Added CANCEL_STATUS_MAP: maps tables with non-standard status column names or values
+ *    (e.g. invoice_status='cancelled' for invoice tables, status='reversed' for journal_entries).
+ *  - Expanded TABLE_NAME_MAP with full camelCase ↔ snake_case aliases for DB.from().
  *  - Added auto company_id injection on every INSERT so RLS policies are satisfied.
  *  - Fixed SUPABASE_URL: removed the /rest/v1/ suffix that the JS library adds itself.
  *
@@ -36,20 +43,73 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Table name map — legacy camelCase collection names → real snake_case tables
 // ---------------------------------------------------------------------------
 const TABLE_NAME_MAP = {
+    // Legacy collection name aliases (used by old Firestore-style modules)
     'bankAccounts':          'bank_accounts',
     'bankTransactions':      'bank_transactions',
     'inventoryStock':        'inventory_stock',
-    'inventoryTransactions': 'stock_movements',   // schema table is stock_movements
+    'inventoryTransactions': 'stock_movements',
     'appSettings':           'app_settings',
     'sales':                 'sales_invoices',
     'purchases':             'purchase_invoices',
     'users':                 'profiles',
+    // Convenience camelCase → snake_case aliases for DB.from() calls
+    'productCategories':     'product_categories',
+    'productUnits':          'product_units',
+    'salesInvoices':         'sales_invoices',
+    'salesInvoiceItems':     'sales_invoice_items',
+    'purchaseInvoices':      'purchase_invoices',
+    'purchaseInvoiceItems':  'purchase_invoice_items',
+    'stockMovements':        'stock_movements',
+    'inventoryStockItems':   'inventory_stock',
+    'supplierCategories':    'supplier_categories',
+    'bankAcct':              'bank_accounts',
+    'chartOfAccounts':       'chart_of_accounts',
+    'journalEntries':        'journal_entries',
+    'journalEntryLines':     'journal_entry_lines',
+    'auditLogs':             'audit_logs',
 };
 
 // ---------------------------------------------------------------------------
 // Tables that support soft-delete via deleted_at (no hard deletes on these)
 // ---------------------------------------------------------------------------
 const SOFT_DELETE_TABLES = new Set(['customers', 'suppliers', 'products']);
+
+// ---------------------------------------------------------------------------
+// Tables that use a non-standard column name and/or value for cancellation.
+//   column: the column to update (default: 'status')
+//   value:  the value to set    (default: 'cancelled')
+// Lookup keys are the real snake_case table names.
+//
+// How to identify entries for this map:
+//   - Open supabase/schema.sql and check the CHECK constraint for the table's
+//     status-like column. If the column is not named 'status' or if 'cancelled'
+//     is not a valid value, add an entry here.
+// ---------------------------------------------------------------------------
+const CANCEL_STATUS_MAP = {
+    // sales_invoices.invoice_status CHECK (... 'cancelled' ...)
+    'sales_invoices':    { column: 'invoice_status', value: 'cancelled' },
+    // purchase_invoices.invoice_status CHECK (... 'cancelled' ...)
+    'purchase_invoices': { column: 'invoice_status', value: 'cancelled' },
+    // journal_entries.status CHECK ('draft' | 'posted' | 'reversed') — no 'cancelled'
+    'journal_entries':   { column: 'status',         value: 'reversed' },
+};
+
+// ---------------------------------------------------------------------------
+// Child / junction tables that have no company_id column.
+// Auto company_id injection is skipped for these to avoid DB errors.
+//
+// Rule: add a table here if its CREATE TABLE in supabase/schema.sql has no
+//       company_id column (typically child rows whose parent carries company_id).
+// Current child tables in the schema: sales_invoice_items, purchase_invoice_items,
+//   supplier_categories, journal_entry_lines, audit_logs.
+// ---------------------------------------------------------------------------
+const TABLES_WITHOUT_COMPANY_ID = new Set([
+    'sales_invoice_items',
+    'purchase_invoice_items',
+    'supplier_categories',
+    'journal_entry_lines',
+    'audit_logs',
+]);
 
 // ---------------------------------------------------------------------------
 // Fields to strip before INSERT / UPDATE because they live in a separate
@@ -212,10 +272,10 @@ class _TableQuery {
     }
 
     // ── Terminal: INSERT ──────────────────────────────────────────────────
-    /** Insert one record. Auto-injects company_id. Returns the created row. */
+    /** Insert one record. Auto-injects company_id for top-level tables. Returns the created row. */
     async insert(record) {
         const payload = { ...record };
-        if (!payload.company_id) {
+        if (!TABLES_WITHOUT_COMPANY_ID.has(this._table) && !payload.company_id) {
             const cid = await _getMyCompanyId(this._client);
             if (cid) payload.company_id = cid;
         }
@@ -228,7 +288,9 @@ class _TableQuery {
 
     /** Insert multiple records. Returns created rows. */
     async insertMany(records) {
-        const cid = await _getMyCompanyId(this._client);
+        const cid = TABLES_WITHOUT_COMPANY_ID.has(this._table)
+            ? null
+            : await _getMyCompanyId(this._client);
         const payloads = records.map(r => {
             const p = { ...r };
             if (!p.company_id && cid) p.company_id = cid;
@@ -255,6 +317,7 @@ class _TableQuery {
     /**
      * Soft-delete a record.
      * - Tables in SOFT_DELETE_TABLES  → sets deleted_at.
+     * - Tables with invoice_status    → sets invoice_status = 'cancelled'.
      * - All other ERP tables          → sets status = 'cancelled'.
      * Hard delete is intentionally not exposed; use supabaseClient directly
      * only for non-ERP data (sessions, temp records).
@@ -263,7 +326,8 @@ class _TableQuery {
         if (SOFT_DELETE_TABLES.has(this._table)) {
             return this.update({ deleted_at: new Date().toISOString() });
         }
-        return this.update({ status: 'cancelled' });
+        const { column = 'status', value = 'cancelled' } = CANCEL_STATUS_MAP[this._table] || {};
+        return this.update({ [column]: value });
     }
 
     // ── Terminal: UPSERT ─────────────────────────────────────────────────
@@ -368,10 +432,11 @@ class _DocumentRef {
                 .eq('id', this._id);
             if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         } else {
-            // For tables without deleted_at, mark as cancelled
+            // Use the correct status column/value for the table (e.g. invoice_status for invoices)
+            const { column = 'status', value = 'cancelled' } = CANCEL_STATUS_MAP[this._table] || {};
             const { error } = await this._client
                 .from(this._table)
-                .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+                .update({ [column]: value, updated_at: new Date().toISOString() })
                 .eq('id', this._id);
             if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         }
@@ -440,8 +505,9 @@ class _CollectionRef {
         const processed   = _processTimestamps(docData);
         const snakeFields = _keysToSnake(processed, this._table);
 
-        // Auto-inject company_id required by RLS INSERT policies
-        if (!snakeFields.company_id) {
+        // Auto-inject company_id required by RLS INSERT policies.
+        // Skipped for child tables that have no company_id column.
+        if (!TABLES_WITHOUT_COMPANY_ID.has(this._table) && !snakeFields.company_id) {
             const cid = await _getMyCompanyId(this._client);
             if (cid) snakeFields.company_id = cid;
         }
@@ -550,6 +616,6 @@ class _ServerTimestamp {
         if (event === 'SIGNED_OUT') _cachedCompanyId = null;
     });
 
-    console.log('✅ Supabase client initialized (Phase 1 — real columns, no doc_data)');
+    console.log('✅ Supabase client initialized (Phase 1 — real columns, no doc_data, invoice_status fix)');
     console.log('🔗 Project:', SUPABASE_URL);
 })();
