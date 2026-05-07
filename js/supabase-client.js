@@ -14,7 +14,8 @@
  *    purchase_invoices (previously used the wrong column 'status').
  *  - Added TABLES_WITHOUT_COMPANY_ID: child tables (sales_invoice_items, etc.)
  *    are skipped during company_id auto-injection to prevent DB column errors.
- *  - Added CANCEL_STATUS_COLUMN map for tables with non-standard status column names.
+ *  - Added CANCEL_STATUS_MAP: maps tables with non-standard status column names or values
+ *    (e.g. invoice_status='cancelled' for invoice tables, status='reversed' for journal_entries).
  *  - Expanded TABLE_NAME_MAP with full camelCase ↔ snake_case aliases for DB.from().
  *  - Added auto company_id injection on every INSERT so RLS policies are satisfied.
  *  - Fixed SUPABASE_URL: removed the /rest/v1/ suffix that the JS library adds itself.
@@ -74,18 +75,33 @@ const TABLE_NAME_MAP = {
 const SOFT_DELETE_TABLES = new Set(['customers', 'suppliers', 'products']);
 
 // ---------------------------------------------------------------------------
-// Tables that use a non-standard column name for the cancellation status.
-// All other tables use the generic 'status' column.
+// Tables that use a non-standard column name and/or value for cancellation.
+//   column: the column to update (default: 'status')
+//   value:  the value to set    (default: 'cancelled')
+// Lookup keys are the real snake_case table names.
+//
+// How to identify entries for this map:
+//   - Open supabase/schema.sql and check the CHECK constraint for the table's
+//     status-like column. If the column is not named 'status' or if 'cancelled'
+//     is not a valid value, add an entry here.
 // ---------------------------------------------------------------------------
-const CANCEL_STATUS_COLUMN = {
-    'sales_invoices':    'invoice_status',
-    'purchase_invoices': 'invoice_status',
-    'journal_entries':   'status',  // uses 'reversed' — listed for clarity
+const CANCEL_STATUS_MAP = {
+    // sales_invoices.invoice_status CHECK (... 'cancelled' ...)
+    'sales_invoices':    { column: 'invoice_status', value: 'cancelled' },
+    // purchase_invoices.invoice_status CHECK (... 'cancelled' ...)
+    'purchase_invoices': { column: 'invoice_status', value: 'cancelled' },
+    // journal_entries.status CHECK ('draft' | 'posted' | 'reversed') — no 'cancelled'
+    'journal_entries':   { column: 'status',         value: 'reversed' },
 };
 
 // ---------------------------------------------------------------------------
 // Child / junction tables that have no company_id column.
 // Auto company_id injection is skipped for these to avoid DB errors.
+//
+// Rule: add a table here if its CREATE TABLE in supabase/schema.sql has no
+//       company_id column (typically child rows whose parent carries company_id).
+// Current child tables in the schema: sales_invoice_items, purchase_invoice_items,
+//   supplier_categories, journal_entry_lines, audit_logs.
 // ---------------------------------------------------------------------------
 const TABLES_WITHOUT_COMPANY_ID = new Set([
     'sales_invoice_items',
@@ -310,8 +326,8 @@ class _TableQuery {
         if (SOFT_DELETE_TABLES.has(this._table)) {
             return this.update({ deleted_at: new Date().toISOString() });
         }
-        const cancelCol = CANCEL_STATUS_COLUMN[this._table] || 'status';
-        return this.update({ [cancelCol]: 'cancelled' });
+        const { column = 'status', value = 'cancelled' } = CANCEL_STATUS_MAP[this._table] || {};
+        return this.update({ [column]: value });
     }
 
     // ── Terminal: UPSERT ─────────────────────────────────────────────────
@@ -416,11 +432,11 @@ class _DocumentRef {
                 .eq('id', this._id);
             if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         } else {
-            // Use the correct status column for the table (e.g. invoice_status for invoices)
-            const cancelCol = CANCEL_STATUS_COLUMN[this._table] || 'status';
+            // Use the correct status column/value for the table (e.g. invoice_status for invoices)
+            const { column = 'status', value = 'cancelled' } = CANCEL_STATUS_MAP[this._table] || {};
             const { error } = await this._client
                 .from(this._table)
-                .update({ [cancelCol]: 'cancelled', updated_at: new Date().toISOString() })
+                .update({ [column]: value, updated_at: new Date().toISOString() })
                 .eq('id', this._id);
             if (error) throw new Error(`[DB:${this._table}] ${error.message}`);
         }
