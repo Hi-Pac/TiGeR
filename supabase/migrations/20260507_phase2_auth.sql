@@ -43,51 +43,63 @@ $$;
 -- ===========================================================
 -- PART 2: First-run seed template
 -- ===========================================================
--- Purpose: Bootstrap the very first company + admin user so the
---          application has a valid company_id when the first admin
---          logs in for the first time.
+-- Purpose: Bootstrap the first company + first admin profile.
 --
--- HOW TO USE:
---   1. Go to Supabase Dashboard → Authentication → Users
---   2. Click "Add User" and create the first admin user with email
---      and a strong password. Note the new user's UUID.
---   3. In the SQL below:
---        a. Replace 'شركة النمر للتجارة والتوزيع' with your company name
---           (or leave it as-is for the demo company).
---        b. Replace '<ADMIN_USER_UUID>' with the UUID from step 2.
---        c. Replace 'المدير العام' with the admin's full name.
---   4. Run the modified SQL in Supabase SQL Editor.
+-- HOW TO USE (safe single script):
+--   1) Create the first user from Supabase Authentication → Users
+--   2) Copy that user's UUID
+--   3) Replace ONLY the variables in the block below
+--   4) Run it in Supabase SQL Editor
 --
--- NOTE: This seed is only needed ONCE. After the first admin profile
---       exists, new users can be created through the Users module.
---
--- ⚠️  DO NOT run this block if the company or profile already exists —
---     the INSERT will fail with a unique-key violation.
+-- This block validates:
+--   - Auth user UUID exists in auth.users
+--   - Profile does not already exist
+-- Then it creates company + profile in one transaction.
 -- ============================================================
 
--- --- UNCOMMENT AND EDIT the block below, then run it in Supabase SQL Editor ---
-
 /*
+DO $$
+DECLARE
+    v_admin_user_id UUID := '00000000-0000-0000-0000-000000000000'; -- Replace with Auth user UUID
+    v_company_name  TEXT := 'شركة النمر للتجارة والتوزيع';            -- Replace if needed
+    v_admin_name    TEXT := 'المدير العام';                           -- Replace admin display name
+    v_company_id    UUID;
+BEGIN
+    -- Validate auth user exists first
+    IF NOT EXISTS (
+        SELECT 1 FROM auth.users au WHERE au.id = v_admin_user_id
+    ) THEN
+        RAISE EXCEPTION 'Auth user % was not found in auth.users. Create the user first in Authentication > Users.', v_admin_user_id;
+    END IF;
 
--- Step 1: Insert the company (or use an existing company_id).
-INSERT INTO public.companies (name, currency, status)
-VALUES ('شركة النمر للتجارة والتوزيع', 'EGP', 'active')
-RETURNING id;
--- ☝️ The query result panel will show a UUID in the 'id' column.
---    Copy that UUID — you will need to paste it as <COMPANY_UUID> in Step 2 below.
+    -- Prevent duplicate profile for the same auth user
+    IF EXISTS (
+        SELECT 1 FROM public.profiles p WHERE p.id = v_admin_user_id
+    ) THEN
+        RAISE EXCEPTION 'Profile for auth user % already exists in public.profiles.', v_admin_user_id;
+    END IF;
 
+    -- Reuse company if same name already exists, else create one
+    SELECT c.id INTO v_company_id
+    FROM public.companies c
+    WHERE c.name = v_company_name
+    LIMIT 1;
 
--- Step 2: Insert the first admin profile.
--- Replace the UUIDs below with the actual values from your setup.
-INSERT INTO public.profiles (id, company_id, full_name, role, status)
-VALUES (
-    '<ADMIN_USER_UUID>',       -- UUID from Supabase Auth → Users
-    '<COMPANY_UUID>',          -- UUID returned from Step 1 above
-    'المدير العام',             -- Admin's display name
-    'admin',
-    'active'
-);
+    IF v_company_id IS NULL THEN
+        INSERT INTO public.companies (name, currency, status)
+        VALUES (v_company_name, 'EGP', 'active')
+        RETURNING id INTO v_company_id;
+    END IF;
 
+    INSERT INTO public.profiles (id, company_id, full_name, role, status)
+    VALUES (
+        v_admin_user_id,
+        v_company_id,
+        v_admin_name,
+        'admin',
+        'active'
+    );
+END $$;
 */
 
 -- ===========================================================
