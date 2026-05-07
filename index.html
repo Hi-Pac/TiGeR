@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <!-- Supabase Client & Firestore Compatibility Wrapper -->
     <script src="js/supabase-client.js"></script>
+    <!-- Phase 2: Authentication module (must load before main.js) -->
+    <script src="js/auth.js"></script>
 
     <script>
         tailwind.config = {
@@ -27,7 +29,59 @@
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
-    <div id="app" class="flex h-screen overflow-hidden">
+
+    <!-- ============================================================ -->
+    <!-- Login Overlay — visible by default; hidden after auth check  -->
+    <!-- ============================================================ -->
+    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+        <div class="w-full max-w-md">
+            <!-- Logo / brand -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4 shadow-md">
+                    <i class="fas fa-box-open text-white text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">نظام TiGeR ERP</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">شركة النمر للتجارة والتوزيع</p>
+            </div>
+
+            <!-- Login card -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+                <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6">تسجيل الدخول</h2>
+
+                <form id="login-form" novalidate>
+                    <!-- Error message -->
+                    <div id="login-error" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-600 dark:text-red-400"></div>
+
+                    <!-- Email -->
+                    <div class="mb-4">
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label>
+                        <input type="email" id="login-email" autocomplete="username" required
+                               class="form-input"
+                               placeholder="example@company.com">
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-6">
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">كلمة المرور</label>
+                        <input type="password" id="login-password" autocomplete="current-password" required
+                               class="form-input"
+                               placeholder="••••••••">
+                    </div>
+
+                    <!-- Submit button -->
+                    <button type="submit" id="login-btn"
+                            class="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed">
+                        تسجيل الدخول
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- Main App — hidden until auth check passes                    -->
+    <!-- ============================================================ -->
+    <div id="app" class="flex h-screen overflow-hidden hidden">
         <!-- Sidebar -->
         <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 shadow-md hidden md:block transition-all duration-300">
             <div class="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -137,11 +191,23 @@
                         <div class="relative">
                             <button id="user-menu-button" class="flex items-center space-x-2 space-x-reverse">
                                 <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center" id="user-avatar-initial">
-                                    <span>م</span> <!-- سيتم تحديثها ببيانات المستخدم لاحقًا -->
+                                    <span>م</span>
                                 </div>
-                                <span class="hidden md:block" id="user-display-name">مدير النظام</span> <!-- سيتم تحديثها ببيانات المستخدم لاحقًا -->
+                                <span class="hidden md:block" id="user-display-name">مدير النظام</span>
+                                <i class="fas fa-chevron-down text-xs text-gray-500 hidden md:block"></i>
                             </button>
-                            <!-- User Menu Dropdown (Optional - يمكن إضافته لاحقًا) -->
+                            <!-- User dropdown menu -->
+                            <div id="user-menu-dropdown" class="hidden absolute left-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate" id="user-menu-name">-</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" id="user-menu-role">-</p>
+                                </div>
+                                <button id="logout-btn"
+                                        class="w-full text-right px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 rounded-b-lg transition-colors">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>تسجيل الخروج</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

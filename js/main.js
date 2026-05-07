@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // تهيئة Supabase تمت في js/supabase-client.js المُحمَّل قبل هذا الملف.
-    // window.db  → طبقة التوافق مع Firestore API
-    // window.supabaseClient → عميل Supabase الأصلي
+    // Auth is handled by js/auth.js (loaded before this file).
+    // window.AppAuth exposes the session context, role helpers, and login/logout.
+    // window.db  → Firestore-compat shim  (legacy modules)
+    // window.DB  → clean _TableQuery builder (Phase 1+)
+    // window.supabaseClient → raw Supabase client
     console.log("Main.js loaded — Supabase backend active.");
 
     // --- Global DOM Elements ---
@@ -38,16 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const desktopSidebar = document.getElementById('sidebar');
     const mobileSidebarElement = document.getElementById('mobile-sidebar');
     const mobileSidebarAside = mobileSidebarElement.querySelector('aside');
-    const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn'); // Main toggle button
+    const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
     const closeMobileSidebarBtn = document.getElementById('close-mobile-sidebar-btn');
     const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
 
     // Populate mobile nav from desktop nav
     if (desktopNavMenu && mobileNavMenu) {
-        mobileNavMenu.innerHTML = desktopNavMenu.innerHTML; // Simple copy
+        mobileNavMenu.innerHTML = desktopNavMenu.innerHTML;
     }
     const allModuleButtons = document.querySelectorAll('.module-btn');
-
 
     function setActiveSidebarButton(moduleId) {
         allModuleButtons.forEach(btn => {
@@ -57,26 +58,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     function openMobileSidebar() {
         mobileSidebarElement.classList.remove('hidden');
-        setTimeout(() => mobileSidebarAside.style.transform = 'translateX(0)', 10); // For RTL
+        setTimeout(() => mobileSidebarAside.style.transform = 'translateX(0)', 10);
     }
 
     function closeMobileSidebar() {
-        mobileSidebarAside.style.transform = 'translateX(100%)'; // For RTL
+        mobileSidebarAside.style.transform = 'translateX(100%)';
         setTimeout(() => mobileSidebarElement.classList.add('hidden'), 300);
     }
-    
-    // Toggle for main sidebar (desktop collapse/expand and mobile show)
+
     if (toggleSidebarBtn) {
         toggleSidebarBtn.addEventListener('click', () => {
-            if (window.innerWidth < 768) { // md breakpoint
+            if (window.innerWidth < 768) {
                 openMobileSidebar();
             } else {
                 desktopSidebar.classList.toggle('w-64');
-                desktopSidebar.classList.toggle('w-20'); // Example collapsed width
-                // You might want to hide text and only show icons when collapsed
+                desktopSidebar.classList.toggle('w-20');
                 desktopSidebar.querySelectorAll('nav span').forEach(span => span.classList.toggle('hidden'));
             }
         });
@@ -87,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Module Loading and Navigation ---
-    window.currentLoadedModule = null; // To keep track of the currently loaded module's specific JS functions
+    window.currentLoadedModule = null;
 
     const loadModule = window.loadModule = async function(moduleId) {
         if (globalLoader) globalLoader.classList.remove('hidden');
@@ -136,8 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (moduleId === 'help' && typeof initHelpModule === 'function') {
                 await initHelpModule();
             }
-            // Add other `else if` for other modules here...
-            
+
         } catch (error) {
             console.error('Error loading module:', error);
             contentArea.innerHTML = `<div class="p-4 text-red-500">فشل تحميل الوحدة: ${error.message}</div>`;
@@ -155,9 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- Utility Functions (can be moved to a separate utils.js later) ---
+    // --- Utility Functions ---
     window.showButtonSpinner = function(buttonElement, show = true) {
-        // Ensure the button is an HTMLElement
         if (!(buttonElement instanceof HTMLElement)) {
             console.error("Invalid buttonElement passed to showButtonSpinner:", buttonElement);
             return;
@@ -168,9 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!spinner) {
                 spinner = document.createElement('span');
                 spinner.className = 'btn-spinner';
-                // Adjust insertion for RTL: icon before text
                 if (buttonElement.firstChild && buttonElement.firstChild.nodeName === '#text') {
-                     buttonElement.insertBefore(spinner, buttonElement.firstChild.nextSibling); // after first text node
+                    buttonElement.insertBefore(spinner, buttonElement.firstChild.nextSibling);
                 } else {
                     buttonElement.prepend(spinner);
                 }
@@ -178,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
             spinner.style.display = 'inline-block';
         } else {
             if (spinner) {
-                spinner.style.display = 'none'; // Hide instead of remove if re-used
+                spinner.style.display = 'none';
             }
             buttonElement.disabled = false;
         }
@@ -187,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.setupFormToggle = function(options) {
         const { addButtonId, formContainerId, closeButtonId, cancelButtonId, formId, formTitleId, addTitle, editTitle, resetFormFunction, onOpen, currentModule } = options;
 
-        // Try to find elements - search globally first since forms are usually outside modules in modal pattern
         let addBtn = document.getElementById(addButtonId);
         if (!addBtn && currentModule) {
             const currentModuleElement = document.getElementById(`${currentModule}-module`);
@@ -203,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formContainer = currentModuleElement.querySelector(`#${formContainerId}`);
             }
         }
-        
+
         let closeBtn = document.getElementById(closeButtonId);
         if (!closeBtn && currentModule) {
             const currentModuleElement = document.getElementById(`${currentModule}-module`);
@@ -211,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeBtn = currentModuleElement.querySelector(`#${closeButtonId}`);
             }
         }
-        
+
         let cancelBtn = null;
         if (cancelButtonId) {
             cancelBtn = document.getElementById(cancelButtonId);
@@ -222,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         let form = document.getElementById(formId);
         if (!form && currentModule) {
             const currentModuleElement = document.getElementById(`${currentModule}-module`);
@@ -264,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return openForm;
     };
-    
+
     window.showGlobalLoader = function(show = true) {
         if (globalLoader) {
             if (show) globalLoader.classList.remove('hidden');
@@ -272,7 +267,47 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Header user info update ---
+    function updateHeaderUserInfo() {
+        const profile = window.AppAuth?.profile;
+        if (!profile) return;
 
-    // --- Initial Load ---
-    loadModule('dashboard'); // Load dashboard by default
+        const displayName   = document.getElementById('user-display-name');
+        const avatarInitial = document.getElementById('user-avatar-initial');
+
+        if (displayName) displayName.textContent = profile.full_name || '';
+        if (avatarInitial) {
+            const initial = (profile.full_name || '?').charAt(0);
+            avatarInitial.innerHTML = `<span>${initial}</span>`;
+        }
+    }
+
+    // --- Auth event listeners ---
+    // These two events are mutually exclusive:
+    //   'auth:ready' (authenticated=true) fires only during the session bootstrap
+    //     on page load when a valid session already exists.  It does NOT fire after
+    //     a login-form submission.
+    //   'auth:signedIn' fires only after a successful login-form submission.
+    //     _bootstrapSession() does not dispatch this event.
+    // Therefore loadModule('dashboard') is called exactly once per login.
+
+    // Load dashboard once the session bootstrap completes and user is authenticated.
+    window.addEventListener('auth:ready', (e) => {
+        if (e.detail.authenticated) {
+            updateHeaderUserInfo();
+            loadModule('dashboard');
+        }
+    });
+
+    // Re-load dashboard and update header after a fresh sign-in via the login form.
+    window.addEventListener('auth:signedIn', () => {
+        updateHeaderUserInfo();
+        loadModule('dashboard');
+    });
+
+    // Clear content area on sign-out so stale data is not visible after the next login.
+    window.addEventListener('auth:signedOut', () => {
+        if (contentArea) contentArea.innerHTML = '';
+        if (pageTitleElement) pageTitleElement.textContent = 'لوحة التحكم';
+    });
 });
