@@ -41,21 +41,54 @@ $$;
 -- (stored in the profiles table, linked to auth.users)
 -- SECURITY DEFINER so it can read profiles even when RLS is active
 CREATE OR REPLACE FUNCTION fn_my_company_id()
-RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER AS $$
-    SELECT company_id FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+RETURNS UUID LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+BEGIN
+    IF to_regclass('public.profiles') IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    RETURN (
+        SELECT company_id
+        FROM public.profiles
+        WHERE id = auth.uid()
+        LIMIT 1
+    );
+END;
 $$;
 
 -- Returns the role of the currently authenticated user
 CREATE OR REPLACE FUNCTION fn_my_role()
-RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
-    SELECT role FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+RETURNS TEXT LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+BEGIN
+    IF to_regclass('public.profiles') IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    RETURN (
+        SELECT role
+        FROM public.profiles
+        WHERE id = auth.uid()
+        LIMIT 1
+    );
+END;
 $$;
 
 -- Returns the branch_id of the currently authenticated user
 -- (NULL means the user has access to all branches of their company)
 CREATE OR REPLACE FUNCTION fn_my_branch_id()
-RETURNS UUID LANGUAGE sql STABLE SECURITY DEFINER AS $$
-    SELECT branch_id FROM public.profiles WHERE id = auth.uid() LIMIT 1;
+RETURNS UUID LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+BEGIN
+    IF to_regclass('public.profiles') IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    RETURN (
+        SELECT branch_id
+        FROM public.profiles
+        WHERE id = auth.uid()
+        LIMIT 1
+    );
+END;
 $$;
 
 -- Writes one row to audit_logs (called from module-level triggers)
