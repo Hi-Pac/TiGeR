@@ -70,19 +70,30 @@ async function initSuppliersModule() {
     }
 
     async function loadCategoryMetadata() {
-        const { data } = await DB
-            .from('product_categories')
-            .select('id,name,name_ar')
-            .order('name', { ascending: true })
-            .get();
+        try {
+            const { data } = await DB
+                .from('product_categories')
+                .select('id,name,name_ar')
+                .order('name', { ascending: true })
+                .get();
+            if (!Array.isArray(data)) {
+                throw new Error('نتيجة تصنيفات الأصناف غير صالحة.');
+            }
 
-        categoryNameById.clear();
-        supplierCategoryOptions = (data || []).map((category) => {
-            const displayName = category.name_ar || category.name;
-            categoryNameById.set(category.id, displayName);
-            return { id: category.id, displayName };
-        });
-        renderCategoryInputs();
+            categoryNameById.clear();
+            supplierCategoryOptions = data.map((category) => {
+                const displayName = category.name_ar || category.name;
+                categoryNameById.set(category.id, displayName);
+                return { id: category.id, displayName };
+            });
+            renderCategoryInputs();
+        } catch (error) {
+            console.error('Error loading product categories for suppliers:', error);
+            supplierCategoryOptions = [];
+            categoryNameById.clear();
+            renderCategoryInputs();
+            alert('تعذر تحميل تصنيفات الأصناف حالياً. يمكنك حفظ المورد بدون تصنيفات والمحاولة لاحقاً.');
+        }
     }
 
     function getSelectedCategories() {
@@ -142,16 +153,22 @@ async function initSuppliersModule() {
                 DB.from('suppliers').select('*').order('company_name', { ascending: true }).get(),
                 DB.from('supplier_categories').select('supplier_id,category_id').get()
             ]);
+            if (!Array.isArray(suppliersRows)) {
+                throw new Error('فشل تحميل بيانات الموردين.');
+            }
+            if (!Array.isArray(supplierCategoryRows)) {
+                throw new Error('فشل تحميل تصنيفات الموردين.');
+            }
 
             const categoriesBySupplier = new Map();
-            (supplierCategoryRows || []).forEach((linkRow) => {
+            supplierCategoryRows.forEach((linkRow) => {
                 if (!categoriesBySupplier.has(linkRow.supplier_id)) {
                     categoriesBySupplier.set(linkRow.supplier_id, []);
                 }
                 categoriesBySupplier.get(linkRow.supplier_id).push(linkRow.category_id);
             });
 
-            allSuppliersData = (suppliersRows || []).map((row) => {
+            allSuppliersData = suppliersRows.map((row) => {
                 const supplier = mapSupplierRowToViewModel(row);
                 supplier.productCategories = categoriesBySupplier.get(row.id) || [];
                 return supplier;
@@ -176,7 +193,7 @@ async function initSuppliersModule() {
         if (searchTerm) {
             filteredSuppliers = filteredSuppliers.filter(sup =>
                 (sup.companyName || '').toLowerCase().includes(searchTerm) ||
-                (sup.contactPerson && sup.contactPerson.toLowerCase().includes(searchTerm)) ||
+                (sup.contactPerson || '').toLowerCase().includes(searchTerm) ||
                 (sup.phone || '').includes(searchTerm)
             );
         }
@@ -282,6 +299,10 @@ async function initSuppliersModule() {
                 } else {
                     supplierData.current_balance = supplierData.opening_balance;
                     const createdSupplier = await DB.from('suppliers').insert(supplierData);
+                    if (!createdSupplier?.id) {
+                        console.error('Supplier insert returned invalid payload:', createdSupplier);
+                        throw new Error('لم يتم إرجاع معرّف المورد بعد الحفظ. يرجى التحقق من صلاحيات RLS وإعداد قاعدة البيانات.');
+                    }
                     await syncSupplierCategories(createdSupplier.id, selectedCategoryIds);
                     console.log("Supplier added successfully");
                 }
@@ -316,13 +337,21 @@ async function initSuppliersModule() {
     if (supplierStatusFilter) supplierStatusFilter.addEventListener('change', applySupplierFiltersAndRender);
 
     async function syncSupplierCategories(supplierId, selectedCategoryIds) {
-        if (!window.supabaseClient || !supplierId) return;
+        // DB abstraction currently does not expose hard delete, while supplier_categories
+        // needs row-level sync (insert/delete) to mirror checkbox selections.
+        if (!supplierId) return;
+        if (!window.supabaseClient) {
+            throw new Error('تعذر تهيئة اتصال قاعدة البيانات لتحديث تصنيفات المورد.');
+        }
 
         const { data: existingRows, error: existingError } = await window.supabaseClient
             .from('supplier_categories')
             .select('category_id')
             .eq('supplier_id', supplierId);
-        if (existingError) throw new Error(existingError.message);
+        if (existingError) {
+            console.error('Failed to load existing supplier categories:', existingError);
+            throw new Error(`تعذر تحميل تصنيفات المورد الحالية (${supplierId}): ${existingError.message}`);
+        }
 
         const existingCategoryIds = new Set((existingRows || []).map((row) => row.category_id));
         const desiredCategoryIds = new Set(selectedCategoryIds.filter(Boolean));
@@ -336,7 +365,10 @@ async function initSuppliersModule() {
                 .delete()
                 .eq('supplier_id', supplierId)
                 .in('category_id', toDelete);
-            if (deleteError) throw new Error(deleteError.message);
+            if (deleteError) {
+                console.error('Failed to delete supplier categories:', deleteError);
+                throw new Error(`تعذر حذف تصنيفات المورد (${supplierId}): ${deleteError.message}`);
+            }
         }
 
         if (toInsert.length) {
@@ -344,7 +376,10 @@ async function initSuppliersModule() {
             const { error: insertError } = await window.supabaseClient
                 .from('supplier_categories')
                 .insert(rows);
-            if (insertError) throw new Error(insertError.message);
+            if (insertError) {
+                console.error('Failed to insert supplier categories:', insertError);
+                throw new Error(`تعذر إضافة تصنيفات المورد (${supplierId}): ${insertError.message}`);
+            }
         }
     }
 

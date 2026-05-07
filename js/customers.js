@@ -1,4 +1,10 @@
 let allCustomersData = []; // To store fetched customers for client-side filtering
+const CUSTOMER_STATUS_LABEL_BY_VALUE = { active: 'نشط', inactive: 'غير نشط', blocked: 'محظور' };
+const CUSTOMER_STATUS_CLASS_BY_VALUE = {
+    active: 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100',
+    inactive: 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100',
+    blocked: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100'
+};
 
 async function initCustomersModule() {
     console.log("Customers Module Initialized!");
@@ -125,7 +131,7 @@ async function initCustomersModule() {
                 (cust.shopName || '').toLowerCase().includes(searchTerm) ||
                 (cust.ownerName || '').toLowerCase().includes(searchTerm) ||
                 (cust.phone || '').includes(searchTerm) ||
-                (cust.phone2 && cust.phone2.includes(searchTerm))
+                (cust.phone2 || '').includes(searchTerm)
             );
         }
         if (area) {
@@ -151,14 +157,8 @@ async function initCustomersModule() {
             // currentBalance should be calculated/fetched in a real app
             const currentBalance = customer.currentBalance !== undefined ? customer.currentBalance : customer.openingBalance;
             const balanceColor = currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-            const statusLabelByValue = { active: 'نشط', inactive: 'غير نشط', blocked: 'محظور' };
-            const statusClassByValue = {
-                active: 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100',
-                inactive: 'bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100',
-                blocked: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100'
-            };
-            const customerStatusClass = statusClassByValue[customer.status] || statusClassByValue.inactive;
-            const customerStatusLabel = statusLabelByValue[customer.status] || customer.status;
+            const customerStatusClass = CUSTOMER_STATUS_CLASS_BY_VALUE[customer.status] || CUSTOMER_STATUS_CLASS_BY_VALUE.inactive;
+            const customerStatusLabel = CUSTOMER_STATUS_LABEL_BY_VALUE[customer.status] || customer.status;
 
             row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
