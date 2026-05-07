@@ -62,8 +62,7 @@ async function initUsersModule() {
         resetFormFunction: resetUserForm,
     });
 
-    // Validates RFC 4122 UUID versions 1-5.
-    function isValidUUIDv1to5(value) {
+    function isValidAuthUID(value) {
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value || '');
     }
 
@@ -205,8 +204,8 @@ async function initUsersModule() {
 
                     if (error) throw error;
                 } else {
-                    if (!isValidUUIDv1to5(authIdInput)) {
-                        throw new Error('معرف Auth UID غير صالح. يجب أن يكون UUID بصيغة مثل: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+                    if (!isValidAuthUID(authIdInput)) {
+                        throw new Error('Auth UID غير صالح. يجب أن يكون UUID بصيغة مثل: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
                     }
 
                     const companyId = window.AppAuth?.companyId();

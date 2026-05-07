@@ -67,14 +67,14 @@ DECLARE
 BEGIN
     -- Validate auth user exists first
     IF NOT EXISTS (
-        SELECT 1 FROM auth.users au WHERE au.id = v_admin_user_id
+        SELECT 1 FROM auth.users WHERE id = v_admin_user_id
     ) THEN
         RAISE EXCEPTION 'Auth user % was not found in auth.users. Create it first via Supabase Dashboard → Authentication → Users.', v_admin_user_id;
     END IF;
 
     -- Prevent duplicate profile for the same auth user
     IF EXISTS (
-        SELECT 1 FROM public.profiles p WHERE p.id = v_admin_user_id
+        SELECT 1 FROM public.profiles WHERE id = v_admin_user_id
     ) THEN
         RAISE EXCEPTION 'Profile for auth user % already exists in public.profiles.', v_admin_user_id;
     END IF;
