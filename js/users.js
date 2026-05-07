@@ -77,13 +77,14 @@ async function initUsersModule() {
         usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">جاري تحميل المستخدمين... <span class="loader ml-2"></span></td></tr>`;
 
         try {
-            const { data } = await window.DB
+            const { data, error } = await window.supabaseClient
                 .from('profiles')
                 .select('*')
-                .order('full_name', { ascending: true })
-                .get();
+                .order('full_name', { ascending: true });
 
-            allUsersData = Array.isArray(data) ? data : [];
+            if (error) throw error;
+
+            allUsersData = data || [];
             applyFiltersAndRender();
         } catch (error) {
             console.error('Error loading users from profiles:', error);
