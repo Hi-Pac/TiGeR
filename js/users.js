@@ -205,7 +205,7 @@ async function initUsersModule() {
                     if (error) throw error;
                 } else {
                     if (!isValidUUID(authIdInput)) {
-                        throw new Error('معرف Auth UID غير صالح.');
+                        throw new Error('معرف Auth UID غير صالح. يجب أن يكون UUID بصيغة مثل: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
                     }
 
                     const companyId = window.AppAuth?.companyId();
