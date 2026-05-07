@@ -220,9 +220,17 @@
                 _showLogin();
                 _fireSignedOut();
             } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-                // Keep _user in sync; profile stays cached (role changes are rare,
-                // and admins would trigger a logout/re-login when they change roles).
                 _user = session.user;
+                // Re-fetch the profile on every token refresh so that server-side
+                // changes (role update, status set to inactive) take effect within
+                // one token lifetime (~1 hour) rather than requiring a manual re-login.
+                const refreshedProfile = await _loadProfile(_user.id);
+                if (!refreshedProfile || refreshedProfile.status !== 'active') {
+                    // Profile gone or deactivated — force sign-out.
+                    await window.supabaseClient.auth.signOut();
+                } else {
+                    _profile = refreshedProfile;
+                }
             }
         });
     }

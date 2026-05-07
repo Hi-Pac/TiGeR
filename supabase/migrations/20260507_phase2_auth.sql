@@ -91,6 +91,10 @@ VALUES (
 
 -- ===========================================================
 -- VERIFICATION QUERIES (run after seeding to confirm setup)
+-- NOTE: These queries require that the base schema (supabase/schema.sql)
+--       has already been applied to the database. The helper functions
+--       fn_my_company_id(), fn_my_role(), and fn_my_status() are defined
+--       in the base schema and in Part 1 of this migration respectively.
 -- ===========================================================
 -- SELECT id, name, currency, status FROM public.companies;
 -- SELECT id, full_name, role, status, company_id FROM public.profiles;
