@@ -56,10 +56,9 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
     if (typeof TABLE_NAME_MAP !== 'undefined') {
         return; // Already declared by business-logic.js (browser)
     }
-    // Node.js / test environment: assign to global so the rest of this file
+    // Node.js / test environment: assign to globalThis so the rest of this file
     // can reference them as free variables.
-    /* global TABLE_NAME_MAP, SOFT_DELETE_TABLES, CANCEL_STATUS_MAP, TABLES_WITHOUT_COMPANY_ID */
-    var _g = (typeof global !== 'undefined') ? global : window;
+    var _g = globalThis;
 
     _g.TABLE_NAME_MAP = {
         // Legacy collection name aliases (used by old Firestore-style modules)
