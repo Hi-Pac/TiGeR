@@ -38,6 +38,7 @@
         warehouse:  'مستودع',
         viewer:     'مشاهد',
     };
+    const MISSING_PROFILE_ERROR = 'هذا الحساب لا يملك ملف مستخدم. إذا كانت هذه أول مرة لتشغيل النظام فتأكد من تشغيل ملفات SQL الجديدة، وإذا استمرت المشكلة اطلب من مدير النظام إضافتك.';
 
     // ── Internal state ─────────────────────────────────────────────────────
     let _user    = null;  // Supabase auth.users row
@@ -86,6 +87,66 @@
         } catch (err) {
             console.error('[Auth] Profile fetch exception:', err);
             return null;
+        }
+    }
+
+    function _getBootstrapDisplayName(user) {
+        const metadataName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+        if (metadataName && metadataName.trim()) return metadataName.trim();
+        const email = typeof user?.email === 'string' ? user.email.trim() : '';
+        if (email) {
+            const localPart = email.split('@')[0].trim();
+            if (localPart) return localPart;
+        }
+        return 'مدير النظام';
+    }
+
+    function _translateBootstrapError(err) {
+        const code = (err?.code || '').trim();
+        const raw = (err?.message || err || '').trim();
+        const m = raw.toLowerCase();
+        if (!m) return MISSING_PROFILE_ERROR;
+        // PGRST202 = PostgREST could not find the requested RPC function.
+        if (code === 'PGRST202') {
+            return 'قاعدة البيانات لم تُحدَّث بعد. شغّل supabase/schema.sql ثم supabase/migrations/20260507_phase2_auth.sql ثم أعد تسجيل الدخول.';
+        }
+        if (raw === 'BOOTSTRAP_ALREADY_INITIALIZED') {
+            return 'تم تهيئة النظام بالفعل، لكن هذا الحساب ليس مضافاً كمستخدم داخل النظام. اطلب من مدير النظام إضافتك من شاشة إدارة المستخدمين باستخدام Auth UID.';
+        }
+        if (raw === 'BOOTSTRAP_MULTIPLE_COMPANIES') {
+            return 'يوجد أكثر من شركة بدون ملفات مستخدم، لذلك يلزم إكمال الربط الأول يدوياً من ملف SQL الخاص بالإعداد.';
+        }
+        if (raw === 'BOOTSTRAP_AUTH_REQUIRED') {
+            return 'انتهت الجلسة قبل إكمال التهيئة. حاول تسجيل الدخول مرة أخرى.';
+        }
+        if (raw === 'BOOTSTRAP_AUTH_USER_NOT_FOUND') {
+            return 'الحساب الحالي غير موجود داخل Supabase Authentication. تحقق من المستخدم ثم أعد المحاولة.';
+        }
+        return MISSING_PROFILE_ERROR;
+    }
+
+    async function _loadOrBootstrapProfile(user) {
+        let profile = await _loadProfile(user.id);
+        if (profile) return { profile, error: null };
+
+        try {
+            const { error } = await window.supabaseClient.rpc('bootstrap_first_admin_profile', {
+                p_full_name: _getBootstrapDisplayName(user),
+            });
+
+            if (error) {
+                console.warn('[Auth] First-admin bootstrap skipped:', error.message);
+                return { profile: null, error: _translateBootstrapError(error) };
+            }
+
+            profile = await _loadProfile(user.id);
+            if (profile) {
+                console.info('[Auth] First admin profile bootstrapped successfully.');
+            }
+            return { profile, error: profile ? null : MISSING_PROFILE_ERROR };
+        } catch (err) {
+            console.warn('[Auth] First-admin bootstrap failed:', err);
+            return { profile: null, error: _translateBootstrapError(err) };
         }
     }
 
@@ -177,13 +238,15 @@
                 return { error: msg };
             }
 
-            _user    = data.user;
-            _profile = await _loadProfile(_user.id);
+            _user = data.user;
+
+            const profileResult = await _loadOrBootstrapProfile(_user);
+            _profile = profileResult.profile;
 
             if (!_profile) {
                 await window.supabaseClient.auth.signOut();
                 _user = null;
-                return { error: 'لم يتم العثور على ملف تعريف المستخدم. يرجى التواصل مع مسؤول النظام.' };
+                return { error: profileResult.error || MISSING_PROFILE_ERROR };
             }
 
             if (_profile.status !== 'active') {
@@ -261,8 +324,10 @@
             const { data: { session } } = await window.supabaseClient.auth.getSession();
 
             if (session?.user) {
-                _user    = session.user;
-                _profile = await _loadProfile(_user.id);
+                _user = session.user;
+
+                const profileResult = await _loadOrBootstrapProfile(_user);
+                _profile = profileResult.profile;
 
                 if (_profile && _profile.status === 'active') {
                     _showApp();
@@ -276,7 +341,7 @@
                 _profile = null;
 
                 const reason = !_profile
-                    ? 'لم يتم العثور على ملف تعريف المستخدم. يرجى التواصل مع مسؤول النظام.'
+                    ? (profileResult.error || MISSING_PROFILE_ERROR)
                     : 'حسابك غير نشط. يرجى التواصل مع مسؤول النظام.';
 
                 _showLogin(reason);
