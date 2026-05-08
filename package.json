@@ -1,0 +1,20 @@
+{
+  "name": "tiger-erp",
+  "version": "1.0.0",
+  "description": "TiGeR ERP — automated test suite",
+  "private": true,
+  "scripts": {
+    "test": "jest --no-coverage",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  }
+}
