@@ -102,11 +102,12 @@
         return 'مدير النظام';
     }
 
-    function _translateBootstrapError(msg) {
-        const raw = (msg || '').trim();
+    function _translateBootstrapError(err) {
+        const code = (err?.code || '').trim();
+        const raw = (err?.message || err || '').trim();
         const m = raw.toLowerCase();
         if (!m) return MISSING_PROFILE_ERROR;
-        if (m.includes('bootstrap_first_admin_profile') && (m.includes('not found') || m.includes('does not exist'))) {
+        if (code === 'PGRST202') {
             return 'قاعدة البيانات لم تُحدَّث بعد. شغّل supabase/schema.sql ثم supabase/migrations/20260507_phase2_auth.sql ثم أعد تسجيل الدخول.';
         }
         if (raw === 'BOOTSTRAP_ALREADY_INITIALIZED') {
@@ -136,7 +137,7 @@
 
             if (error) {
                 console.warn('[Auth] First-admin bootstrap skipped:', error.message);
-                return { profile: null, error: _translateBootstrapError(error.message) };
+                return { profile: null, error: _translateBootstrapError(error) };
             }
 
             profile = await _loadProfile(user.id);
@@ -146,7 +147,7 @@
             return { profile, error: profile ? null : MISSING_PROFILE_ERROR };
         } catch (err) {
             console.warn('[Auth] First-admin bootstrap failed:', err);
-            return { profile: null, error: _translateBootstrapError(err?.message) };
+            return { profile: null, error: _translateBootstrapError(err) };
         }
     }
 
