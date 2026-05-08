@@ -38,7 +38,6 @@
         warehouse:  'مستودع',
         viewer:     'مشاهد',
     };
-    const DEFAULT_BOOTSTRAP_COMPANY_NAME = 'شركة النمر للتجارة والتوزيع';
     const MISSING_PROFILE_ERROR = 'هذا الحساب لا يملك ملف مستخدم. إذا كانت هذه أول مرة لتشغيل النظام فتأكد من تشغيل ملفات SQL الجديدة، وإذا استمرت المشكلة اطلب من مدير النظام إضافتك.';
 
     // ── Internal state ─────────────────────────────────────────────────────
@@ -96,7 +95,7 @@
         if (metadataName && metadataName.trim()) return metadataName.trim();
         const email = typeof user?.email === 'string' ? user.email.trim() : '';
         if (email) {
-            const localPart = email.split('@')[0]?.trim();
+            const localPart = email.split('@')[0].trim();
             if (localPart) return localPart;
         }
         return 'مدير النظام';
@@ -107,6 +106,7 @@
         const raw = (err?.message || err || '').trim();
         const m = raw.toLowerCase();
         if (!m) return MISSING_PROFILE_ERROR;
+        // PGRST202 = PostgREST could not find the requested RPC function.
         if (code === 'PGRST202') {
             return 'قاعدة البيانات لم تُحدَّث بعد. شغّل supabase/schema.sql ثم supabase/migrations/20260507_phase2_auth.sql ثم أعد تسجيل الدخول.';
         }
@@ -131,7 +131,6 @@
 
         try {
             const { error } = await window.supabaseClient.rpc('bootstrap_first_admin_profile', {
-                p_company_name: DEFAULT_BOOTSTRAP_COMPANY_NAME,
                 p_full_name: _getBootstrapDisplayName(user),
             });
 

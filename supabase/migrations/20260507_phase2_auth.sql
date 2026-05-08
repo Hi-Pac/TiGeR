@@ -74,6 +74,7 @@ DECLARE
     v_company_created  BOOLEAN := FALSE;
     v_profile_count    BIGINT;
     v_company_count    BIGINT;
+    v_company_name     TEXT := COALESCE(NULLIF(BTRIM(p_company_name), ''), 'شركة النمر للتجارة والتوزيع');
     v_full_name        TEXT;
 BEGIN
     IF v_user_id IS NULL THEN
@@ -115,11 +116,7 @@ BEGIN
         LIMIT 1;
     ELSE
         INSERT INTO public.companies (name, currency, status)
-        VALUES (
-            COALESCE(NULLIF(BTRIM(p_company_name), ''), 'شركة النمر للتجارة والتوزيع'),
-            'EGP',
-            'active'
-        )
+        VALUES (v_company_name, 'EGP', 'active')
         RETURNING id INTO v_company_id;
 
         v_company_created := TRUE;
