@@ -34,26 +34,31 @@ async function initSalesModule() {
     const saveSaleBtn = document.getElementById('save-sale-form-btn');
     const saveAndPrintSaleBtn = document.getElementById('save-print-sale-form-btn');
 
-    const fmtMoney = (n) => `${(Number(n) || 0).toFixed(2)} ج.م`;
+    const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
     const paymentLabel = { unpaid: 'غير مدفوعة', partially_paid: 'مدفوعة جزئياً', paid: 'مدفوعة', overdue: 'متأخرة' };
     const deliveryLabel = { pending: 'قيد الانتظار', partial: 'جزئي', dispatched: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجعة' };
 
-    function mapDeliveryUiToDb(value) {
+    // Delegate to ERPUtils canonical implementations (js/business-logic.js)
+    const mapDeliveryUiToDb    = (v) => (window.ERPUtils?.mapDeliveryUiToDb    ?? _mapDeliveryUiToDbFallback)(v);
+    const mapDeliveryDbToUi    = (v) => (window.ERPUtils?.mapDeliveryDbToUi    ?? _mapDeliveryDbToUiFallback)(v);
+    const mapStatusFilterToDb  = (v) => (window.ERPUtils?.mapSalesStatusFilterToDb ?? _mapSalesStatusFilterFallback)(v);
+    const inferPaymentStatus   = (m) => (window.ERPUtils?.inferPaymentStatus   ?? _inferPaymentStatusFallback)(m);
+
+    // Fallback implementations (active only when business-logic.js did not load)
+    function _mapDeliveryUiToDbFallback(value) {
         if (value === 'pending_delivery') return 'pending';
         if (value === 'out_for_delivery') return 'dispatched';
         if (value === 'delivered') return 'delivered';
         return 'pending';
     }
-
-    function mapDeliveryDbToUi(value) {
+    function _mapDeliveryDbToUiFallback(value) {
         if (value === 'pending') return 'pending_delivery';
         if (value === 'dispatched') return 'out_for_delivery';
         if (value === 'delivered') return 'delivered';
         return 'pending_delivery';
     }
-
-    function mapStatusFilterToDb(value) {
+    function _mapSalesStatusFilterFallback(value) {
         if (value === 'pending_payment') return { field: 'payment_status', value: 'unpaid' };
         if (['unpaid', 'partially_paid', 'paid', 'overdue'].includes(value)) return { field: 'payment_status', value };
         if (value === 'pending_delivery') return { field: 'delivery_status', value: 'pending' };
@@ -61,8 +66,7 @@ async function initSalesModule() {
         if (value === 'cancelled') return { field: 'invoice_status', value: 'cancelled' };
         return null;
     }
-
-    function inferPaymentStatus(method) {
+    function _inferPaymentStatusFallback(method) {
         return method === 'cash' ? 'paid' : 'unpaid';
     }
 

@@ -32,35 +32,39 @@ async function initPurchasesModule() {
     const purchaseGrandTotalAmountEl = document.getElementById('purchase-grand-total-amount');
     const savePurchaseBtn = document.getElementById('save-purchase-form-btn');
 
-    const fmtMoney = (n) => `${(Number(n) || 0).toFixed(2)} ج.م`;
+    const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
     const paymentLabel = { unpaid: 'غير مدفوعة', partially_paid: 'مدفوعة جزئياً', paid: 'مدفوعة' };
     const receiptLabel = { pending: 'بانتظار الاستلام', partial: 'استلام جزئي', received: 'تم الاستلام', returned: 'مرتجع' };
 
-    function mapReceiptUiToDb(value) {
-        if (value === 'pending_receipt') return 'pending';
+    // Delegate to ERPUtils canonical implementations (js/business-logic.js)
+    const mapReceiptUiToDb    = (v) => (window.ERPUtils?.mapReceiptUiToDb    ?? _mapReceiptUiToDbFallback)(v);
+    const mapReceiptDbToUi    = (v) => (window.ERPUtils?.mapReceiptDbToUi    ?? _mapReceiptDbToUiFallback)(v);
+    const inferPaymentStatus  = (m) => (window.ERPUtils?.inferPaymentStatus  ?? _inferPaymentStatusFallback)(m);
+    const mapStatusFilterToDb = (v) => (window.ERPUtils?.mapPurchaseStatusFilterToDb ?? _mapPurchaseStatusFilterFallback)(v);
+
+    // Fallback implementations (active only when business-logic.js did not load)
+    function _mapReceiptUiToDbFallback(value) {
+        if (value === 'pending_receipt')    return 'pending';
         if (value === 'partially_received') return 'partial';
-        if (value === 'received') return 'received';
+        if (value === 'received')           return 'received';
         return 'pending';
     }
-
-    function mapReceiptDbToUi(value) {
-        if (value === 'pending') return 'pending_receipt';
-        if (value === 'partial') return 'partially_received';
+    function _mapReceiptDbToUiFallback(value) {
+        if (value === 'pending')  return 'pending_receipt';
+        if (value === 'partial')  return 'partially_received';
         if (value === 'received') return 'received';
         return 'pending_receipt';
     }
-
-    function inferPaymentStatus(method) {
+    function _inferPaymentStatusFallback(method) {
         return method === 'cash' ? 'paid' : 'unpaid';
     }
-
-    function mapStatusFilterToDb(value) {
+    function _mapPurchaseStatusFilterFallback(value) {
         if (['unpaid', 'partially_paid', 'paid'].includes(value)) return { field: 'payment_status', value };
-        if (value === 'pending_receipt') return { field: 'receipt_status', value: 'pending' };
-        if (value === 'partially_received') return { field: 'receipt_status', value: 'partial' };
-        if (value === 'received') return { field: 'receipt_status', value: 'received' };
-        if (value === 'cancelled') return { field: 'invoice_status', value: 'cancelled' };
+        if (value === 'pending_receipt')    return { field: 'receipt_status', value: 'pending'  };
+        if (value === 'partially_received') return { field: 'receipt_status', value: 'partial'  };
+        if (value === 'received')           return { field: 'receipt_status', value: 'received' };
+        if (value === 'cancelled')          return { field: 'invoice_status', value: 'cancelled' };
         return null;
     }
 
