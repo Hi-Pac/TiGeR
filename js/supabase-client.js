@@ -576,11 +576,31 @@ class _ServerTimestamp {
     constructor() { this._isServerTimestamp = true; }
 }
 
+// ===========================================================================
+// Node.js / Jest exports — exposes internal utilities for unit testing.
+// The browser IIFE below is guarded by the `window.supabase` check so it
+// exits gracefully in test environments where Supabase JS is not loaded.
+// ===========================================================================
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        _camelToSnake,
+        _snakeToCamel,
+        _keysToSnake,
+        _keysToCamel,
+        _toTableName,
+        TABLE_NAME_MAP,
+        SOFT_DELETE_TABLES,
+        CANCEL_STATUS_MAP,
+        TABLES_WITHOUT_COMPANY_ID,
+        FIELDS_TO_IGNORE_BY_TABLE,
+    };
+}
+
 // ============================================================
 // Initialization
 // ============================================================
 (function initSupabase() {
-    if (!window.supabase) {
+    if (typeof window === 'undefined' || !window.supabase) {
         console.error('❌ Supabase JS library not loaded. Make sure the Supabase CDN is included in index.html.');
         return;
     }
