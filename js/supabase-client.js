@@ -40,76 +40,73 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // ============================================================
 
 // ---------------------------------------------------------------------------
-// Table name map — legacy camelCase collection names → real snake_case tables
-// ---------------------------------------------------------------------------
-const TABLE_NAME_MAP = {
-    // Legacy collection name aliases (used by old Firestore-style modules)
-    'bankAccounts':          'bank_accounts',
-    'bankTransactions':      'bank_transactions',
-    'inventoryStock':        'inventory_stock',
-    'inventoryTransactions': 'stock_movements',
-    'appSettings':           'app_settings',
-    'sales':                 'sales_invoices',
-    'purchases':             'purchase_invoices',
-    'users':                 'profiles',
-    // Convenience camelCase → snake_case aliases for DB.from() calls
-    'productCategories':     'product_categories',
-    'productUnits':          'product_units',
-    'salesInvoices':         'sales_invoices',
-    'salesInvoiceItems':     'sales_invoice_items',
-    'purchaseInvoices':      'purchase_invoices',
-    'purchaseInvoiceItems':  'purchase_invoice_items',
-    'stockMovements':        'stock_movements',
-    'inventoryStockItems':   'inventory_stock',
-    'supplierCategories':    'supplier_categories',
-    'bankAcct':              'bank_accounts',
-    'chartOfAccounts':       'chart_of_accounts',
-    'journalEntries':        'journal_entries',
-    'journalEntryLines':     'journal_entry_lines',
-    'auditLogs':             'audit_logs',
-};
-
-// ---------------------------------------------------------------------------
-// Tables that support soft-delete via deleted_at (no hard deletes on these)
-// ---------------------------------------------------------------------------
-const SOFT_DELETE_TABLES = new Set(['customers', 'suppliers', 'products']);
-
-// ---------------------------------------------------------------------------
-// Tables that use a non-standard column name and/or value for cancellation.
-//   column: the column to update (default: 'status')
-//   value:  the value to set    (default: 'cancelled')
-// Lookup keys are the real snake_case table names.
+// Shared constants — TABLE_NAME_MAP, SOFT_DELETE_TABLES, CANCEL_STATUS_MAP,
+// TABLES_WITHOUT_COMPANY_ID.
 //
-// How to identify entries for this map:
-//   - Open supabase/schema.sql and check the CHECK constraint for the table's
-//     status-like column. If the column is not named 'status' or if 'cancelled'
-//     is not a valid value, add an entry here.
-// ---------------------------------------------------------------------------
-const CANCEL_STATUS_MAP = {
-    // sales_invoices.invoice_status CHECK (... 'cancelled' ...)
-    'sales_invoices':    { column: 'invoice_status', value: 'cancelled' },
-    // purchase_invoices.invoice_status CHECK (... 'cancelled' ...)
-    'purchase_invoices': { column: 'invoice_status', value: 'cancelled' },
-    // journal_entries.status CHECK ('draft' | 'posted' | 'reversed') — no 'cancelled'
-    'journal_entries':   { column: 'status',         value: 'reversed' },
-};
-
-// ---------------------------------------------------------------------------
-// Child / junction tables that have no company_id column.
-// Auto company_id injection is skipped for these to avoid DB errors.
+// These four constants are also declared in js/business-logic.js, which is
+// the canonical source and is loaded BEFORE this file in index.html.
+// Declaring them twice with `const` in the same browser global-lexical scope
+// causes "Identifier already declared" SyntaxError that breaks the entire file.
 //
-// Rule: add a table here if its CREATE TABLE in supabase/schema.sql has no
-//       company_id column (typically child rows whose parent carries company_id).
-// Current child tables in the schema: sales_invoice_items, purchase_invoice_items,
-//   supplier_categories, journal_entry_lines, audit_logs.
+// Fix: only define them when they are not already in scope (i.e. Node.js /
+// Jest test environments where business-logic.js is not pre-loaded).
+// In the browser they arrive from business-logic.js and are visible here.
 // ---------------------------------------------------------------------------
-const TABLES_WITHOUT_COMPANY_ID = new Set([
-    'sales_invoice_items',
-    'purchase_invoice_items',
-    'supplier_categories',
-    'journal_entry_lines',
-    'audit_logs',
-]);
+(function _initSharedConstants() {
+    if (typeof TABLE_NAME_MAP !== 'undefined') {
+        return; // Already declared by business-logic.js (browser)
+    }
+    // Node.js / test environment: assign to global so the rest of this file
+    // can reference them as free variables.
+    /* global TABLE_NAME_MAP, SOFT_DELETE_TABLES, CANCEL_STATUS_MAP, TABLES_WITHOUT_COMPANY_ID */
+    var _g = (typeof global !== 'undefined') ? global : window;
+
+    _g.TABLE_NAME_MAP = {
+        // Legacy collection name aliases (used by old Firestore-style modules)
+        'bankAccounts':          'bank_accounts',
+        'bankTransactions':      'bank_transactions',
+        'inventoryStock':        'inventory_stock',
+        'inventoryTransactions': 'stock_movements',
+        'appSettings':           'app_settings',
+        'sales':                 'sales_invoices',
+        'purchases':             'purchase_invoices',
+        'users':                 'profiles',
+        // Convenience camelCase → snake_case aliases for DB.from() calls
+        'productCategories':     'product_categories',
+        'productUnits':          'product_units',
+        'salesInvoices':         'sales_invoices',
+        'salesInvoiceItems':     'sales_invoice_items',
+        'purchaseInvoices':      'purchase_invoices',
+        'purchaseInvoiceItems':  'purchase_invoice_items',
+        'stockMovements':        'stock_movements',
+        'inventoryStockItems':   'inventory_stock',
+        'supplierCategories':    'supplier_categories',
+        'bankAcct':              'bank_accounts',
+        'chartOfAccounts':       'chart_of_accounts',
+        'journalEntries':        'journal_entries',
+        'journalEntryLines':     'journal_entry_lines',
+        'auditLogs':             'audit_logs',
+    };
+
+    _g.SOFT_DELETE_TABLES = new Set(['customers', 'suppliers', 'products']);
+
+    _g.CANCEL_STATUS_MAP = {
+        // sales_invoices.invoice_status CHECK (... 'cancelled' ...)
+        'sales_invoices':    { column: 'invoice_status', value: 'cancelled' },
+        // purchase_invoices.invoice_status CHECK (... 'cancelled' ...)
+        'purchase_invoices': { column: 'invoice_status', value: 'cancelled' },
+        // journal_entries.status CHECK ('draft' | 'posted' | 'reversed') — no 'cancelled'
+        'journal_entries':   { column: 'status',         value: 'reversed' },
+    };
+
+    _g.TABLES_WITHOUT_COMPANY_ID = new Set([
+        'sales_invoice_items',
+        'purchase_invoice_items',
+        'supplier_categories',
+        'journal_entry_lines',
+        'audit_logs',
+    ]);
+}());
 
 // ---------------------------------------------------------------------------
 // Fields to strip before INSERT / UPDATE because they live in a separate
