@@ -1043,13 +1043,13 @@ DECLARE
     v_full_name        TEXT;
 BEGIN
     IF v_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication is required to bootstrap the first admin profile.';
+        RAISE EXCEPTION 'BOOTSTRAP_AUTH_REQUIRED';
     END IF;
 
     IF NOT EXISTS (
         SELECT 1 FROM auth.users WHERE id = v_user_id
     ) THEN
-        RAISE EXCEPTION 'Authenticated user % was not found in auth.users.', v_user_id;
+        RAISE EXCEPTION 'BOOTSTRAP_AUTH_USER_NOT_FOUND';
     END IF;
 
     IF EXISTS (
@@ -1066,14 +1066,14 @@ BEGIN
     FROM public.profiles;
 
     IF v_profile_count > 0 THEN
-        RAISE EXCEPTION 'Initial admin bootstrap is only available before any profile exists.';
+        RAISE EXCEPTION 'BOOTSTRAP_ALREADY_INITIALIZED';
     END IF;
 
     SELECT COUNT(*) INTO v_company_count
     FROM public.companies;
 
     IF v_company_count > 1 THEN
-        RAISE EXCEPTION 'Cannot bootstrap the first admin automatically because multiple companies already exist.';
+        RAISE EXCEPTION 'BOOTSTRAP_MULTIPLE_COMPANIES';
     ELSIF v_company_count = 1 THEN
         SELECT c.id INTO v_company_id
         FROM public.companies c

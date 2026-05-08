@@ -94,27 +94,32 @@
     function _getBootstrapDisplayName(user) {
         const metadataName = user?.user_metadata?.full_name || user?.user_metadata?.name;
         if (metadataName && metadataName.trim()) return metadataName.trim();
-        if (user?.email) {
-            const localPart = user.email.split('@')[0]?.trim();
+        const email = typeof user?.email === 'string' ? user.email.trim() : '';
+        if (email) {
+            const localPart = email.split('@')[0]?.trim();
             if (localPart) return localPart;
         }
         return 'مدير النظام';
     }
 
     function _translateBootstrapError(msg) {
-        const m = (msg || '').toLowerCase();
+        const raw = (msg || '').trim();
+        const m = raw.toLowerCase();
         if (!m) return MISSING_PROFILE_ERROR;
         if (m.includes('bootstrap_first_admin_profile') && (m.includes('not found') || m.includes('does not exist'))) {
             return 'قاعدة البيانات لم تُحدَّث بعد. شغّل supabase/schema.sql ثم supabase/migrations/20260507_phase2_auth.sql ثم أعد تسجيل الدخول.';
         }
-        if (m.includes('initial admin bootstrap is only available before any profile exists')) {
+        if (raw === 'BOOTSTRAP_ALREADY_INITIALIZED') {
             return 'هذا الحساب ليس مرتبطاً بملف مستخدم. اطلب من مدير النظام إضافتك من شاشة إدارة المستخدمين باستخدام Auth UID.';
         }
-        if (m.includes('multiple companies already exist')) {
+        if (raw === 'BOOTSTRAP_MULTIPLE_COMPANIES') {
             return 'يوجد أكثر من شركة بدون ملفات مستخدم، لذلك يلزم إكمال الربط الأول يدوياً من ملف SQL الخاص بالإعداد.';
         }
-        if (m.includes('authentication is required')) {
+        if (raw === 'BOOTSTRAP_AUTH_REQUIRED') {
             return 'انتهت الجلسة قبل إكمال التهيئة. حاول تسجيل الدخول مرة أخرى.';
+        }
+        if (raw === 'BOOTSTRAP_AUTH_USER_NOT_FOUND') {
+            return 'الحساب الحالي غير موجود داخل Supabase Authentication. تحقق من المستخدم ثم أعد المحاولة.';
         }
         return MISSING_PROFILE_ERROR;
     }
