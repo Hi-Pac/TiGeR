@@ -5,7 +5,8 @@
 -- What this migration does:
 --   1. Adds fn_my_status() helper function (for checking active status
 --      in RLS policies and application code).
---   2. Provides a SEED TEMPLATE for the first company + admin user.
+--   2. Adds bootstrap_first_admin_profile() for secure first-login setup.
+--   3. Provides a manual SEED TEMPLATE for fallback cases.
 --
 -- Migration type: ADDITIVE — safe to run on existing database.
 -- No tables are dropped or data deleted.
@@ -41,7 +42,118 @@ END;
 $$;
 
 -- ===========================================================
--- PART 2: First-run seed template
+-- PART 2: bootstrap_first_admin_profile()
+-- ===========================================================
+-- Purpose: Allow the first authenticated user to bootstrap the
+-- first company + first admin profile from the application.
+--
+-- Safe constraints:
+--   - Requires auth.uid()
+--   - Runs only before any profile row exists
+--   - Reuses the single existing company if one was created
+--     manually, otherwise creates the first company automatically
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.bootstrap_first_admin_profile(
+    p_company_name TEXT DEFAULT 'شركة النمر للتجارة والتوزيع',
+    p_full_name    TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    company_id      UUID,
+    profile_id      UUID,
+    company_created BOOLEAN,
+    profile_created BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+    v_user_id          UUID := auth.uid();
+    v_company_id       UUID;
+    v_company_created  BOOLEAN := FALSE;
+    v_profile_count    BIGINT;
+    v_company_count    BIGINT;
+    v_full_name        TEXT;
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication is required to bootstrap the first admin profile.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM auth.users WHERE id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'Authenticated user % was not found in auth.users.', v_user_id;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.profiles WHERE id = v_user_id
+    ) THEN
+        RETURN QUERY
+        SELECT p.company_id, p.id, FALSE, FALSE
+        FROM public.profiles p
+        WHERE p.id = v_user_id;
+        RETURN;
+    END IF;
+
+    SELECT COUNT(*) INTO v_profile_count
+    FROM public.profiles;
+
+    IF v_profile_count > 0 THEN
+        RAISE EXCEPTION 'Initial admin bootstrap is only available before any profile exists.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_company_count
+    FROM public.companies;
+
+    IF v_company_count > 1 THEN
+        RAISE EXCEPTION 'Cannot bootstrap the first admin automatically because multiple companies already exist.';
+    ELSIF v_company_count = 1 THEN
+        SELECT c.id INTO v_company_id
+        FROM public.companies c
+        ORDER BY c.created_at
+        LIMIT 1;
+    ELSE
+        INSERT INTO public.companies (name, currency, status)
+        VALUES (
+            COALESCE(NULLIF(BTRIM(p_company_name), ''), 'شركة النمر للتجارة والتوزيع'),
+            'EGP',
+            'active'
+        )
+        RETURNING id INTO v_company_id;
+
+        v_company_created := TRUE;
+    END IF;
+
+    SELECT COALESCE(
+        NULLIF(BTRIM(p_full_name), ''),
+        NULLIF(BTRIM(COALESCE(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name')), ''),
+        NULLIF(BTRIM(u.email), ''),
+        'مدير النظام'
+    )
+    INTO v_full_name
+    FROM auth.users u
+    WHERE u.id = v_user_id;
+
+    INSERT INTO public.profiles (id, company_id, full_name, role, status)
+    VALUES (
+        v_user_id,
+        v_company_id,
+        v_full_name,
+        'admin',
+        'active'
+    );
+
+    RETURN QUERY
+    SELECT v_company_id, v_user_id, v_company_created, TRUE;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.bootstrap_first_admin_profile(TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.bootstrap_first_admin_profile(TEXT, TEXT) TO authenticated;
+
+-- ===========================================================
+-- PART 3: First-run seed template
 -- ===========================================================
 -- Purpose: Bootstrap the first company + first admin profile.
 --
@@ -118,3 +230,4 @@ END $$;
 -- SELECT fn_my_company_id();   -- run as the admin user to verify
 -- SELECT fn_my_role();         -- should return 'admin'
 -- SELECT fn_my_status();       -- should return 'active'
+-- SELECT * FROM public.bootstrap_first_admin_profile();

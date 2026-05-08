@@ -38,6 +38,8 @@
         warehouse:  'مستودع',
         viewer:     'مشاهد',
     };
+    const DEFAULT_BOOTSTRAP_COMPANY_NAME = 'شركة النمر للتجارة والتوزيع';
+    const MISSING_PROFILE_ERROR = 'هذا الحساب لا يملك ملف مستخدم. إذا كانت هذه أول مرة لتشغيل النظام فحدّث قاعدة البيانات ثم أعد تسجيل الدخول، أو اطلب من مدير النظام إضافتك.';
 
     // ── Internal state ─────────────────────────────────────────────────────
     let _user    = null;  // Supabase auth.users row
@@ -85,6 +87,42 @@
             return data;
         } catch (err) {
             console.error('[Auth] Profile fetch exception:', err);
+            return null;
+        }
+    }
+
+    function _getBootstrapDisplayName(user) {
+        const metadataName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+        if (metadataName && metadataName.trim()) return metadataName.trim();
+        if (user?.email) {
+            const localPart = user.email.split('@')[0]?.trim();
+            if (localPart) return localPart;
+        }
+        return 'مدير النظام';
+    }
+
+    async function _loadOrBootstrapProfile(user) {
+        let profile = await _loadProfile(user.id);
+        if (profile) return profile;
+
+        try {
+            const { error } = await window.supabaseClient.rpc('bootstrap_first_admin_profile', {
+                p_company_name: DEFAULT_BOOTSTRAP_COMPANY_NAME,
+                p_full_name: _getBootstrapDisplayName(user),
+            });
+
+            if (error) {
+                console.warn('[Auth] First-admin bootstrap skipped:', error.message);
+                return null;
+            }
+
+            profile = await _loadProfile(user.id);
+            if (profile) {
+                console.info('[Auth] First admin profile bootstrapped successfully.');
+            }
+            return profile;
+        } catch (err) {
+            console.warn('[Auth] First-admin bootstrap failed:', err);
             return null;
         }
     }
@@ -178,12 +216,12 @@
             }
 
             _user    = data.user;
-            _profile = await _loadProfile(_user.id);
+            _profile = await _loadOrBootstrapProfile(_user);
 
             if (!_profile) {
                 await window.supabaseClient.auth.signOut();
                 _user = null;
-                return { error: 'لم يتم العثور على ملف تعريف المستخدم. يرجى التواصل مع مسؤول النظام.' };
+                return { error: MISSING_PROFILE_ERROR };
             }
 
             if (_profile.status !== 'active') {
@@ -262,7 +300,7 @@
 
             if (session?.user) {
                 _user    = session.user;
-                _profile = await _loadProfile(_user.id);
+                _profile = await _loadOrBootstrapProfile(_user);
 
                 if (_profile && _profile.status === 'active') {
                     _showApp();
@@ -276,7 +314,7 @@
                 _profile = null;
 
                 const reason = !_profile
-                    ? 'لم يتم العثور على ملف تعريف المستخدم. يرجى التواصل مع مسؤول النظام.'
+                    ? MISSING_PROFILE_ERROR
                     : 'حسابك غير نشط. يرجى التواصل مع مسؤول النظام.';
 
                 _showLogin(reason);

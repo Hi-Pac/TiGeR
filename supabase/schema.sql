@@ -1014,6 +1014,110 @@ CREATE OR REPLACE FUNCTION fn_is_admin() RETURNS BOOLEAN LANGUAGE sql STABLE SEC
     SELECT fn_my_role() = 'admin';
 $$;
 
+-- Bootstrap the very first admin profile for a fresh installation.
+-- Safe constraints:
+--   • Requires an authenticated Auth user (auth.uid()).
+--   • Runs only before any profile row exists.
+--   • Reuses the single existing company if one was created manually,
+--     otherwise creates the first company automatically.
+CREATE OR REPLACE FUNCTION public.bootstrap_first_admin_profile(
+    p_company_name TEXT DEFAULT 'شركة النمر للتجارة والتوزيع',
+    p_full_name    TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    company_id      UUID,
+    profile_id      UUID,
+    company_created BOOLEAN,
+    profile_created BOOLEAN
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+    v_user_id          UUID := auth.uid();
+    v_company_id       UUID;
+    v_company_created  BOOLEAN := FALSE;
+    v_profile_count    BIGINT;
+    v_company_count    BIGINT;
+    v_full_name        TEXT;
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication is required to bootstrap the first admin profile.';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM auth.users WHERE id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'Authenticated user % was not found in auth.users.', v_user_id;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.profiles WHERE id = v_user_id
+    ) THEN
+        RETURN QUERY
+        SELECT p.company_id, p.id, FALSE, FALSE
+        FROM public.profiles p
+        WHERE p.id = v_user_id;
+        RETURN;
+    END IF;
+
+    SELECT COUNT(*) INTO v_profile_count
+    FROM public.profiles;
+
+    IF v_profile_count > 0 THEN
+        RAISE EXCEPTION 'Initial admin bootstrap is only available before any profile exists.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_company_count
+    FROM public.companies;
+
+    IF v_company_count > 1 THEN
+        RAISE EXCEPTION 'Cannot bootstrap the first admin automatically because multiple companies already exist.';
+    ELSIF v_company_count = 1 THEN
+        SELECT c.id INTO v_company_id
+        FROM public.companies c
+        ORDER BY c.created_at
+        LIMIT 1;
+    ELSE
+        INSERT INTO public.companies (name, currency, status)
+        VALUES (
+            COALESCE(NULLIF(BTRIM(p_company_name), ''), 'شركة النمر للتجارة والتوزيع'),
+            'EGP',
+            'active'
+        )
+        RETURNING id INTO v_company_id;
+
+        v_company_created := TRUE;
+    END IF;
+
+    SELECT COALESCE(
+        NULLIF(BTRIM(p_full_name), ''),
+        NULLIF(BTRIM(COALESCE(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name')), ''),
+        NULLIF(BTRIM(u.email), ''),
+        'مدير النظام'
+    )
+    INTO v_full_name
+    FROM auth.users u
+    WHERE u.id = v_user_id;
+
+    INSERT INTO public.profiles (id, company_id, full_name, role, status)
+    VALUES (
+        v_user_id,
+        v_company_id,
+        v_full_name,
+        'admin',
+        'active'
+    );
+
+    RETURN QUERY
+    SELECT v_company_id, v_user_id, v_company_created, TRUE;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.bootstrap_first_admin_profile(TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.bootstrap_first_admin_profile(TEXT, TEXT) TO authenticated;
+
 -- ----
 -- companies: admin can read/write own company; others read-only own company
 -- ----
@@ -1491,10 +1595,10 @@ DROP FUNCTION IF EXISTS attach_audit_trigger(TEXT);
 -- ============================================================
 -- ✅ After running this script:
 --    1. Go to Authentication → Providers → enable Email.
---    2. Create your first company row via SQL or Supabase Dashboard.
---    3. Register the first admin user via Supabase Auth, then
---       INSERT a row into public.profiles linking that auth user
---       to the company with role = 'admin'.
+--    2. Create the first Auth user from Supabase Authentication.
+--    3. Sign in to the app once with that user; the app will call
+--       bootstrap_first_admin_profile() to create the first company
+--       and admin profile automatically when no profiles exist yet.
 --    4. Update js/supabase-client.js to use the correct Project URL
 --       (NOT the /rest/v1/ sub-path) and your anon key.
 -- ============================================================

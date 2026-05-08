@@ -37,8 +37,9 @@ cd TiGeR
 2. إعداد Supabase:
    - راجع ملف [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) للتعليمات التفصيلية
    - أنشئ مشروعاً على [https://app.supabase.com](https://app.supabase.com)
-   - نفِّذ SQL scripts الموجودة في `SUPABASE_SETUP.md` لإنشاء الجداول
+   - شغّل `supabase/schema.sql` ثم `supabase/migrations/20260507_phase2_auth.sql`
    - ضع `SUPABASE_URL` و `SUPABASE_ANON_KEY` في `js/supabase-client.js`
+   - أنشئ أول مستخدم من Supabase Authentication ثم سجّل الدخول مرة واحدة ليتم إنشاء أول `admin` تلقائياً
 
 3. تشغيل التطبيق:
 ```bash
