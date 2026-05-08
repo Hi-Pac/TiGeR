@@ -1117,7 +1117,7 @@ $$;
 
 -- Safe to grant to all authenticated users because the function itself
 -- aborts unless no profile rows exist yet; after first setup it cannot
--- create or modify additional users.
+-- create additional profiles.
 REVOKE ALL ON FUNCTION public.bootstrap_first_admin_profile(TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.bootstrap_first_admin_profile(TEXT, TEXT) TO authenticated;
 
