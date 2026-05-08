@@ -1,6 +1,4 @@
 async function initSettingsModule() {
-    console.log("Settings Module Initialized!");
-
     const settingsModuleNode = document.getElementById('settings-module');
     if (!settingsModuleNode) return;
 
@@ -9,10 +7,82 @@ async function initSettingsModule() {
     const activeTabClasses = ['border-primary', 'text-primary', 'dark:border-primary', 'dark:text-primary'];
     const inactiveTabClasses = ['border-transparent', 'hover:text-gray-600', 'hover:border-gray-300', 'dark:hover:text-gray-300'];
 
-    // --- Tab Switching Logic ---
+    const companyInfoForm = settingsModuleNode.querySelector('#company-info-form');
+    const systemPreferencesForm = settingsModuleNode.querySelector('#system-preferences-form');
+    const taxesFeesForm = settingsModuleNode.querySelector('#taxes-fees-form');
+    const companyLogoField = settingsModuleNode.querySelector('#company-logo-field');
+    const companyLogoPreview = settingsModuleNode.querySelector('#company-logo-preview');
+
+    const companyNameField = settingsModuleNode.querySelector('#company-name-field');
+    const companyCrNumberField = settingsModuleNode.querySelector('#company-cr-number-field');
+    const companyTaxNumberField = settingsModuleNode.querySelector('#company-tax-number-field');
+    const companyPhoneField = settingsModuleNode.querySelector('#company-phone-field');
+    const companyAddressField = settingsModuleNode.querySelector('#company-address-field');
+    const companyEmailField = settingsModuleNode.querySelector('#company-email-field');
+    const companyWebsiteField = settingsModuleNode.querySelector('#company-website-field');
+
+    const defaultCurrencyField = settingsModuleNode.querySelector('#system-default-currency-field');
+    const dateFormatField = settingsModuleNode.querySelector('#system-date-format-field');
+    const defaultWarehouseField = settingsModuleNode.querySelector('#system-default-warehouse-field');
+    const lowStockThresholdField = settingsModuleNode.querySelector('#low-stock-threshold-field');
+    const emailNewOrderField = settingsModuleNode.querySelector('#email-new-order-notify');
+    const emailLowStockField = settingsModuleNode.querySelector('#email-low-stock-notify');
+
+    const vatPercentageField = settingsModuleNode.querySelector('#vat-percentage-field');
+    const enableVatField = settingsModuleNode.querySelector('#enable-vat-field');
+
+    const createBackupBtn = settingsModuleNode.querySelector('#create-backup-btn');
+    const restoreBackupBtn = settingsModuleNode.querySelector('#restore-backup-btn');
+
+    const SETTINGS_KEYS = {
+        company: 'company_info',
+        preferences: 'system_preferences',
+        taxes: 'tax_settings'
+    };
+
+    async function loadWarehousesForSettings() {
+        const { data } = await DB.from('warehouses')
+            .select('id,name,status')
+            .eq('status', 'active')
+            .order('name', { ascending: true })
+            .get();
+
+        const rows = Array.isArray(data) ? data : [];
+        defaultWarehouseField.innerHTML = '<option value="">اختر مخزن...</option>' +
+            rows.map((w) => `<option value="${w.id}">${w.name}</option>`).join('');
+    }
+
+    async function getSetting(settingKey) {
+        const { data, error } = await window.supabaseClient
+            .from('app_settings')
+            .select('setting_value_json,setting_value')
+            .eq('setting_key', settingKey)
+            .maybeSingle();
+        if (error) throw error;
+        return data?.setting_value_json || null;
+    }
+
+    async function upsertSetting(settingKey, jsonValue) {
+        const companyId = window.AppAuth?.companyId();
+        if (!companyId) throw new Error('تعذر تحديد الشركة الحالية.');
+
+        const { error } = await window.supabaseClient
+            .from('app_settings')
+            .upsert({
+                company_id: companyId,
+                setting_key: settingKey,
+                setting_value_json: jsonValue,
+                setting_value: null,
+                description: null,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'company_id,setting_key' });
+
+        if (error) throw error;
+    }
+
     function switchSettingsTab(targetTabId) {
-        tabPanes.forEach(pane => pane.classList.add('hidden'));
-        tabButtons.forEach(button => {
+        tabPanes.forEach((pane) => pane.classList.add('hidden'));
+        tabButtons.forEach((button) => {
             button.classList.remove(...activeTabClasses);
             button.classList.add(...inactiveTabClasses);
         });
@@ -25,136 +95,152 @@ async function initSettingsModule() {
             activeButton.classList.add(...activeTabClasses);
             activeButton.classList.remove(...inactiveTabClasses);
         }
-        // Load data for the active tab if needed
-        if (targetTabId === 'company-info-tab') {
-            loadCompanyInfo();
-        } // Add else if for other tabs data loading
     }
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            switchSettingsTab(e.currentTarget.dataset.tabTarget);
+    async function loadCompanyInfo() {
+        const data = await getSetting(SETTINGS_KEYS.company);
+        if (!data) return;
+
+        companyNameField.value = data.name || '';
+        companyCrNumberField.value = data.crNumber || '';
+        companyTaxNumberField.value = data.taxNumber || '';
+        companyPhoneField.value = data.phone || '';
+        companyAddressField.value = data.address || '';
+        companyEmailField.value = data.email || '';
+        companyWebsiteField.value = data.website || '';
+
+        if (data.logoUrl && companyLogoPreview) {
+            companyLogoPreview.src = data.logoUrl;
+            companyLogoPreview.classList.remove('hidden');
+        }
+    }
+
+    async function loadSystemPreferences() {
+        await loadWarehousesForSettings();
+        const data = await getSetting(SETTINGS_KEYS.preferences);
+        if (!data) return;
+
+        defaultCurrencyField.value = data.currency || 'EGP';
+        dateFormatField.value = data.dateFormat || 'dd/mm/yyyy';
+        defaultWarehouseField.value = data.defaultWarehouseId || '';
+        lowStockThresholdField.value = Number(data.lowStockThreshold ?? 10);
+        emailNewOrderField.checked = Boolean(data.notifyNewOrder);
+        emailLowStockField.checked = Boolean(data.notifyLowStock);
+    }
+
+    async function loadTaxSettings() {
+        const data = await getSetting(SETTINGS_KEYS.taxes);
+        if (!data) return;
+
+        vatPercentageField.value = Number(data.vatPercentage ?? 14);
+        enableVatField.checked = Boolean(data.enableVat ?? true);
+    }
+
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', async (e) => {
+            const tab = e.currentTarget.dataset.tabTarget;
+            switchSettingsTab(tab);
+            if (tab === 'company-info-tab') await loadCompanyInfo();
+            if (tab === 'system-preferences-tab') await loadSystemPreferences();
+            if (tab === 'taxes-fees-tab') await loadTaxSettings();
         });
     });
 
-    // --- Company Info Form Logic ---
-    const companyInfoForm = settingsModuleNode.querySelector('#company-info-form');
-    const companyLogoField = settingsModuleNode.querySelector('#company-logo-field');
-    const companyLogoPreview = settingsModuleNode.querySelector('#company-logo-preview');
-
-    async function loadCompanyInfo() {
-        // --- FIREBASE: Fetch company info from a 'settings' document ---
-        console.log("Loading company info (simulated)...");
-        // Example:
-        // const doc = await db.collection('appSettings').doc('companyDetails').get();
-        // if (doc.exists) {
-        //     const data = doc.data();
-        //     document.getElementById('company-name-field').value = data.name || '';
-        //     // ... populate other fields
-        //     if(data.logoUrl) {
-        //         companyLogoPreview.src = data.logoUrl;
-        //         companyLogoPreview.classList.remove('hidden');
-        //     }
-        // }
-    }
-
     if (companyLogoField && companyLogoPreview) {
-        companyLogoField.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    companyLogoPreview.src = e.target.result;
-                    companyLogoPreview.classList.remove('hidden');
-                }
-                reader.readAsDataURL(file);
-            } else {
+        companyLogoField.addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            if (!file) {
                 companyLogoPreview.classList.add('hidden');
+                return;
             }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                companyLogoPreview.src = e.target.result;
+                companyLogoPreview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
         });
     }
-    
+
     if (companyInfoForm) {
         companyInfoForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const saveBtn = e.submitter;
-            window.showButtonSpinner(saveBtn, true);
-            const companyData = {
-                name: document.getElementById('company-name-field').value,
-                crNumber: document.getElementById('company-cr-number-field').value,
-                taxNumber: document.getElementById('company-tax-number-field').value,
-                phone: document.getElementById('company-phone-field').value,
-                address: document.getElementById('company-address-field').value,
-                email: document.getElementById('company-email-field').value,
-                website: document.getElementById('company-website-field').value,
-            };
-            const logoFile = companyLogoField.files[0];
+            if (saveBtn) window.showButtonSpinner(saveBtn, true);
+
             try {
-                if (logoFile) {
-                    console.log("Logo file:", logoFile.name);
-                }
-                companyData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-                await db.collection('appSettings').doc('companyDetails').set(companyData, { merge: true });
-                console.log("Company info saved successfully");
-            } catch (error) {
-                console.error("Error saving company info:", error);
-                alert("فشل حفظ معلومات الشركة.");
+                const payload = {
+                    name: companyNameField.value.trim(),
+                    crNumber: companyCrNumberField.value.trim(),
+                    taxNumber: companyTaxNumberField.value.trim(),
+                    phone: companyPhoneField.value.trim(),
+                    address: companyAddressField.value.trim(),
+                    email: companyEmailField.value.trim(),
+                    website: companyWebsiteField.value.trim(),
+                    logoUrl: companyLogoPreview && !companyLogoPreview.classList.contains('hidden') ? companyLogoPreview.src : null
+                };
+                await upsertSetting(SETTINGS_KEYS.company, payload);
+                alert('تم حفظ معلومات الشركة.');
+            } catch (err) {
+                console.error('Error saving company settings:', err);
+                alert(`فشل حفظ معلومات الشركة: ${err.message || 'خطأ غير متوقع.'}`);
             } finally {
-                window.showButtonSpinner(saveBtn, false);
+                if (saveBtn) window.showButtonSpinner(saveBtn, false);
             }
         });
     }
 
-    // --- System Preferences Form Logic ---
-    const systemPreferencesForm = settingsModuleNode.querySelector('#system-preferences-form');
     if (systemPreferencesForm) {
         systemPreferencesForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const saveBtn = e.submitter;
+            if (saveBtn) window.showButtonSpinner(saveBtn, true);
+
             try {
-                const preferencesData = {
-                    theme: settingsModuleNode.querySelector('[name="theme"]:checked')?.value || 'light',
-                    language: settingsModuleNode.querySelector('[name="language"]')?.value || 'ar',
-                    currencyFormat: settingsModuleNode.querySelector('[name="currency-format"]')?.value || 'EGP',
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                const payload = {
+                    currency: defaultCurrencyField.value,
+                    dateFormat: dateFormatField.value,
+                    defaultWarehouseId: defaultWarehouseField.value || null,
+                    lowStockThreshold: Number(lowStockThresholdField.value || 10),
+                    notifyNewOrder: emailNewOrderField.checked,
+                    notifyLowStock: emailLowStockField.checked
                 };
-                await db.collection('appSettings').doc('systemPreferences').set(preferencesData, { merge: true });
-                console.log("System preferences saved successfully");
-                alert("تم حفظ تفضيلات النظام.");
-            } catch (error) {
-                console.error("Error saving preferences:", error);
-                alert("فشل حفظ التفضيلات.");
+                await upsertSetting(SETTINGS_KEYS.preferences, payload);
+                alert('تم حفظ تفضيلات النظام.');
+            } catch (err) {
+                console.error('Error saving system preferences:', err);
+                alert(`فشل حفظ التفضيلات: ${err.message || 'خطأ غير متوقع.'}`);
+            } finally {
+                if (saveBtn) window.showButtonSpinner(saveBtn, false);
             }
         });
     }
-    
-    // --- Taxes & Fees Form Logic ---
-    const taxesFeesForm = settingsModuleNode.querySelector('#taxes-fees-form');
+
     if (taxesFeesForm) {
         taxesFeesForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const saveBtn = e.submitter;
+            if (saveBtn) window.showButtonSpinner(saveBtn, true);
+
             try {
-                const taxData = {
-                    defaultTaxRate: parseFloat(settingsModuleNode.querySelector('[name="tax-rate"]')?.value || 0),
-                    serviceFee: parseFloat(settingsModuleNode.querySelector('[name="service-fee"]')?.value || 0),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                const payload = {
+                    vatPercentage: Number(vatPercentageField.value || 0),
+                    enableVat: enableVatField.checked
                 };
-                await db.collection('appSettings').doc('taxSettings').set(taxData, { merge: true });
-                console.log("Tax settings saved successfully");
-                alert("تم حفظ إعدادات الضرائب.");
-            } catch (error) {
-                console.error("Error saving tax settings:", error);
-                alert("فشل حفظ إعدادات الضرائب.");
+                await upsertSetting(SETTINGS_KEYS.taxes, payload);
+                alert('تم حفظ إعدادات الضرائب.');
+            } catch (err) {
+                console.error('Error saving tax settings:', err);
+                alert(`فشل حفظ إعدادات الضرائب: ${err.message || 'خطأ غير متوقع.'}`);
+            } finally {
+                if (saveBtn) window.showButtonSpinner(saveBtn, false);
             }
         });
     }
 
-    // --- Backup & Restore Logic ---
-    const createBackupBtn = settingsModuleNode.querySelector('#create-backup-btn');
-    const restoreBackupBtn = settingsModuleNode.querySelector('#restore-backup-btn');
-    if(createBackupBtn) createBackupBtn.addEventListener('click', () => alert("إنشاء نسخة احتياطية (سيتم تنفيذه عبر Firebase Functions لاحقًا)."));
-    if(restoreBackupBtn) restoreBackupBtn.addEventListener('click', () => alert("استعادة من نسخة احتياطية (سيتم تنفيذه عبر Firebase Functions لاحقًا)."));
+    if (createBackupBtn) createBackupBtn.addEventListener('click', () => alert('ميزة النسخ الاحتياطي قيد التطوير.'));
+    if (restoreBackupBtn) restoreBackupBtn.addEventListener('click', () => alert('ميزة الاستعادة قيد التطوير.'));
 
-
-    // Initial Tab and Data Load
-    switchSettingsTab('company-info-tab'); // Default to company info
+    switchSettingsTab('company-info-tab');
+    await Promise.all([loadCompanyInfo(), loadSystemPreferences(), loadTaxSettings()]);
 }
