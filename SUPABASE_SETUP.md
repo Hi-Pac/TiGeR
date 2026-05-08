@@ -1,304 +1,175 @@
 # 🚀 دليل إعداد Supabase لنظام TiGeR ERP
 
-> ⚠️ **تحديث مهم (Schema الجديد):**
-> لا تستخدم سكريبت الجداول القديمة المبنية على `users` + `doc_data`.
-> السكريبت الصحيح الحالي موجود في: `supabase/schema.sql`
-> وبعده شغّل: `supabase/migrations/20260507_phase2_auth.sql`
-> لأن الكود الحالي يعتمد على جدول `profiles` المرتبط بـ `auth.users`.
-
-## المتطلبات
-- حساب على [Supabase](https://supabase.com) (مجاني)
-
----
-
-## الخطوة 1 — إنشاء مشروع Supabase جديد
-
-1. انتقل إلى [https://app.supabase.com](https://app.supabase.com)
-2. اضغط **New Project**
-3. أدخل اسم المشروع (مثلاً: `tiger-erp`) وكلمة مرور قاعدة البيانات واختر منطقة قريبة منك
-4. انتظر حتى يُنشأ المشروع (دقيقة أو اثنتان)
+> ⚠️ **المصدر الصحيح الحالي لقاعدة البيانات**
+>
+> 1. شغّل الملف الكامل: `supabase/schema.sql`
+> 2. ثم شغّل ملف التحديث: `supabase/migrations/20260507_phase2_auth.sql`
+>
+> لا تستخدم أي سكريبت قديم مبني على `users` أو `doc_data` لأن التطبيق الحالي يعتمد على
+> `public.profiles` المرتبط مباشرةً بـ `auth.users`.
 
 ---
 
-## الخطوة 2 — جلب بيانات الاعتماد (Credentials)
+## 1) إنشاء مشروع Supabase
 
-1. من لوحة التحكم اذهب إلى **Settings → API**
-2. انسخ:
-   - **Project URL** (مثل: `https://xxxx.supabase.co`)
-   - **anon / public key**
+1. افتح [https://app.supabase.com](https://app.supabase.com)
+2. أنشئ مشروعاً جديداً
+3. انتظر حتى يكتمل تجهيز قاعدة البيانات
 
 ---
 
-## الخطوة 3 — ضبط الإعدادات في الكود
+## 2) نسخ بيانات الاتصال
 
-افتح الملف `js/supabase-client.js` واستبدل السطرين التاليين:
+من **Settings → API** انسخ:
+
+- **Project URL**
+- **anon / public key**
+
+ثم حدّث الملف:
+
+`/home/runner/work/TiGeR/TiGeR/js/supabase-client.js`
+
+واستبدل:
 
 ```js
 const SUPABASE_URL = 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 ```
 
-بقيم مشروعك الفعلية، مثلاً:
+بالقيم الفعلية لمشروعك.
 
-```js
-const SUPABASE_URL = 'https://xxxx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
-```
+> لا تضع `service_role` في الواجهة الأمامية.
 
 ---
 
-## الخطوة 4 — إنشاء الجداول في قاعدة البيانات
+## 3) إنشاء الجداول والدوال والسياسات
 
-انتقل إلى **SQL Editor** في لوحة تحكم Supabase وقم بتنفيذ الكود التالي كاملاً:
+من **SQL Editor** في Supabase:
+
+1. انسخ كامل محتوى الملف `supabase/schema.sql`
+2. شغّله مرة واحدة
+3. بعد نجاحه، انسخ كامل محتوى الملف `supabase/migrations/20260507_phase2_auth.sql`
+4. شغّله مرة واحدة
+
+### ماذا يضيف كل ملف؟
+
+- `supabase/schema.sql`
+  - الجداول الأساسية
+  - الفهارس والقيود
+  - RLS policies
+  - دوال المساعدة
+- `supabase/migrations/20260507_phase2_auth.sql`
+  - `fn_my_status()`
+  - `bootstrap_first_admin_profile()`
+  - قالب SQL احتياطي للإعداد اليدوي لأول مدير
+
+---
+
+## 4) تفعيل تسجيل الدخول
+
+من **Authentication → Providers**:
+
+- فعّل **Email**
+
+ثم من **Authentication → Users**:
+
+- أنشئ أول مستخدم (البريد وكلمة المرور)
+
+---
+
+## 5) أول دخول للنظام
+
+بعد تشغيل التطبيق وتسجيل الدخول بأول مستخدم:
+
+- إذا لم يكن هناك أي سجل داخل `public.profiles`
+- سيقوم التطبيق تلقائياً باستدعاء:
 
 ```sql
--- ============================================================
--- TiGeR ERP — Database Schema
--- ============================================================
-
--- دالة مساعدة لتحديث حقل updated_at تلقائياً
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================
--- جدول المستخدمين
--- ============================================================
-CREATE TABLE IF NOT EXISTS users (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER users_updated_at BEFORE UPDATE ON users
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول الأصناف / المنتجات
--- ============================================================
-CREATE TABLE IF NOT EXISTS products (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER products_updated_at BEFORE UPDATE ON products
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول العملاء
--- ============================================================
-CREATE TABLE IF NOT EXISTS customers (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER customers_updated_at BEFORE UPDATE ON customers
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول الموردين
--- ============================================================
-CREATE TABLE IF NOT EXISTS suppliers (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER suppliers_updated_at BEFORE UPDATE ON suppliers
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول المشتريات
--- ============================================================
-CREATE TABLE IF NOT EXISTS purchases (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER purchases_updated_at BEFORE UPDATE ON purchases
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول المبيعات
--- ============================================================
-CREATE TABLE IF NOT EXISTS sales (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER sales_updated_at BEFORE UPDATE ON sales
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول أرصدة المخزون
--- ============================================================
-CREATE TABLE IF NOT EXISTS inventory_stock (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER inventory_stock_updated_at BEFORE UPDATE ON inventory_stock
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول حركات المخزون (وارد / تحويل)
--- ============================================================
-CREATE TABLE IF NOT EXISTS inventory_transactions (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER inventory_transactions_updated_at BEFORE UPDATE ON inventory_transactions
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول المصروفات
--- ============================================================
-CREATE TABLE IF NOT EXISTS expenses (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER expenses_updated_at BEFORE UPDATE ON expenses
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول الحسابات البنكية والخزائن
--- ============================================================
-CREATE TABLE IF NOT EXISTS bank_accounts (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER bank_accounts_updated_at BEFORE UPDATE ON bank_accounts
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول المعاملات البنكية
--- ============================================================
-CREATE TABLE IF NOT EXISTS bank_transactions (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER bank_transactions_updated_at BEFORE UPDATE ON bank_transactions
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- جدول إعدادات النظام
--- ============================================================
-CREATE TABLE IF NOT EXISTS app_settings (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  doc_data   JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-CREATE TRIGGER app_settings_updated_at BEFORE UPDATE ON app_settings
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+public.bootstrap_first_admin_profile()
 ```
+
+وسيتم:
+
+- إنشاء أول شركة تلقائياً إذا لم تكن موجودة
+- أو إعادة استخدام الشركة الوحيدة الموجودة إذا كانت مُنشأة مسبقاً
+- إنشاء ملف المستخدم الأول داخل `public.profiles`
+- تعيينه كـ `admin`
+
+### متى لا يعمل الإنشاء التلقائي؟
+
+لن يعمل إذا:
+
+- لم يتم تشغيل `schema.sql`
+- لم يتم تشغيل `20260507_phase2_auth.sql`
+- يوجد بالفعل مستخدمون داخل `public.profiles`
+- توجد أكثر من شركة داخل `public.companies` بدون أي Profiles
+
+في هذه الحالات استخدم القالب اليدوي الموجود داخل:
+
+`supabase/migrations/20260507_phase2_auth.sql`
 
 ---
 
-## الخطوة 5 — إعداد Row Level Security (RLS) — اختياري للبداية
+## 6) تشغيل التطبيق محلياً
 
-بشكل افتراضي تكون RLS مُفعَّلة في Supabase وتمنع القراءة/الكتابة.  
-للبدء السريع بدون authentication، يمكنك تعطيلها مؤقتاً عبر SQL:
-
-```sql
--- تعطيل مؤقت لـ RLS على جميع الجداول (للتطوير فقط)
-ALTER TABLE users               DISABLE ROW LEVEL SECURITY;
-ALTER TABLE products            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE customers           DISABLE ROW LEVEL SECURITY;
-ALTER TABLE suppliers           DISABLE ROW LEVEL SECURITY;
-ALTER TABLE purchases           DISABLE ROW LEVEL SECURITY;
-ALTER TABLE sales               DISABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_stock     DISABLE ROW LEVEL SECURITY;
-ALTER TABLE inventory_transactions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses            DISABLE ROW LEVEL SECURITY;
-ALTER TABLE bank_accounts       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE bank_transactions   DISABLE ROW LEVEL SECURITY;
-ALTER TABLE app_settings        DISABLE ROW LEVEL SECURITY;
-```
-
-> ⚠️ **تحذير:** لا تُبقِ RLS معطَّلاً في بيئة الإنتاج.  
-> عند الجاهزية، فعِّل المصادقة وأضف سياسات RLS مناسبة.
-
----
-
-## الخطوة 6 — تشغيل التطبيق
+من جذر المشروع:
 
 ```bash
-# باستخدام Python 3
 python -m http.server 8000
+```
 
-# ثم افتح المتصفح على
+ثم افتح:
+
+```text
 http://localhost:8000
 ```
 
 ---
 
-## 🗄️ ملاحظات تقنية
+## 7) التحقق السريع بعد الإعداد
 
-### بنية التخزين
-كل جدول يحتوي على:
-| العمود | النوع | الوصف |
-|--------|-------|--------|
-| `id` | UUID | مفتاح أساسي تلقائي |
-| `doc_data` | JSONB | بيانات السجل (بنية مرنة) |
-| `created_at` | TIMESTAMPTZ | تاريخ الإنشاء |
-| `updated_at` | TIMESTAMPTZ | تاريخ آخر تعديل |
+بعد أول تسجيل دخول ناجح يمكنك التأكد من البيانات من Supabase SQL Editor:
 
-### استعلام البيانات من Supabase Studio
 ```sql
--- مثال: استعراض بيانات المنتجات
-SELECT id, doc_data->>'name' AS name, doc_data->>'salePrice' AS sale_price
-FROM products;
-
--- مثال: فلترة العملاء النشطين
-SELECT id, doc_data->>'shopName' AS shop_name
-FROM customers
-WHERE doc_data->>'status' = 'active';
+SELECT id, name, status FROM public.companies;
+SELECT id, full_name, role, status, company_id FROM public.profiles;
+SELECT public.fn_my_company_id();
+SELECT public.fn_my_role();
+SELECT public.fn_my_status();
 ```
 
-### طبقة التوافق مع Firestore API
-ملف `js/supabase-client.js` يوفر نفس واجهة Firestore:
-```js
-// قراءة
-const snapshot = await db.collection('products').get();
-const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+المفترض أن يكون أول مستخدم:
 
-// إضافة
-await db.collection('products').add({ name: 'منتج جديد', ... });
-
-// تعديل
-await db.collection('products').doc(id).update({ name: 'اسم جديد' });
-
-// حذف
-await db.collection('products').doc(id).delete();
-```
+- موجوداً في `public.profiles`
+- دوره `admin`
+- حالته `active`
 
 ---
 
-## 🔐 المرحلة القادمة: المصادقة (Authentication)
+## 8) ملاحظات مهمة
 
-لإضافة نظام تسجيل الدخول الحقيقي:
-1. فعِّل **Email Auth** من **Authentication → Providers** في Supabase
-2. استخدم `window.supabaseClient.auth.signInWithPassword({ email, password })`
-3. أضف RLS policies لتقييد الوصول حسب المستخدم
+- هذا النظام يستخدم **RLS** بشكل فعلي، فلا تعطّلها في الإنتاج.
+- لا تنشئ سياسات عامة مثل `USING (true)`.
+- إضافة المستخدمين بعد المدير الأول تتم من:
+  - **Supabase Authentication** لإنشاء حساب الدخول
+  - ثم **إدارة المستخدمين** داخل التطبيق لإضافة Profile باستخدام `Auth UID`
 
 ---
 
-**آخر تحديث:** مارس 2026
+## 9) حل المشكلة الظاهرة في شاشة الدخول
+
+إذا ظهرت الرسالة:
+
+> لم يتم العثور على ملف تعريف المستخدم
+
+فهذا يعني غالباً أحد أمرين:
+
+1. لم يتم تشغيل ملفات SQL الجديدة
+2. أو أن الحساب ليس له صف داخل `public.profiles`
+
+ابدأ دائماً بتشغيل:
+
+1. `supabase/schema.sql`
+2. `supabase/migrations/20260507_phase2_auth.sql`
+
+ثم أعد تسجيل الدخول بأول مستخدم.
