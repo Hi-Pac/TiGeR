@@ -39,7 +39,7 @@
         viewer:     'مشاهد',
     };
     const DEFAULT_BOOTSTRAP_COMPANY_NAME = 'شركة النمر للتجارة والتوزيع';
-    const MISSING_PROFILE_ERROR = 'هذا الحساب لا يملك ملف مستخدم. إذا كانت هذه أول مرة لتشغيل النظام فحدّث قاعدة البيانات ثم أعد تسجيل الدخول، أو اطلب من مدير النظام إضافتك.';
+    const MISSING_PROFILE_ERROR = 'هذا الحساب لا يملك ملف مستخدم. إذا كانت هذه أول مرة لتشغيل النظام فتأكد من تشغيل ملفات SQL الجديدة، وإذا استمرت المشكلة اطلب من مدير النظام إضافتك.';
 
     // ── Internal state ─────────────────────────────────────────────────────
     let _user    = null;  // Supabase auth.users row
@@ -101,9 +101,27 @@
         return 'مدير النظام';
     }
 
+    function _translateBootstrapError(msg) {
+        const m = (msg || '').toLowerCase();
+        if (!m) return MISSING_PROFILE_ERROR;
+        if (m.includes('bootstrap_first_admin_profile') && (m.includes('not found') || m.includes('does not exist'))) {
+            return 'قاعدة البيانات لم تُحدَّث بعد. شغّل supabase/schema.sql ثم supabase/migrations/20260507_phase2_auth.sql ثم أعد تسجيل الدخول.';
+        }
+        if (m.includes('initial admin bootstrap is only available before any profile exists')) {
+            return 'هذا الحساب ليس مرتبطاً بملف مستخدم. اطلب من مدير النظام إضافتك من شاشة إدارة المستخدمين باستخدام Auth UID.';
+        }
+        if (m.includes('multiple companies already exist')) {
+            return 'يوجد أكثر من شركة بدون ملفات مستخدم، لذلك يلزم إكمال الربط الأول يدوياً من ملف SQL الخاص بالإعداد.';
+        }
+        if (m.includes('authentication is required')) {
+            return 'انتهت الجلسة قبل إكمال التهيئة. حاول تسجيل الدخول مرة أخرى.';
+        }
+        return MISSING_PROFILE_ERROR;
+    }
+
     async function _loadOrBootstrapProfile(user) {
         let profile = await _loadProfile(user.id);
-        if (profile) return profile;
+        if (profile) return { profile, error: null };
 
         try {
             const { error } = await window.supabaseClient.rpc('bootstrap_first_admin_profile', {
@@ -113,17 +131,17 @@
 
             if (error) {
                 console.warn('[Auth] First-admin bootstrap skipped:', error.message);
-                return null;
+                return { profile: null, error: _translateBootstrapError(error.message) };
             }
 
             profile = await _loadProfile(user.id);
             if (profile) {
                 console.info('[Auth] First admin profile bootstrapped successfully.');
             }
-            return profile;
+            return { profile, error: profile ? null : MISSING_PROFILE_ERROR };
         } catch (err) {
             console.warn('[Auth] First-admin bootstrap failed:', err);
-            return null;
+            return { profile: null, error: _translateBootstrapError(err?.message) };
         }
     }
 
@@ -215,13 +233,15 @@
                 return { error: msg };
             }
 
-            _user    = data.user;
-            _profile = await _loadOrBootstrapProfile(_user);
+            _user = data.user;
+
+            const profileResult = await _loadOrBootstrapProfile(_user);
+            _profile = profileResult.profile;
 
             if (!_profile) {
                 await window.supabaseClient.auth.signOut();
                 _user = null;
-                return { error: MISSING_PROFILE_ERROR };
+                return { error: profileResult.error || MISSING_PROFILE_ERROR };
             }
 
             if (_profile.status !== 'active') {
@@ -299,8 +319,10 @@
             const { data: { session } } = await window.supabaseClient.auth.getSession();
 
             if (session?.user) {
-                _user    = session.user;
-                _profile = await _loadOrBootstrapProfile(_user);
+                _user = session.user;
+
+                const profileResult = await _loadOrBootstrapProfile(_user);
+                _profile = profileResult.profile;
 
                 if (_profile && _profile.status === 'active') {
                     _showApp();
@@ -314,7 +336,7 @@
                 _profile = null;
 
                 const reason = !_profile
-                    ? MISSING_PROFILE_ERROR
+                    ? (profileResult.error || MISSING_PROFILE_ERROR)
                     : 'حسابك غير نشط. يرجى التواصل مع مسؤول النظام.';
 
                 _showLogin(reason);
