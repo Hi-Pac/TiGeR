@@ -281,7 +281,7 @@ async function initSettingsModule() {
                 }
                 await window.AppConfig.saveSection(window.AppConfig.settingKeys.userPermissionOverrides, overridesSnapshot);
                 renderUserOverridesTable();
-                window.AppNotify.success('تم حذف الصلاحية المخصصة بنجاح.');
+                window.AppNotify?.success('تم حذف الصلاحية المخصصة بنجاح.');
             });
         });
     }
@@ -315,7 +315,7 @@ async function initSettingsModule() {
                 renderLookupItems();
                 hydrateGeneralSettings();
                 hydrateSalesSettings();
-                window.AppNotify.success('تم حذف عنصر القائمة.');
+                window.AppNotify?.success('تم حذف عنصر القائمة.');
             });
         });
     }
@@ -384,7 +384,7 @@ async function initSettingsModule() {
                 website: companyWebsiteField.value.trim(),
                 logoUrl: companyLogoPreview.classList.contains('hidden') ? null : companyLogoPreview.src
             });
-            window.AppNotify.success('تم حفظ معلومات الشركة.');
+            window.AppNotify?.success('تم حفظ معلومات الشركة.');
         });
     });
 
@@ -399,7 +399,7 @@ async function initSettingsModule() {
                 denseTables: denseTablesField.checked,
                 defaultWarehouseId: generalDefaultWarehouseField.value || null
             });
-            window.AppNotify.success('تم حفظ الإعدادات العامة.');
+            window.AppNotify?.success('تم حفظ الإعدادات العامة.');
         });
     });
 
@@ -412,7 +412,7 @@ async function initSettingsModule() {
                 enableVat: enableVatField.checked,
                 roundInvoices: roundInvoicesField.checked
             });
-            window.AppNotify.success('تم حفظ الإعدادات المالية.');
+            window.AppNotify?.success('تم حفظ الإعدادات المالية.');
         });
     });
 
@@ -425,7 +425,7 @@ async function initSettingsModule() {
                 allowNegativeStock: allowNegativeStockField.checked,
                 autoReserveStock: autoReserveStockField.checked
             });
-            window.AppNotify.success('تم حفظ إعدادات المخزون.');
+            window.AppNotify?.success('تم حفظ إعدادات المخزون.');
         });
     });
 
@@ -439,7 +439,7 @@ async function initSettingsModule() {
                 requireSalesperson: requireSalespersonField.checked,
                 autoPrintAfterSave: autoPrintAfterSaveField.checked
             });
-            window.AppNotify.success('تم حفظ إعدادات المبيعات.');
+            window.AppNotify?.success('تم حفظ إعدادات المبيعات.');
         });
     });
 
@@ -453,7 +453,7 @@ async function initSettingsModule() {
                 notifyNewOrder: emailNewOrderField.checked,
                 notifyLowStock: emailLowStockField.checked
             });
-            window.AppNotify.success('تم حفظ إعدادات الإشعارات.');
+            window.AppNotify?.success('تم حفظ إعدادات الإشعارات.');
         });
     });
 
@@ -471,7 +471,7 @@ async function initSettingsModule() {
                 });
             });
             await window.AppConfig.saveSection(window.AppConfig.settingKeys.permissionMatrix, matrixSnapshot);
-            window.AppNotify.success('تم حفظ صلاحيات الدور.');
+            window.AppNotify?.success('تم حفظ صلاحيات الدور.');
         });
     });
 
@@ -492,7 +492,7 @@ async function initSettingsModule() {
                 overridesSnapshot[userId][moduleId][action] = mode === 'allow';
                 await window.AppConfig.saveSection(window.AppConfig.settingKeys.userPermissionOverrides, overridesSnapshot);
                 renderUserOverridesTable();
-                window.AppNotify.success('تم حفظ الاستثناء المخصص.');
+                window.AppNotify?.success('تم حفظ الاستثناء المخصص.');
             });
         } catch (error) {
             window.AppNotify.error(error.message || 'فشل حفظ الاستثناء.');
@@ -521,7 +521,7 @@ async function initSettingsModule() {
         renderLookupItems();
         hydrateGeneralSettings();
         hydrateSalesSettings();
-        window.AppNotify.success('تمت إضافة عنصر جديد للقائمة.');
+        window.AppNotify?.success('تمت إضافة عنصر جديد للقائمة.');
     });
 
     await hydrateAll();
