@@ -39,47 +39,74 @@
     <!-- ============================================================ -->
     <!-- Login Overlay — visible by default; hidden after auth check  -->
     <!-- ============================================================ -->
-    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <div class="w-full max-w-md">
+    <div id="login-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <!-- Animated background circles -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-10 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-10 right-10 w-96 h-96 bg-purple-300/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        </div>
+
+        <div class="w-full max-w-md relative z-10">
             <!-- Logo / brand -->
-            <div class="text-center mb-8">
-                <div class="brand-mark inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-md">
-                    <i class="fas fa-box-open text-white text-2xl"></i>
+            <div class="text-center mb-8 animate-fade-in">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 shadow-2xl bg-white/20 backdrop-blur-sm border border-white/30">
+                    <i class="fas fa-box-open text-white text-3xl"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">نظام TiGeR ERP</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">شركة النمر للتجارة والتوزيع</p>
+                <h1 class="text-3xl font-bold text-white mb-2 drop-shadow-lg">نظام TiGeR ERP</h1>
+                <p class="text-white/90 text-base font-medium drop-shadow">شركة النمر للتجارة والتوزيع</p>
             </div>
 
             <!-- Login card -->
-            <div class="login-card p-8">
-                <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6">تسجيل الدخول</h2>
+            <div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20 animate-slide-up">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 text-center">مرحباً بك</h2>
 
                 <form id="login-form" novalidate>
                     <!-- Error message -->
-                    <div id="login-error" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-600 dark:text-red-400"></div>
+                    <div id="login-error" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl text-sm text-red-600 dark:text-red-400 flex items-start">
+                        <i class="fas fa-exclamation-circle ml-2 mt-0.5"></i>
+                        <span id="login-error-text"></span>
+                    </div>
 
                     <!-- Email -->
-                    <div class="mb-4">
-                        <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label>
-                        <input type="email" id="login-email" autocomplete="username" required
-                               class="form-input"
-                               placeholder="example@company.com">
+                    <div class="mb-5">
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">البريد الإلكتروني</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-gray-400"></i>
+                            </div>
+                            <input type="email" id="login-email" autocomplete="username" required
+                                   class="form-input pr-10 rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="example@company.com">
+                        </div>
                     </div>
 
                     <!-- Password -->
                     <div class="mb-6">
-                        <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">كلمة المرور</label>
-                        <input type="password" id="login-password" autocomplete="current-password" required
-                               class="form-input"
-                               placeholder="••••••••">
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">كلمة المرور</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-gray-400"></i>
+                            </div>
+                            <input type="password" id="login-password" autocomplete="current-password" required
+                                   class="form-input pr-10 rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                   placeholder="••••••••">
+                        </div>
                     </div>
 
                     <!-- Submit button -->
                     <button type="submit" id="login-btn"
-                            class="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed">
-                        تسجيل الدخول
+                            class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none shadow-lg">
+                        <span class="flex items-center justify-center">
+                            <i class="fas fa-sign-in-alt ml-2"></i>
+                            تسجيل الدخول
+                        </span>
                     </button>
                 </form>
+
+                <!-- Footer text -->
+                <div class="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
+                    <p>نظام متكامل لإدارة الموارد والمخزون</p>
+                </div>
             </div>
         </div>
     </div>
