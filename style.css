@@ -27,6 +27,8 @@
     --radius-md: 16px;
     --radius-sm: 12px;
     --transition-base: 180ms ease;
+    --sidebar-compact-width: 5.25rem;
+    --dense-table-cell-padding-y: 0.45rem;
 }
 
 .dark {
@@ -141,7 +143,7 @@ header,
 }
 
 body.layout-compact-sidebar #sidebar {
-    width: 5.25rem;
+    width: var(--sidebar-compact-width);
 }
 
 body.layout-compact-sidebar #sidebar .module-btn {
@@ -344,8 +346,8 @@ tbody tr:hover {
 
 body.layout-dense-tables #content-area table th,
 body.layout-dense-tables #content-area table td {
-    padding-top: 0.45rem;
-    padding-bottom: 0.45rem;
+    padding-top: var(--dense-table-cell-padding-y);
+    padding-bottom: var(--dense-table-cell-padding-y);
 }
 
 body.layout-dense-tables #content-area .form-input,

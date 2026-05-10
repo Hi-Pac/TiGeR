@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.toggle('layout-compact-sidebar', compactSidebar);
         document.body.classList.toggle('layout-dense-tables', denseTables);
 
-        if (window.innerWidth >= DESKTOP_BREAKPOINT) setDesktopSidebarCompact(compactSidebar);
+        if (isDesktopViewport()) setDesktopSidebarCompact(compactSidebar);
     }
 
     function setDesktopSidebarCompact(compact) {
@@ -552,6 +552,10 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopSidebar.querySelectorAll('nav span').forEach((span) => {
             span.classList.toggle('hidden', compact);
         });
+    }
+
+    function isDesktopViewport() {
+        return window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches;
     }
 
     function setActiveSidebarButton(moduleId) {
@@ -791,7 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     toggleSidebarBtn?.addEventListener('click', () => {
-        if (window.innerWidth < DESKTOP_BREAKPOINT) {
+        if (!isDesktopViewport()) {
             openMobileSidebar();
         } else {
             const shouldCompact = !desktopSidebar?.classList.contains('w-20');
