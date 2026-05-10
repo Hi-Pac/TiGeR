@@ -81,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             { selector: '.delete-product-btn', action: 'delete' }
         ],
         inventory: [
-            { selector: '#add-stock-entry-btn', action: 'create' },
-            { selector: '#add-stock-transfer-btn', action: 'transfer' }
+            { selector: '#add-inventory-in-btn', action: 'create' },
+            { selector: '#add-inventory-transfer-btn', action: 'transfer' }
         ]
     });
 
@@ -206,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const contentArea = document.getElementById('content-area');
     const pageTitleElement = document.getElementById('page-title');
+    const DESKTOP_BREAKPOINT = 768;
     const desktopNavMenu = document.getElementById('desktop-nav-menu');
     const mobileNavMenu = document.getElementById('mobile-nav-menu');
     const globalLoader = document.getElementById('global-loader');
@@ -497,6 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.loadPromise = null;
             positionToastContainer();
             applyConfiguredThemeMode();
+            applyConfiguredLayoutMode();
             updateNavigationVisibility();
             window.dispatchEvent(new CustomEvent('app-config:loaded', { detail: { config: appState.config } }));
             return appState.config;
@@ -531,6 +533,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const configuredTheme = appState.config.generalSettings?.themeMode || 'system';
         const theme = configuredTheme === 'system' ? getCurrentThemePreference() : configuredTheme;
         applyTheme(theme);
+    }
+
+    function applyConfiguredLayoutMode() {
+        const compactSidebar = Boolean(appState.config.generalSettings?.compactSidebar);
+        const denseTables = Boolean(appState.config.generalSettings?.denseTables);
+
+        document.body.classList.toggle('layout-compact-sidebar', compactSidebar);
+        document.body.classList.toggle('layout-dense-tables', denseTables);
+
+        if (isDesktopViewport()) setDesktopSidebarCompact(compactSidebar);
+    }
+
+    function setDesktopSidebarCompact(compact) {
+        if (!desktopSidebar) return;
+        desktopSidebar.classList.toggle('w-20', compact);
+        desktopSidebar.classList.toggle('w-64', !compact);
+        desktopSidebar.querySelectorAll('nav span').forEach((span) => {
+            span.classList.toggle('hidden', compact);
+        });
+    }
+
+    function isDesktopViewport() {
+        return window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches;
     }
 
     function setActiveSidebarButton(moduleId) {
@@ -770,12 +795,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     toggleSidebarBtn?.addEventListener('click', () => {
-        if (window.innerWidth < 768) {
+        if (!isDesktopViewport()) {
             openMobileSidebar();
         } else {
-            desktopSidebar?.classList.toggle('w-64');
-            desktopSidebar?.classList.toggle('w-20');
-            desktopSidebar?.querySelectorAll('nav span').forEach((span) => span.classList.toggle('hidden'));
+            const shouldCompact = !desktopSidebar?.classList.contains('w-20');
+            setDesktopSidebarCompact(shouldCompact);
         }
     });
 
@@ -819,6 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('app-config:updated', () => {
         positionToastContainer();
         applyConfiguredThemeMode();
+        applyConfiguredLayoutMode();
         updateNavigationVisibility();
         if (currentLoadedModule) {
             window.applyModuleActionGuards(currentLoadedModule, contentArea);
