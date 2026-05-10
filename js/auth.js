@@ -58,7 +58,12 @@
         if (app)     app.classList.add('hidden');
         if (overlay) overlay.classList.remove('hidden');
         const errEl = document.getElementById('login-error');
-        if (errEl) {
+        const errTextEl = document.getElementById('login-error-text');
+        if (errEl && errTextEl) {
+            errTextEl.textContent = errorMsg || '';
+            errEl.classList.toggle('hidden', !errorMsg);
+        } else if (errEl) {
+            // Fallback for old structure
             errEl.textContent = errorMsg || '';
             errEl.classList.toggle('hidden', !errorMsg);
         }
@@ -371,9 +376,14 @@
             const password = document.getElementById('login-password')?.value || '';
 
             if (!email || !password) {
-                if (loginError) {
-                    loginError.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور.';
-                    loginError.classList.remove('hidden');
+                const errEl = document.getElementById('login-error');
+                const errTextEl = document.getElementById('login-error-text');
+                if (errEl && errTextEl) {
+                    errTextEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور.';
+                    errEl.classList.remove('hidden');
+                } else if (errEl) {
+                    errEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور.';
+                    errEl.classList.remove('hidden');
                 }
                 return;
             }
@@ -387,13 +397,18 @@
             const { error } = await window.AppAuth.login(email, password);
 
             if (error) {
-                if (loginError) {
-                    loginError.textContent = error;
-                    loginError.classList.remove('hidden');
+                const errEl = document.getElementById('login-error');
+                const errTextEl = document.getElementById('login-error-text');
+                if (errEl && errTextEl) {
+                    errTextEl.textContent = error;
+                    errEl.classList.remove('hidden');
+                } else if (errEl) {
+                    errEl.textContent = error;
+                    errEl.classList.remove('hidden');
                 }
                 if (loginBtn) {
                     loginBtn.disabled = false;
-                    loginBtn.textContent = 'تسجيل الدخول';
+                    loginBtn.innerHTML = '<span class="flex items-center justify-center"><i class="fas fa-sign-in-alt ml-2"></i>تسجيل الدخول</span>';
                 }
             }
             // On success: AppAuth.login() calls _showApp() and fires auth:signedIn.
