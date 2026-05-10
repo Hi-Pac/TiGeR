@@ -542,13 +542,16 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.toggle('layout-compact-sidebar', compactSidebar);
         document.body.classList.toggle('layout-dense-tables', denseTables);
 
-        if (window.innerWidth >= DESKTOP_BREAKPOINT && desktopSidebar) {
-            desktopSidebar.classList.toggle('w-20', compactSidebar);
-            desktopSidebar.classList.toggle('w-64', !compactSidebar);
-            desktopSidebar.querySelectorAll('nav span').forEach((span) => {
-                span.classList.toggle('hidden', compactSidebar);
-            });
-        }
+        if (window.innerWidth >= DESKTOP_BREAKPOINT) setDesktopSidebarCompact(compactSidebar);
+    }
+
+    function setDesktopSidebarCompact(compact) {
+        if (!desktopSidebar) return;
+        desktopSidebar.classList.toggle('w-20', compact);
+        desktopSidebar.classList.toggle('w-64', !compact);
+        desktopSidebar.querySelectorAll('nav span').forEach((span) => {
+            span.classList.toggle('hidden', compact);
+        });
     }
 
     function setActiveSidebarButton(moduleId) {
@@ -791,9 +794,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.innerWidth < DESKTOP_BREAKPOINT) {
             openMobileSidebar();
         } else {
-            desktopSidebar?.classList.toggle('w-64');
-            desktopSidebar?.classList.toggle('w-20');
-            desktopSidebar?.querySelectorAll('nav span').forEach((span) => span.classList.toggle('hidden'));
+            const shouldCompact = !desktopSidebar?.classList.contains('w-20');
+            setDesktopSidebarCompact(shouldCompact);
         }
     });
 
