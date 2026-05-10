@@ -216,6 +216,7 @@ async function initSettingsModule() {
 
     function renderUserOverridesTable() {
         const selectedUserId = permissionOverrideUserField.value;
+        userPermissionOverridesBody.innerHTML = '';
         if (!selectedUserId) {
             userPermissionOverridesBody.innerHTML = '<tr><td colspan="4"><div class="empty-state">اختر مستخدماً لعرض الاستثناءات.</div></td></tr>';
             return;
@@ -225,20 +226,45 @@ async function initSettingsModule() {
         const rows = [];
         Object.entries(overrides).forEach(([moduleId, actions]) => {
             Object.entries(actions).forEach(([action, allowed]) => {
-                rows.push(`
-                    <tr>
-                        <td>${window.escapeHtml?.(window.AppConfig.modules[moduleId]?.label || moduleId) || (window.AppConfig.modules[moduleId]?.label || moduleId)}</td>
-                        <td>${window.escapeHtml?.(action) || action}</td>
-                        <td>${allowed ? 'سماح' : 'منع'}</td>
-                        <td><button type="button" class="text-red-600 remove-override-btn" data-user-id="${selectedUserId}" data-module-id="${moduleId}" data-action="${action}"><i class="fas fa-trash"></i></button></td>
-                    </tr>
-                `);
+                rows.push({
+                    moduleId,
+                    action,
+                    allowed,
+                    moduleLabel: window.AppConfig.modules[moduleId]?.label || moduleId
+                });
             });
         });
 
-        userPermissionOverridesBody.innerHTML = rows.length
-            ? rows.join('')
-            : '<tr><td colspan="4"><div class="empty-state">لا توجد استثناءات مخصصة لهذا المستخدم.</div></td></tr>';
+        if (!rows.length) {
+            userPermissionOverridesBody.innerHTML = '<tr><td colspan="4"><div class="empty-state">لا توجد استثناءات مخصصة لهذا المستخدم.</div></td></tr>';
+            return;
+        }
+
+        rows.forEach(({ moduleId, action, allowed, moduleLabel }) => {
+            const row = document.createElement('tr');
+
+            const moduleCell = document.createElement('td');
+            moduleCell.textContent = moduleLabel;
+
+            const actionCell = document.createElement('td');
+            actionCell.textContent = action;
+
+            const allowedCell = document.createElement('td');
+            allowedCell.textContent = allowed ? 'سماح' : 'منع';
+
+            const actionsCell = document.createElement('td');
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'text-red-600 remove-override-btn';
+            removeButton.dataset.userId = selectedUserId;
+            removeButton.dataset.moduleId = moduleId;
+            removeButton.dataset.action = action;
+            removeButton.innerHTML = '<i class="fas fa-trash"></i>';
+            actionsCell.appendChild(removeButton);
+
+            row.append(moduleCell, actionCell, allowedCell, actionsCell);
+            userPermissionOverridesBody.appendChild(row);
+        });
 
         userPermissionOverridesBody.querySelectorAll('.remove-override-btn').forEach((button) => {
             button.addEventListener('click', async () => {
