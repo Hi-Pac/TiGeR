@@ -15,10 +15,6 @@
         </div>
         <select id="customer-area-filter" class="form-select">
             <option value="">كل المناطق</option>
-            <!-- Populate with distinct areas from data or a predefined list -->
-            <option value="القاهرة">القاهرة</option>
-            <option value="الجيزة">الجيزة</option>
-            <option value="الإسكندرية">الإسكندرية</option>
         </select>
         <select id="customer-status-filter" class="form-select">
             <option value="">كل الحالات</option>
@@ -82,7 +78,8 @@
             </div>
             <div>
                 <label for="customer-area-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المنطقة/المحافظة</label>
-                <input type="text" id="customer-area-field" class="form-input">
+                <input type="text" id="customer-area-field" class="form-input" list="customer-area-list">
+                <datalist id="customer-area-list"></datalist>
             </div>
             <div class="md:col-span-2">
                 <label for="customer-address-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان التفصيلي</label>

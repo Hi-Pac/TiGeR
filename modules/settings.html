@@ -1,163 +1,305 @@
-<div id="settings-module" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-    <h3 class="text-xl font-bold mb-6">إعدادات النظام</h3>
-
-    <!-- Tabs Navigation -->
-    <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
-        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="settings-tabs-nav">
-            <li class="mr-2">
-                <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="company-info-tab">
-                    معلومات الشركة
-                </button>
-            </li>
-            <li class="mr-2">
-                <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="system-preferences-tab">
-                    تفضيلات النظام
-                </button>
-            </li>
-            <li class="mr-2">
-                <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="taxes-fees-tab">
-                    الضرائب والرسوم
-                </button>
-            </li>
-            <li>
-                <button class="settings-tab-btn inline-block p-4 border-b-2 rounded-t-lg" data-tab-target="backup-restore-tab">
-                    النسخ الاحتياطي والاستعادة
-                </button>
-            </li>
-        </ul>
+<div id="settings-module" class="module-shell">
+    <div class="settings-hero">
+        <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">لوحة تحكم متقدمة لإدارة الهوية البصرية، الإعدادات، الصلاحيات والقوائم المرجعية.</p>
+            <h3 class="text-2xl font-extrabold mt-2">إعدادات النظام الاحترافية</h3>
+        </div>
+        <div class="settings-subcard text-sm">
+            <div class="permissions-chip"><i class="fas fa-shield-halved"></i><span>صلاحيات ديناميكية</span></div>
+            <div class="permissions-chip mt-2"><i class="fas fa-sliders"></i><span>قوائم قابلة للإدارة</span></div>
+        </div>
     </div>
 
-    <!-- Tab Content Area -->
-    <div id="settings-tabs-content">
-        <!-- Company Information Tab -->
-        <div id="company-info-tab" class="settings-tab-pane p-4 hidden">
-            <h4 class="text-lg font-semibold mb-4">معلومات الشركة</h4>
-            <form id="company-info-form">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="settings-layout">
+        <aside class="settings-panel settings-nav">
+            <button type="button" class="settings-tab-btn active" data-tab-target="company-info-tab" aria-selected="true"><span>معلومات الشركة</span><i class="fas fa-building"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="general-settings-tab"><span>عام وواجهة الاستخدام</span><i class="fas fa-palette"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="financial-settings-tab"><span>المالية والضرائب</span><i class="fas fa-calculator"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="inventory-settings-tab"><span>المخزون</span><i class="fas fa-warehouse"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="sales-settings-tab"><span>المبيعات</span><i class="fas fa-receipt"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="notifications-settings-tab"><span>الإشعارات</span><i class="fas fa-bell"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="permissions-settings-tab"><span>الصلاحيات</span><i class="fas fa-user-lock"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="lookups-settings-tab"><span>القوائم المرجعية</span><i class="fas fa-list-check"></i></button>
+        </aside>
+
+        <div class="settings-grid">
+            <section id="company-info-tab" class="settings-tab-pane active settings-panel">
+                <h4 class="text-xl mb-4">الهوية الأساسية للشركة</h4>
+                <form id="company-info-form" class="settings-form-grid">
                     <div>
-                        <label for="company-name-field" class="block text-sm font-medium mb-1">اسم الشركة <span class="text-red-500">*</span></label>
-                        <input type="text" id="company-name-field" required class="form-input" value="شركة توزيع المواد الغذائية">
+                        <label for="company-name-field" class="block text-sm font-medium mb-1">اسم الشركة</label>
+                        <input type="text" id="company-name-field" required class="form-input">
                     </div>
                     <div>
                         <label for="company-cr-number-field" class="block text-sm font-medium mb-1">رقم السجل التجاري</label>
-                        <input type="text" id="company-cr-number-field" class="form-input" value="123456">
+                        <input type="text" id="company-cr-number-field" class="form-input">
                     </div>
                     <div>
                         <label for="company-tax-number-field" class="block text-sm font-medium mb-1">الرقم الضريبي</label>
-                        <input type="text" id="company-tax-number-field" class="form-input" value="987-654-321">
+                        <input type="text" id="company-tax-number-field" class="form-input">
                     </div>
                     <div>
                         <label for="company-phone-field" class="block text-sm font-medium mb-1">رقم الهاتف</label>
-                        <input type="tel" id="company-phone-field" class="form-input" value="02-12345678">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="company-address-field" class="block text-sm font-medium mb-1">العنوان</label>
-                        <textarea id="company-address-field" class="form-input" rows="2">123 شارع النصر، مدينة نصر، القاهرة</textarea>
+                        <input type="tel" id="company-phone-field" class="form-input">
                     </div>
                     <div>
                         <label for="company-email-field" class="block text-sm font-medium mb-1">البريد الإلكتروني</label>
-                        <input type="email" id="company-email-field" class="form-input" value="info@examplefood.com">
+                        <input type="email" id="company-email-field" class="form-input">
                     </div>
                     <div>
                         <label for="company-website-field" class="block text-sm font-medium mb-1">الموقع الإلكتروني</label>
-                        <input type="url" id="company-website-field" class="form-input" value="https://www.examplefood.com">
+                        <input type="url" id="company-website-field" class="form-input">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="company-address-field" class="block text-sm font-medium mb-1">العنوان</label>
+                        <textarea id="company-address-field" class="form-input" rows="2"></textarea>
                     </div>
                     <div class="md:col-span-2">
                         <label for="company-logo-field" class="block text-sm font-medium mb-1">شعار الشركة</label>
-                        <input type="file" id="company-logo-field" class="form-input" accept="image/*">
-                        <img id="company-logo-preview" src="#" alt="معاينة الشعار" class="mt-2 h-20 hidden"/>
+                        <input type="file" id="company-logo-field" accept="image/*" class="form-input">
+                        <img id="company-logo-preview" src="#" alt="معاينة الشعار" class="mt-3 h-20 rounded-lg hidden" />
                     </div>
-                </div>
-                <div class="mt-6 text-right">
-                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90">حفظ معلومات الشركة</button>
-                </div>
-            </form>
-        </div>
+                    <div class="md:col-span-2 text-left">
+                        <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ معلومات الشركة</button>
+                    </div>
+                </form>
+            </section>
 
-        <!-- System Preferences Tab -->
-        <div id="system-preferences-tab" class="settings-tab-pane p-4 hidden">
-            <h4 class="text-lg font-semibold mb-4">تفضيلات النظام</h4>
-            <form id="system-preferences-form">
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="system-default-currency-field" class="block text-sm font-medium mb-1">العملة الافتراضية</label>
-                        <select id="system-default-currency-field" class="form-select">
-                            <option value="EGP">جنيه مصري (EGP)</option>
-                            <option value="USD">دولار أمريكي (USD)</option>
-                        </select>
+            <section id="general-settings-tab" class="settings-tab-pane settings-panel">
+                <h4 class="text-xl mb-4">الإعدادات العامة وتجربة الاستخدام</h4>
+                <form id="general-settings-form" class="settings-grid">
+                    <div class="settings-form-grid">
+                        <div>
+                            <label for="system-default-currency-field" class="block text-sm font-medium mb-1">العملة الافتراضية</label>
+                            <select id="system-default-currency-field" class="form-select"></select>
+                        </div>
+                        <div>
+                            <label for="system-date-format-field" class="block text-sm font-medium mb-1">تنسيق التاريخ</label>
+                            <select id="system-date-format-field" class="form-select"></select>
+                        </div>
+                        <div>
+                            <label for="system-theme-mode-field" class="block text-sm font-medium mb-1">الوضع الافتراضي للثيم</label>
+                            <select id="system-theme-mode-field" class="form-select">
+                                <option value="system">حسب الجهاز</option>
+                                <option value="light">فاتح</option>
+                                <option value="dark">داكن</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="system-default-warehouse-field" class="block text-sm font-medium mb-1">المخزن الافتراضي</label>
+                            <select id="system-default-warehouse-field" class="form-select"></select>
+                        </div>
                     </div>
-                    <div>
-                        <label for="system-date-format-field" class="block text-sm font-medium mb-1">تنسيق التاريخ</label>
-                        <select id="system-date-format-field" class="form-select">
-                            <option value="dd/mm/yyyy">DD/MM/YYYY</option>
-                            <option value="mm/dd/yyyy">MM/DD/YYYY</option>
-                            <option value="yyyy-mm-dd">YYYY-MM-DD</option>
-                        </select>
+                    <div class="settings-grid">
+                        <label class="inline-switch"><span>قائمة جانبية مضغوطة افتراضياً</span><input type="checkbox" id="compact-sidebar-field" class="form-switch-input"></label>
+                        <label class="inline-switch"><span>جداول كثيفة لعرض بيانات أكثر</span><input type="checkbox" id="dense-tables-field" class="form-switch-input"></label>
                     </div>
-                    <div>
-                        <label for="system-default-warehouse-field" class="block text-sm font-medium mb-1">المخزن الافتراضي للمبيعات</label>
-                        <select id="system-default-warehouse-field" class="form-select">
-                            <option value="">اختر مخزن...</option>
-                            <!-- Populate with warehouses -->
-                        </select>
-                    </div>
-                    <div>
-                        <label for="low-stock-threshold-field" class="block text-sm font-medium mb-1">حد تنبيه المخزون المنخفض (أيام/كمية)</label>
-                        <input type="number" id="low-stock-threshold-field" class="form-input" value="10">
-                    </div>
-                     <div class="md:col-span-2">
-                        <span class="block text-sm font-medium mb-1">إشعارات البريد الإلكتروني</span>
-                        <label class="inline-flex items-center mt-1">
-                            <input type="checkbox" id="email-new-order-notify" class="form-checkbox-input rounded">
-                            <span class="mr-2 text-sm">إشعار بطلبات البيع الجديدة</span>
-                        </label>
-                        <br>
-                        <label class="inline-flex items-center mt-1">
-                            <input type="checkbox" id="email-low-stock-notify" class="form-checkbox-input rounded">
-                            <span class="mr-2 text-sm">إشعار بالمخزون المنخفض</span>
-                        </label>
-                    </div>
-                 </div>
-                 <div class="mt-6 text-right">
-                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90">حفظ التفضيلات</button>
-                </div>
-            </form>
-        </div>
+                    <div class="text-left"><button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ الإعدادات العامة</button></div>
+                </form>
+            </section>
 
-        <!-- Taxes & Fees Tab -->
-        <div id="taxes-fees-tab" class="settings-tab-pane p-4 hidden">
-            <h4 class="text-lg font-semibold mb-4">الضرائب والرسوم</h4>
-            <form id="taxes-fees-form">
-                <div class="mb-4">
-                    <label for="vat-percentage-field" class="block text-sm font-medium mb-1">نسبة ضريبة القيمة المضافة (%) <span class="text-red-500">*</span></label>
-                    <input type="number" id="vat-percentage-field" required class="form-input w-full md:w-1/3" value="14" min="0" step="0.01">
-                </div>
-                <label class="inline-flex items-center mb-6">
-                    <input type="checkbox" id="enable-vat-field" class="form-checkbox-input rounded" checked>
-                    <span class="mr-2 text-sm">تفعيل ضريبة القيمة المضافة على الفواتير</span>
-                </label>
-                <!-- Add table for other taxes/fees later -->
-                 <div class="mt-6 text-right">
-                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary/90">حفظ إعدادات الضرائب</button>
-                </div>
-            </form>
-        </div>
+            <section id="financial-settings-tab" class="settings-tab-pane settings-panel">
+                <h4 class="text-xl mb-4">الإعدادات المالية والضريبية</h4>
+                <form id="financial-settings-form" class="settings-grid">
+                    <div class="settings-form-grid">
+                        <div>
+                            <label for="vat-percentage-field" class="block text-sm font-medium mb-1">نسبة ضريبة القيمة المضافة (%)</label>
+                            <input type="number" id="vat-percentage-field" min="0" step="0.01" class="form-input">
+                        </div>
+                        <div>
+                            <label for="credit-grace-days-field" class="block text-sm font-medium mb-1">فترة السماح الائتماني (يوم)</label>
+                            <input type="number" id="credit-grace-days-field" min="0" class="form-input">
+                        </div>
+                    </div>
+                    <div class="settings-grid">
+                        <label class="inline-switch"><span>تفعيل الضريبة على الفواتير</span><input type="checkbox" id="enable-vat-field" class="form-switch-input"></label>
+                        <label class="inline-switch"><span>تقريب القيم النهائية تلقائياً</span><input type="checkbox" id="round-invoices-field" class="form-switch-input"></label>
+                    </div>
+                    <div class="text-left"><button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ الإعدادات المالية</button></div>
+                </form>
+            </section>
 
-        <!-- Backup & Restore Tab -->
-        <div id="backup-restore-tab" class="settings-tab-pane p-4 hidden">
-            <h4 class="text-lg font-semibold mb-4">النسخ الاحتياطي والاستعادة</h4>
-             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">قم بإنشاء نسخة احتياطية لبيانات النظام أو استعادة النظام من نسخة احتياطية سابقة. (هذه الميزة تتطلب إعدادات على جانب الخادم/Firebase Functions)</p>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" id="create-backup-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm">
-                        <i class="fas fa-download ml-1"></i> إنشاء نسخة احتياطية الآن
-                    </button>
-                    <button type="button" id="restore-backup-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 px-4 py-2 rounded-md text-sm">
-                        <i class="fas fa-upload ml-1"></i> استعادة من نسخة احتياطية
-                    </button>
+            <section id="inventory-settings-tab" class="settings-tab-pane settings-panel">
+                <h4 class="text-xl mb-4">سياسات المخزون</h4>
+                <form id="inventory-settings-form" class="settings-grid">
+                    <div class="settings-form-grid">
+                        <div>
+                            <label for="low-stock-threshold-field" class="block text-sm font-medium mb-1">حد تنبيه المخزون المنخفض</label>
+                            <input type="number" id="low-stock-threshold-field" min="0" class="form-input">
+                        </div>
+                        <div>
+                            <label for="inventory-default-warehouse-field" class="block text-sm font-medium mb-1">المخزن الافتراضي للمخزون</label>
+                            <select id="inventory-default-warehouse-field" class="form-select"></select>
+                        </div>
+                    </div>
+                    <div class="settings-grid">
+                        <label class="inline-switch"><span>السماح بالمخزون السالب</span><input type="checkbox" id="allow-negative-stock-field" class="form-switch-input"></label>
+                        <label class="inline-switch"><span>حجز الكميات تلقائياً عند إدخال المبيعات</span><input type="checkbox" id="auto-reserve-stock-field" class="form-switch-input"></label>
+                    </div>
+                    <div class="text-left"><button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ إعدادات المخزون</button></div>
+                </form>
+            </section>
+
+            <section id="sales-settings-tab" class="settings-tab-pane settings-panel">
+                <h4 class="text-xl mb-4">إعدادات المبيعات</h4>
+                <form id="sales-settings-form" class="settings-grid">
+                    <div class="settings-form-grid">
+                        <div>
+                            <label for="sales-default-warehouse-field" class="block text-sm font-medium mb-1">المخزن الافتراضي لفواتير البيع</label>
+                            <select id="sales-default-warehouse-field" class="form-select"></select>
+                        </div>
+                        <div>
+                            <label for="sales-default-payment-method-field" class="block text-sm font-medium mb-1">طريقة الدفع الافتراضية</label>
+                            <select id="sales-default-payment-method-field" class="form-select"></select>
+                        </div>
+                        <div>
+                            <label for="sales-default-tax-rate-field" class="block text-sm font-medium mb-1">الضريبة الافتراضية للمبيعات (%)</label>
+                            <input type="number" id="sales-default-tax-rate-field" min="0" step="0.01" class="form-input">
+                        </div>
+                    </div>
+                    <div class="settings-grid">
+                        <label class="inline-switch"><span>إلزام اختيار مندوب مبيعات</span><input type="checkbox" id="require-salesperson-field" class="form-switch-input"></label>
+                        <label class="inline-switch"><span>الطباعة التلقائية بعد الحفظ</span><input type="checkbox" id="auto-print-after-save-field" class="form-switch-input"></label>
+                    </div>
+                    <div class="text-left"><button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ إعدادات المبيعات</button></div>
+                </form>
+            </section>
+
+            <section id="notifications-settings-tab" class="settings-tab-pane settings-panel">
+                <h4 class="text-xl mb-4">الإشعارات المنبثقة والتنبيهات</h4>
+                <form id="notifications-settings-form" class="settings-grid">
+                    <div class="settings-form-grid">
+                        <div>
+                            <label for="toast-duration-field" class="block text-sm font-medium mb-1">مدة ظهور الإشعار (مللي ثانية)</label>
+                            <input type="number" id="toast-duration-field" min="1500" step="100" class="form-input">
+                        </div>
+                        <div>
+                            <label for="toast-position-field" class="block text-sm font-medium mb-1">مكان ظهور الإشعار</label>
+                            <select id="toast-position-field" class="form-select">
+                                <option value="top-left">أعلى اليسار</option>
+                                <option value="top-right">أعلى اليمين</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-grid">
+                        <label class="inline-switch"><span>تنبيه عند حفظ الفواتير</span><input type="checkbox" id="notify-invoice-save-field" class="form-switch-input"></label>
+                        <label class="inline-switch"><span>تنبيه بالطلبات الجديدة</span><input type="checkbox" id="email-new-order-notify" class="form-switch-input"></label>
+                        <label class="inline-switch"><span>تنبيه بالمخزون المنخفض</span><input type="checkbox" id="email-low-stock-notify" class="form-switch-input"></label>
+                    </div>
+                    <div class="text-left"><button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ إعدادات الإشعارات</button></div>
+                </form>
+            </section>
+
+            <section id="permissions-settings-tab" class="settings-tab-pane settings-panel">
+                <div class="settings-grid">
+                    <div class="settings-subcard">
+                        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                            <div>
+                                <h4 class="text-lg font-bold">مصفوفة صلاحيات الأدوار</h4>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">تحكم في الوصول لكل صفحة وكل إجراء حسب الدور.</p>
+                            </div>
+                            <select id="permissions-role-select" class="form-select w-full md:w-60"></select>
+                        </div>
+                        <form id="permissions-matrix-form">
+                            <div class="overflow-x-auto">
+                                <table class="permissions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>الوحدة</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="permissions-matrix-body"></tbody>
+                                </table>
+                            </div>
+                            <div class="text-left mt-4">
+                                <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">حفظ صلاحيات الدور</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-subcard">
+                        <h4 class="text-lg font-bold mb-4">استثناءات صلاحيات مخصصة للمستخدمين</h4>
+                        <form id="user-permission-override-form" class="settings-form-grid">
+                            <div>
+                                <label for="permission-override-user-field" class="block text-sm font-medium mb-1">المستخدم</label>
+                                <select id="permission-override-user-field" class="form-select"></select>
+                            </div>
+                            <div>
+                                <label for="permission-override-module-field" class="block text-sm font-medium mb-1">الوحدة</label>
+                                <select id="permission-override-module-field" class="form-select"></select>
+                            </div>
+                            <div>
+                                <label for="permission-override-action-field" class="block text-sm font-medium mb-1">الإجراء</label>
+                                <select id="permission-override-action-field" class="form-select"></select>
+                            </div>
+                            <div>
+                                <label for="permission-override-mode-field" class="block text-sm font-medium mb-1">القرار</label>
+                                <select id="permission-override-mode-field" class="form-select">
+                                    <option value="allow">سماح</option>
+                                    <option value="deny">منع</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2 text-left">
+                                <button type="submit" class="bg-primary text-white px-6 py-2.5 rounded-md">إضافة / تحديث الاستثناء</button>
+                            </div>
+                        </form>
+                        <div class="overflow-x-auto mt-4">
+                            <table class="lookup-table">
+                                <thead>
+                                    <tr>
+                                        <th>الوحدة</th>
+                                        <th>الإجراء</th>
+                                        <th>القرار</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-permission-overrides-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <!-- Table for previous backups can be added here -->
+            </section>
+
+            <section id="lookups-settings-tab" class="settings-tab-pane settings-panel">
+                <div class="settings-grid">
+                    <div class="settings-subcard">
+                        <div class="settings-form-grid">
+                            <div>
+                                <label for="lookup-category-field" class="block text-sm font-medium mb-1">نوع القائمة</label>
+                                <select id="lookup-category-field" class="form-select"></select>
+                            </div>
+                            <div>
+                                <label for="lookup-item-value-field" class="block text-sm font-medium mb-1">القيمة الفنية</label>
+                                <input type="text" id="lookup-item-value-field" class="form-input" placeholder="مثال: cash">
+                            </div>
+                            <div>
+                                <label for="lookup-item-label-field" class="block text-sm font-medium mb-1">النص الظاهر</label>
+                                <input type="text" id="lookup-item-label-field" class="form-input" placeholder="مثال: نقداً">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="button" id="add-lookup-item-btn" class="bg-primary text-white px-6 py-2.5 rounded-md w-full">إضافة عنصر</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-subcard">
+                        <h4 class="text-lg font-bold mb-4">عناصر القائمة المحددة</h4>
+                        <div class="overflow-x-auto">
+                            <table class="lookup-table">
+                                <thead>
+                                    <tr>
+                                        <th>القيمة</th>
+                                        <th>العنوان</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lookup-items-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 </div>
