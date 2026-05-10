@@ -140,6 +140,20 @@ header,
     overflow: hidden;
 }
 
+body.layout-compact-sidebar #sidebar {
+    width: 5.25rem;
+}
+
+body.layout-compact-sidebar #sidebar .module-btn {
+    justify-content: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+body.layout-compact-sidebar #sidebar .module-btn i {
+    margin: 0;
+}
+
 #sidebar > div:first-child,
 #mobile-sidebar aside > div:first-child {
     background: linear-gradient(135deg, rgba(109, 94, 252, 0.14), rgba(6, 182, 212, 0.14));
@@ -326,6 +340,20 @@ tbody tr:hover {
 
 .dark tbody tr:hover {
     background: rgba(109, 94, 252, 0.1);
+}
+
+body.layout-dense-tables #content-area table th,
+body.layout-dense-tables #content-area table td {
+    padding-top: 0.45rem !important;
+    padding-bottom: 0.45rem !important;
+}
+
+body.layout-dense-tables #content-area .form-input,
+body.layout-dense-tables #content-area .form-select,
+body.layout-dense-tables #content-area textarea.form-input,
+body.layout-dense-tables #content-area .form-textarea {
+    min-height: 40px;
+    padding: 0.58rem 0.8rem;
 }
 
 .rounded-lg,

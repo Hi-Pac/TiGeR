@@ -275,7 +275,7 @@ async function initProductsModule() {
                 await loadAndRenderProducts();
             } catch (error) {
                 console.error("Error saving product:", error);
-                alert(`فشل حفظ الصنف: ${error.message}`);
+                window.AppNotify?.error(`فشل حفظ الصنف: ${error.message}`);
             } finally {
                 window.showButtonSpinner(saveProductBtn, false);
             }
@@ -290,7 +290,7 @@ async function initProductsModule() {
                 await loadAndRenderProducts();
             } catch (error) {
                 console.error("Error deleting product:", error);
-                alert('فشل حذف الصنف.');
+                window.AppNotify?.error('فشل حذف الصنف.');
             }
         }
     }

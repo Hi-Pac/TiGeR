@@ -81,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             { selector: '.delete-product-btn', action: 'delete' }
         ],
         inventory: [
-            { selector: '#add-stock-entry-btn', action: 'create' },
-            { selector: '#add-stock-transfer-btn', action: 'transfer' }
+            { selector: '#add-inventory-in-btn', action: 'create' },
+            { selector: '#add-inventory-transfer-btn', action: 'transfer' }
         ]
     });
 
@@ -497,6 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.loadPromise = null;
             positionToastContainer();
             applyConfiguredThemeMode();
+            applyConfiguredLayoutMode();
             updateNavigationVisibility();
             window.dispatchEvent(new CustomEvent('app-config:loaded', { detail: { config: appState.config } }));
             return appState.config;
@@ -531,6 +532,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const configuredTheme = appState.config.generalSettings?.themeMode || 'system';
         const theme = configuredTheme === 'system' ? getCurrentThemePreference() : configuredTheme;
         applyTheme(theme);
+    }
+
+    function applyConfiguredLayoutMode() {
+        const compactSidebar = Boolean(appState.config.generalSettings?.compactSidebar);
+        const denseTables = Boolean(appState.config.generalSettings?.denseTables);
+
+        document.body.classList.toggle('layout-compact-sidebar', compactSidebar);
+        document.body.classList.toggle('layout-dense-tables', denseTables);
+
+        if (window.innerWidth >= 768 && desktopSidebar) {
+            desktopSidebar.classList.toggle('w-20', compactSidebar);
+            desktopSidebar.classList.toggle('w-64', !compactSidebar);
+            desktopSidebar.querySelectorAll('nav span').forEach((span) => {
+                span.classList.toggle('hidden', compactSidebar);
+            });
+        }
     }
 
     function setActiveSidebarButton(moduleId) {
@@ -819,6 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('app-config:updated', () => {
         positionToastContainer();
         applyConfiguredThemeMode();
+        applyConfiguredLayoutMode();
         updateNavigationVisibility();
         if (currentLoadedModule) {
             window.applyModuleActionGuards(currentLoadedModule, contentArea);
