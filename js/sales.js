@@ -36,6 +36,8 @@ async function initSalesModule() {
 
     const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
+    const getSalesSettings = () => window.AppConfig?.getSection('salesSettings') || {};
+    const getFinancialSettings = () => window.AppConfig?.getSection('financialSettings') || {};
     const paymentLabel = { unpaid: 'غير مدفوعة', partially_paid: 'مدفوعة جزئياً', paid: 'مدفوعة', overdue: 'متأخرة' };
     const deliveryLabel = { pending: 'قيد الانتظار', partial: 'جزئي', dispatched: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجعة' };
 
@@ -76,6 +78,10 @@ async function initSalesModule() {
             const stock = Number(p.stockByWarehouse?.[selectedWarehouseId] || 0);
             return `<option value="${p.id}" data-price="${p.sale_price}" data-unit="${p.unit_name || ''}" data-stock="${stock}" ${selected}>${p.name} ${p.unit_name ? `(${p.unit_name})` : ''}</option>`;
         }).join('');
+    }
+
+    function populatePaymentMethodOptions() {
+        window.AppConfig?.populateSelect(salePaymentMethodField, 'salePaymentMethods', { preserveValue: true });
     }
 
     async function loadCustomers() {
@@ -145,6 +151,9 @@ async function initSalesModule() {
     function resetSaleForm(saleData = null) {
         if (!saleFormElement) return;
         saleFormElement.reset();
+        const salesSettings = getSalesSettings();
+        const financialSettings = getFinancialSettings();
+        populatePaymentMethodOptions();
         saleIdField.value = '';
         saleDateField.value = todayISO();
         saleDeliveryStatusField.value = 'pending_delivery';
@@ -155,18 +164,20 @@ async function initSalesModule() {
             saleCustomerField.value = saleData.customer_id || '';
             saleDateField.value = saleData.invoice_date || todayISO();
             saleSalespersonField.value = saleData.salesperson_id || '';
-            saleWarehouseField.value = saleData.warehouse_id || '';
-            salePaymentMethodField.value = saleData.payment_method || 'cash';
+            saleWarehouseField.value = saleData.warehouse_id || salesSettings.defaultWarehouseId || '';
+            salePaymentMethodField.value = saleData.payment_method || salesSettings.defaultPaymentMethod || 'cash';
             saleDeliveryStatusField.value = mapDeliveryDbToUi(saleData.delivery_status);
             saleDiscountField.value = Number(saleData.discount_amount || 0);
-            saleTaxPercentageField.value = Number(saleData.tax_rate || 0);
+            saleTaxPercentageField.value = Number(saleData.tax_rate || salesSettings.defaultTaxRate || financialSettings.vatPercentage || 0);
             saleNotesField.value = saleData.notes || '';
 
             (saleData.items || []).forEach((item) => addSaleItemRow(item));
             if (!saleData.items || saleData.items.length === 0) addSaleItemRow();
         } else {
+            saleWarehouseField.value = salesSettings.defaultWarehouseId || '';
+            salePaymentMethodField.value = salesSettings.defaultPaymentMethod || 'cash';
             saleDiscountField.value = 0;
-            saleTaxPercentageField.value = 14;
+            saleTaxPercentageField.value = Number(salesSettings.defaultTaxRate ?? financialSettings.vatPercentage ?? 14);
             addSaleItemRow();
         }
 
@@ -223,7 +234,7 @@ async function initSalesModule() {
             const maxStock = Number(productSelector.options[productSelector.selectedIndex]?.getAttribute('data-stock') || 0);
             if (maxStock >= 0 && Number(qtyInput.value) > maxStock) {
                 qtyInput.value = maxStock > 0 ? maxStock : 0;
-                alert(`الكمية المطلوبة تتجاوز المخزون المتاح (${maxStock}).`);
+                window.AppNotify?.warning(`الكمية المطلوبة تتجاوز المخزون المتاح (${maxStock}).`);
             }
             calculateSaleTotals();
         });
@@ -408,6 +419,8 @@ async function initSalesModule() {
                 await handleDeleteSale(saleId);
             });
         });
+
+        window.applyModuleActionGuards?.('sales', salesModuleNode);
     }
 
     async function saveSale(shouldPrint = false) {
@@ -477,14 +490,16 @@ async function initSalesModule() {
                 .insert(rows);
             if (insErr) throw insErr;
 
-            if (shouldPrint) alert(`تم حفظ الفاتورة ${finalSaleId}.`);
+            if (window.AppConfig?.getSection('notificationsSettings')?.notifyInvoiceSave || shouldPrint) {
+                window.AppNotify?.success(`تم حفظ الفاتورة ${finalSaleId}${shouldPrint ? ' وجاهزة للطباعة' : ''}.`);
+            }
 
             const closeBtn = document.getElementById('close-sale-form-btn');
             if (closeBtn) closeBtn.click();
             await loadAndRenderSales();
         } catch (err) {
             console.error('Error saving sale:', err);
-            alert(`فشل حفظ فاتورة المبيعات: ${err.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل حفظ فاتورة المبيعات: ${err.message || 'خطأ غير متوقع.'}`);
         } finally {
             window.showButtonSpinner(submitBtn, false);
         }
@@ -495,9 +510,10 @@ async function initSalesModule() {
         try {
             await DB.from('sales_invoices').eq('id', saleId).softDelete();
             await loadAndRenderSales();
+            window.AppNotify?.success('تم إلغاء الفاتورة بنجاح.');
         } catch (err) {
             console.error('Error cancelling sale:', err);
-            alert(`فشل إلغاء الفاتورة: ${err.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل إلغاء الفاتورة: ${err.message || 'خطأ غير متوقع.'}`);
         }
     }
 
@@ -523,5 +539,7 @@ async function initSalesModule() {
         .filter(Boolean)
         .forEach((el) => el.addEventListener(el.tagName === 'INPUT' && el.type === 'text' ? 'input' : 'change', applySaleFiltersAndRender));
 
+    populatePaymentMethodOptions();
     await Promise.all([loadProductsWithStock(), loadAndRenderSales()]);
+    window.applyModuleActionGuards?.('sales', salesModuleNode);
 }

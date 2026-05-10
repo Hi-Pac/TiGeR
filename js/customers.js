@@ -24,6 +24,7 @@ async function initCustomersModule() {
     const customerPhone2Field = document.getElementById('customer-phone2-field');
     const customerEmailField = document.getElementById('customer-email-field');
     const customerAreaField = document.getElementById('customer-area-field');
+    const customerAreaDatalist = document.getElementById('customer-area-list');
     const customerAddressField = document.getElementById('customer-address-field');
     const customerCreditLimitField = document.getElementById('customer-credit-limit-field');
     const customerOpeningBalanceField = document.getElementById('customer-opening-balance-field');
@@ -108,14 +109,19 @@ async function initCustomersModule() {
     }
     
     function populateAreaFilter(customers) {
-        if (!customerAreaFilter) return;
-        const existingOptions = Array.from(customerAreaFilter.options).map(opt => opt.value);
-        const distinctAreas = [...new Set(customers.map(c => c.area).filter(area => area && !existingOptions.includes(area)))];
-        distinctAreas.sort();
-        distinctAreas.forEach(area => {
-            const option = new Option(area, area);
-            customerAreaFilter.add(option);
-        });
+        const configuredAreas = (window.AppConfig?.getLookupOptions('customerAreas') || []).map((item) => item.label || item.value);
+        const distinctAreas = [...new Set([...configuredAreas, ...customers.map((customer) => customer.area).filter(Boolean)])].sort();
+
+        if (customerAreaFilter) {
+            const selectedArea = customerAreaFilter.value;
+            customerAreaFilter.innerHTML = '<option value="">كل المناطق</option>' +
+                distinctAreas.map((area) => `<option value="${area}">${area}</option>`).join('');
+            customerAreaFilter.value = selectedArea && distinctAreas.includes(selectedArea) ? selectedArea : '';
+        }
+
+        if (customerAreaDatalist) {
+            customerAreaDatalist.innerHTML = distinctAreas.map((area) => `<option value="${area}"></option>`).join('');
+        }
     }
 
     function applyCustomerFiltersAndRender() {
@@ -202,10 +208,11 @@ async function initCustomersModule() {
         customersModuleNode.querySelectorAll('.view-customer-statement-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const customerId = e.currentTarget.getAttribute('data-id');
-                // TODO: Implement logic to show customer statement (e.g., in a modal or new view)
-                alert(`عرض كشف حساب للعميل ID: ${customerId} (قيد الإنشاء)`);
+                window.AppNotify?.info(`عرض كشف حساب للعميل ID: ${customerId} (قيد الإنشاء)`);
             });
         });
+
+        window.applyModuleActionGuards?.('customers', customersModuleNode);
     }
 
     if (customerFormElement) {
@@ -244,9 +251,10 @@ async function initCustomersModule() {
                 const closeBtn = document.getElementById('close-customer-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderCustomers();
+                window.AppNotify?.success(customerId ? 'تم تحديث بيانات العميل.' : 'تمت إضافة العميل بنجاح.');
             } catch (error) {
                 console.error("Error saving customer:", error);
-                alert(`فشل حفظ العميل: ${error.message}`);
+                window.AppNotify?.error(`فشل حفظ العميل: ${error.message}`);
             } finally {
                 window.showButtonSpinner(saveCustomerBtn, false);
             }
@@ -262,9 +270,10 @@ async function initCustomersModule() {
                     .softDelete();
                 console.log('Customer deleted successfully');
                 await loadAndRenderCustomers();
+                window.AppNotify?.success('تم حذف العميل.');
             } catch (error) {
                 console.error("Error deleting customer:", error);
-                alert('فشل حذف العميل.');
+                window.AppNotify?.error('فشل حذف العميل.');
             }
         }
     }
@@ -275,5 +284,6 @@ async function initCustomersModule() {
     if (customerStatusFilter) customerStatusFilter.addEventListener('change', applyCustomerFiltersAndRender);
 
     await loadAndRenderCustomers();
+    window.applyModuleActionGuards?.('customers', customersModuleNode);
     console.log("✅ Customers module initialized successfully");
 }

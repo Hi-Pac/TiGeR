@@ -34,6 +34,8 @@ async function initPurchasesModule() {
 
     const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
+    const getSalesSettings = () => window.AppConfig?.getSection('salesSettings') || {};
+    const getFinancialSettings = () => window.AppConfig?.getSection('financialSettings') || {};
     const paymentLabel = { unpaid: 'غير مدفوعة', partially_paid: 'مدفوعة جزئياً', paid: 'مدفوعة' };
     const receiptLabel = { pending: 'بانتظار الاستلام', partial: 'استلام جزئي', received: 'تم الاستلام', returned: 'مرتجع' };
 
@@ -72,6 +74,10 @@ async function initPurchasesModule() {
         return allProductsForPurchase
             .map((p) => `<option value="${p.id}" data-price="${p.purchase_price}" ${p.id === selectedId ? 'selected' : ''}>${p.name}${p.unit_name ? ` (${p.unit_name})` : ''}</option>`)
             .join('');
+    }
+
+    function populatePaymentMethodOptions() {
+        window.AppConfig?.populateSelect(purchasePaymentMethodField, 'purchasePaymentMethods', { preserveValue: true });
     }
 
     async function loadSuppliers() {
@@ -121,6 +127,9 @@ async function initPurchasesModule() {
 
     function resetPurchaseForm(purchaseData = null) {
         if (!purchaseFormElement) return;
+        const salesSettings = getSalesSettings();
+        const financialSettings = getFinancialSettings();
+        populatePaymentMethodOptions();
         purchaseFormElement.reset();
         purchaseIdField.value = '';
         purchaseDateField.value = todayISO();
@@ -132,18 +141,20 @@ async function initPurchasesModule() {
             purchaseSupplierField.value = purchaseData.supplier_id || '';
             purchaseDateField.value = purchaseData.invoice_date || todayISO();
             purchaseRefNoField.value = purchaseData.supplier_ref_no || '';
-            purchaseWarehouseField.value = purchaseData.warehouse_id || '';
-            purchasePaymentMethodField.value = purchaseData.payment_method || 'cash';
+            purchaseWarehouseField.value = purchaseData.warehouse_id || salesSettings.defaultWarehouseId || '';
+            purchasePaymentMethodField.value = purchaseData.payment_method || salesSettings.defaultPaymentMethod || 'cash';
             purchaseStatusField.value = mapReceiptDbToUi(purchaseData.receipt_status);
             purchaseDiscountField.value = Number(purchaseData.discount_amount || 0);
-            purchaseTaxPercentageField.value = Number(purchaseData.tax_rate || 0);
+            purchaseTaxPercentageField.value = Number(purchaseData.tax_rate || financialSettings.vatPercentage || 0);
             purchaseNotesField.value = purchaseData.notes || '';
 
             (purchaseData.items || []).forEach((item) => addPurchaseItemRow(item));
             if (!purchaseData.items || purchaseData.items.length === 0) addPurchaseItemRow();
         } else {
+            purchaseWarehouseField.value = salesSettings.defaultWarehouseId || '';
+            purchasePaymentMethodField.value = salesSettings.defaultPaymentMethod || 'cash';
             purchaseDiscountField.value = 0;
-            purchaseTaxPercentageField.value = 14;
+            purchaseTaxPercentageField.value = Number(financialSettings.vatPercentage ?? 14);
             addPurchaseItemRow();
         }
 
@@ -353,6 +364,8 @@ async function initPurchasesModule() {
                 await handleDeletePurchase(purchaseId);
             });
         });
+
+        window.applyModuleActionGuards?.('purchases', purchasesModuleNode);
     }
 
     async function savePurchase() {
@@ -422,9 +435,12 @@ async function initPurchasesModule() {
             const closeBtn = document.getElementById('close-purchase-form-btn');
             if (closeBtn) closeBtn.click();
             await loadAndRenderPurchases();
+            if (window.AppConfig?.getSection('notificationsSettings')?.notifyInvoiceSave) {
+                window.AppNotify?.success(`تم حفظ فاتورة المشتريات ${finalPurchaseId}.`);
+            }
         } catch (err) {
             console.error('Error saving purchase:', err);
-            alert(`فشل حفظ فاتورة المشتريات: ${err.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل حفظ فاتورة المشتريات: ${err.message || 'خطأ غير متوقع.'}`);
         } finally {
             window.showButtonSpinner(savePurchaseBtn, false);
         }
@@ -435,9 +451,10 @@ async function initPurchasesModule() {
         try {
             await DB.from('purchase_invoices').eq('id', purchaseId).softDelete();
             await loadAndRenderPurchases();
+            window.AppNotify?.success('تم إلغاء فاتورة المشتريات.');
         } catch (err) {
             console.error('Error cancelling purchase:', err);
-            alert(`فشل إلغاء الفاتورة: ${err.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل إلغاء الفاتورة: ${err.message || 'خطأ غير متوقع.'}`);
         }
     }
 
@@ -456,5 +473,7 @@ async function initPurchasesModule() {
         .filter(Boolean)
         .forEach((el) => el.addEventListener(el.tagName === 'INPUT' && el.type === 'text' ? 'input' : 'change', applyPurchaseFiltersAndRender));
 
+    populatePaymentMethodOptions();
     await Promise.all([loadProducts(), loadAndRenderPurchases()]);
+    window.applyModuleActionGuards?.('purchases', purchasesModuleNode);
 }

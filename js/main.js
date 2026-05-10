@@ -57,12 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
         sales: [
             { selector: '#add-sale-btn', action: 'create' },
             { selector: '.edit-sale-btn', action: 'edit' },
-            { selector: '.cancel-sale-btn', action: 'cancel' }
+            { selector: '.delete-sale-btn', action: 'cancel' }
         ],
         purchases: [
             { selector: '#add-purchase-btn', action: 'create' },
             { selector: '.edit-purchase-btn', action: 'edit' },
-            { selector: '.cancel-purchase-btn', action: 'cancel' }
+            { selector: '.delete-purchase-btn', action: 'cancel' }
         ],
         expenses: [
             { selector: '#add-expense-btn', action: 'create' },

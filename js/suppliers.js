@@ -92,7 +92,7 @@ async function initSuppliersModule() {
             supplierCategoryOptions = [];
             categoryNameById.clear();
             renderCategoryInputs();
-            alert('تعذر تحميل تصنيفات الأصناف حالياً. يمكنك حفظ المورد بدون تصنيفات والمحاولة لاحقاً.');
+            window.AppNotify?.warning('تعذر تحميل تصنيفات الأصناف حالياً. يمكنك حفظ المورد بدون تصنيفات والمحاولة لاحقاً.');
         }
     }
 
@@ -266,9 +266,11 @@ async function initSuppliersModule() {
          suppliersModuleNode.querySelectorAll('.view-supplier-statement-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const supplierId = e.currentTarget.getAttribute('data-id');
-                alert(`عرض كشف حساب للمورد ID: ${supplierId} (قيد الإنشاء)`);
+                window.AppNotify?.info(`عرض كشف حساب للمورد ID: ${supplierId} (قيد الإنشاء)`);
             });
         });
+
+        window.applyModuleActionGuards?.('suppliers', suppliersModuleNode);
     }
 
     if (supplierFormElement) {
@@ -309,9 +311,10 @@ async function initSuppliersModule() {
                 const closeBtn = document.getElementById('close-supplier-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderSuppliers();
+                window.AppNotify?.success(supplierId ? 'تم تحديث بيانات المورد.' : 'تمت إضافة المورد بنجاح.');
             } catch (error) {
                 console.error("Error saving supplier:", error);
-                alert(`فشل حفظ المورد: ${error.message}`);
+                window.AppNotify?.error(`فشل حفظ المورد: ${error.message}`);
             } finally {
                 window.showButtonSpinner(saveSupplierBtn, false);
             }
@@ -324,9 +327,10 @@ async function initSuppliersModule() {
                 await DB.from('suppliers').eq('id', supplierId).softDelete();
                 console.log('Supplier deleted successfully');
                 await loadAndRenderSuppliers();
+                window.AppNotify?.success('تم حذف المورد.');
             } catch (error) {
                 console.error("Error deleting supplier:", error);
-                alert('فشل حذف المورد.');
+                window.AppNotify?.error('فشل حذف المورد.');
             }
         }
     }
@@ -385,5 +389,6 @@ async function initSuppliersModule() {
 
     await loadCategoryMetadata();
     await loadAndRenderSuppliers();
+    window.applyModuleActionGuards?.('suppliers', suppliersModuleNode);
     console.log("✅ Suppliers module initialized successfully");
 }

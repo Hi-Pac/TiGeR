@@ -169,6 +169,8 @@ async function initUsersModule() {
                 await handleDeactivateUser(userId);
             });
         });
+
+        window.applyModuleActionGuards?.('users', usersModuleNode);
     }
 
     if (userFormElement) {
@@ -230,9 +232,10 @@ async function initUsersModule() {
                 const closeBtn = document.getElementById('close-user-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderUsers();
+                window.AppNotify?.success(userId ? 'تم تحديث بيانات المستخدم.' : 'تمت إضافة المستخدم بنجاح.');
             } catch (error) {
                 console.error('Error saving profile:', error);
-                alert(`فشل حفظ المستخدم: ${error.message || 'خطأ غير متوقع.'}`);
+                window.AppNotify?.error(`فشل حفظ المستخدم: ${error.message || 'خطأ غير متوقع.'}`);
             } finally {
                 window.showButtonSpinner(saveUserBtn, false);
             }
@@ -251,9 +254,10 @@ async function initUsersModule() {
 
             if (error) throw error;
             await loadAndRenderUsers();
+            window.AppNotify?.success('تم تعطيل المستخدم.');
         } catch (error) {
             console.error('Error deactivating user profile:', error);
-            alert(`فشل تعطيل المستخدم: ${error.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل تعطيل المستخدم: ${error.message || 'خطأ غير متوقع.'}`);
         }
     }
 
@@ -262,4 +266,5 @@ async function initUsersModule() {
     if (userStatusFilter) userStatusFilter.addEventListener('change', applyFiltersAndRender);
 
     await loadAndRenderUsers();
+    window.applyModuleActionGuards?.('users', usersModuleNode);
 }

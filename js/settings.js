@@ -451,22 +451,26 @@ async function initSettingsModule() {
 
     userPermissionOverrideForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
-        await withSubmit(event, async () => {
-            const userId = permissionOverrideUserField.value;
-            const moduleId = permissionOverrideModuleField.value;
-            const action = permissionOverrideActionField.value;
-            const mode = permissionOverrideModeField.value;
-            if (!userId || !moduleId || !action) {
-                throw new Error('يرجى تحديد المستخدم والوحدة والإجراء.');
-            }
-            const overridesSnapshot = window.AppConfig.getUserPermissionOverrides();
-            overridesSnapshot[userId] = overridesSnapshot[userId] || {};
-            overridesSnapshot[userId][moduleId] = overridesSnapshot[userId][moduleId] || {};
-            overridesSnapshot[userId][moduleId][action] = mode === 'allow';
-            await window.AppConfig.saveSection(window.AppConfig.settingKeys.userPermissionOverrides, overridesSnapshot);
-            renderUserOverridesTable();
-            window.AppNotify.success('تم حفظ الاستثناء المخصص.');
-        }).catch((error) => window.AppNotify.error(error.message || 'فشل حفظ الاستثناء.'));
+        try {
+            await withSubmit(event, async () => {
+                const userId = permissionOverrideUserField.value;
+                const moduleId = permissionOverrideModuleField.value;
+                const action = permissionOverrideActionField.value;
+                const mode = permissionOverrideModeField.value;
+                if (!userId || !moduleId || !action) {
+                    throw new Error('يرجى تحديد المستخدم والوحدة والإجراء.');
+                }
+                const overridesSnapshot = window.AppConfig.getUserPermissionOverrides();
+                overridesSnapshot[userId] = overridesSnapshot[userId] || {};
+                overridesSnapshot[userId][moduleId] = overridesSnapshot[userId][moduleId] || {};
+                overridesSnapshot[userId][moduleId][action] = mode === 'allow';
+                await window.AppConfig.saveSection(window.AppConfig.settingKeys.userPermissionOverrides, overridesSnapshot);
+                renderUserOverridesTable();
+                window.AppNotify.success('تم حفظ الاستثناء المخصص.');
+            });
+        } catch (error) {
+            window.AppNotify.error(error.message || 'فشل حفظ الاستثناء.');
+        }
     });
 
     addLookupItemBtn?.addEventListener('click', async () => {
