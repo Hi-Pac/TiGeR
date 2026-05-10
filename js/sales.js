@@ -232,9 +232,10 @@ async function initSalesModule() {
 
         qtyInput.addEventListener('input', () => {
             const maxStock = Number(productSelector.options[productSelector.selectedIndex]?.getAttribute('data-stock') || 0);
-            if (maxStock >= 0 && Number(qtyInput.value) > maxStock) {
+            const requestedQty = Number(qtyInput.value || 0);
+            if (maxStock >= 0 && requestedQty > maxStock) {
                 qtyInput.value = maxStock > 0 ? maxStock : 0;
-                window.AppNotify?.warning(`الكمية المطلوبة تتجاوز المخزون المتاح (${maxStock}).`);
+                window.AppNotify?.warning(`الكمية المطلوبة (${requestedQty}) تتجاوز المخزون المتاح (${maxStock}).`);
             }
             calculateSaleTotals();
         });

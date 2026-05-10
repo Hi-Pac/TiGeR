@@ -227,8 +227,8 @@ async function initSettingsModule() {
             Object.entries(actions).forEach(([action, allowed]) => {
                 rows.push(`
                     <tr>
-                        <td>${window.AppConfig.modules[moduleId]?.label || moduleId}</td>
-                        <td>${action}</td>
+                        <td>${window.escapeHtml?.(window.AppConfig.modules[moduleId]?.label || moduleId) || (window.AppConfig.modules[moduleId]?.label || moduleId)}</td>
+                        <td>${window.escapeHtml?.(action) || action}</td>
                         <td>${allowed ? 'سماح' : 'منع'}</td>
                         <td><button type="button" class="text-red-600 remove-override-btn" data-user-id="${selectedUserId}" data-module-id="${moduleId}" data-action="${action}"><i class="fas fa-trash"></i></button></td>
                     </tr>
@@ -255,7 +255,7 @@ async function initSettingsModule() {
                 }
                 await window.AppConfig.saveSection(window.AppConfig.settingKeys.userPermissionOverrides, overridesSnapshot);
                 renderUserOverridesTable();
-                window.AppNotify.success('تم حذف الاستثناء بنجاح.');
+                window.AppNotify.success('تم حذف الصلاحية المخصصة بنجاح.');
             });
         });
     }

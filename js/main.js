@@ -297,8 +297,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function deepClone(value) {
+        if (typeof structuredClone === 'function') return structuredClone(value);
         return JSON.parse(JSON.stringify(value));
     }
+
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    window.escapeHtml = escapeHtml;
 
     function deepMerge(baseValue, overrideValue) {
         if (Array.isArray(baseValue)) {
@@ -331,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = String(message || '');
         if (/فشل|خطأ|تعذر|غير صالح|مرفوض|cannot|error/i.test(text)) return 'error';
         if (/تحذير|تنبيه|warning/i.test(text)) return 'warning';
-        if (/تم |نجاح|saved|completed|done/i.test(text)) return 'success';
+        if (/تم|نجاح|saved|completed|done/i.test(text)) return 'success';
         return 'info';
     }
 
@@ -375,16 +388,30 @@ document.addEventListener('DOMContentLoaded', () => {
         positionToastContainer();
         const toast = document.createElement('div');
         toast.className = `toast toast--${type}`;
-        const title = options.title || getToastTitle(type);
-        toast.innerHTML = `
-            <div class="toast__icon"><i class="fas ${getToastIcon(type)}"></i></div>
-            <div>
-                <div class="toast__title">${title}</div>
-                <div class="toast__message">${String(message || '')}</div>
-            </div>
-            <button type="button" class="toast__close" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
-        `;
-        toast.querySelector('.toast__close')?.addEventListener('click', () => toast.remove());
+
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'toast__icon';
+        const icon = document.createElement('i');
+        icon.className = `fas ${getToastIcon(type)}`;
+        iconWrap.appendChild(icon);
+
+        const body = document.createElement('div');
+        const titleEl = document.createElement('div');
+        titleEl.className = 'toast__title';
+        titleEl.textContent = options.title || getToastTitle(type);
+        const messageEl = document.createElement('div');
+        messageEl.className = 'toast__message';
+        messageEl.textContent = String(message || '');
+        body.append(titleEl, messageEl);
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'toast__close';
+        closeButton.setAttribute('aria-label', 'إغلاق');
+        closeButton.innerHTML = '<i class="fas fa-xmark"></i>';
+        closeButton.addEventListener('click', () => toast.remove());
+
+        toast.append(iconWrap, body, closeButton);
         toastContainer.appendChild(toast);
         const duration = Number(options.duration || getToastDuration());
         window.setTimeout(() => {
@@ -450,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.loadPromise = (async () => {
             const persisted = await fetchAppSettings().catch((error) => {
                 console.error('Error loading app settings:', error);
-                window.AppNotify.warning('تعذر تحميل بعض الإعدادات المتقدمة، وسيتم استخدام القيم الافتراضية.');
+                window.AppNotify.warning('تعذر تحميل بعض الإعدادات المتقدمة، وسيتم استخدام القيم الافتراضية. يرجى التحقق من الاتصال أو إعادة تحميل الصفحة.');
                 return {};
             });
 
@@ -487,10 +514,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return appState.config.userPermissionOverrides?.[userId]?.[moduleId]?.[action];
     }
 
-    function hasPermission(moduleId, action = 'view', userId = window.AppAuth?.currentUser?.id, role = window.AppAuth?.role?.()) {
-        const effectiveRole = role || 'viewer';
+    function hasPermission(moduleId, action = 'view', userId, role) {
+        const effectiveUserId = userId ?? window.AppAuth?.currentUser?.id;
+        const effectiveRole = role ?? window.AppAuth?.role?.() ?? 'viewer';
         const base = getRolePermission(effectiveRole, moduleId, action);
-        const override = getUserOverride(userId, moduleId, action);
+        const override = getUserOverride(effectiveUserId, moduleId, action);
         return typeof override === 'boolean' ? override : base;
     }
 

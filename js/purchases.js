@@ -34,7 +34,7 @@ async function initPurchasesModule() {
 
     const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
-    const getSalesSettings = () => window.AppConfig?.getSection('salesSettings') || {};
+    const getTransactionSettings = () => window.AppConfig?.getSection('salesSettings') || {};
     const getFinancialSettings = () => window.AppConfig?.getSection('financialSettings') || {};
     const paymentLabel = { unpaid: 'غير مدفوعة', partially_paid: 'مدفوعة جزئياً', paid: 'مدفوعة' };
     const receiptLabel = { pending: 'بانتظار الاستلام', partial: 'استلام جزئي', received: 'تم الاستلام', returned: 'مرتجع' };
@@ -127,7 +127,7 @@ async function initPurchasesModule() {
 
     function resetPurchaseForm(purchaseData = null) {
         if (!purchaseFormElement) return;
-        const salesSettings = getSalesSettings();
+        const salesSettings = getTransactionSettings();
         const financialSettings = getFinancialSettings();
         populatePaymentMethodOptions();
         purchaseFormElement.reset();
