@@ -344,8 +344,8 @@ tbody tr:hover {
 
 body.layout-dense-tables #content-area table th,
 body.layout-dense-tables #content-area table td {
-    padding-top: 0.45rem !important;
-    padding-bottom: 0.45rem !important;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
 }
 
 body.layout-dense-tables #content-area .form-input,
@@ -353,7 +353,7 @@ body.layout-dense-tables #content-area .form-select,
 body.layout-dense-tables #content-area textarea.form-input,
 body.layout-dense-tables #content-area .form-textarea {
     min-height: 40px;
-    padding: 0.58rem 0.8rem;
+    padding: 0.6rem 0.8rem;
 }
 
 .rounded-lg,

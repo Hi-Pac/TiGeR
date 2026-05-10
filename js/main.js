@@ -206,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const contentArea = document.getElementById('content-area');
     const pageTitleElement = document.getElementById('page-title');
+    const DESKTOP_BREAKPOINT = 768;
     const desktopNavMenu = document.getElementById('desktop-nav-menu');
     const mobileNavMenu = document.getElementById('mobile-nav-menu');
     const globalLoader = document.getElementById('global-loader');
@@ -541,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.toggle('layout-compact-sidebar', compactSidebar);
         document.body.classList.toggle('layout-dense-tables', denseTables);
 
-        if (window.innerWidth >= 768 && desktopSidebar) {
+        if (window.innerWidth >= DESKTOP_BREAKPOINT && desktopSidebar) {
             desktopSidebar.classList.toggle('w-20', compactSidebar);
             desktopSidebar.classList.toggle('w-64', !compactSidebar);
             desktopSidebar.querySelectorAll('nav span').forEach((span) => {
@@ -787,7 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     toggleSidebarBtn?.addEventListener('click', () => {
-        if (window.innerWidth < 768) {
+        if (window.innerWidth < DESKTOP_BREAKPOINT) {
             openMobileSidebar();
         } else {
             desktopSidebar?.classList.toggle('w-64');
