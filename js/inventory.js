@@ -196,80 +196,6 @@ async function initInventoryModule() {
         }
     }
 
-    async function getInventoryRow(warehouseId, productId) {
-        const { data, error } = await window.supabaseClient
-            .from('inventory_stock')
-            .select('*')
-            .eq('warehouse_id', warehouseId)
-            .eq('product_id', productId)
-            .maybeSingle();
-        if (error) throw error;
-        return data;
-    }
-
-    async function upsertInventoryQuantity({ warehouseId, productId, newQty, reorderLevel }) {
-        const companyId = window.AppAuth?.companyId();
-        if (!companyId) throw new Error('تعذر تحديد الشركة الحالية.');
-
-        const existing = await getInventoryRow(warehouseId, productId);
-        const nowIso = new Date().toISOString();
-
-        if (existing) {
-            const { error } = await window.supabaseClient
-                .from('inventory_stock')
-                .update({
-                    quantity_on_hand: newQty,
-                    reorder_level: existing.reorder_level ?? reorderLevel ?? null,
-                    last_movement_at: nowIso,
-                    updated_at: nowIso
-                })
-                .eq('id', existing.id);
-            if (error) throw error;
-            return existing.id;
-        }
-
-        const { data, error } = await window.supabaseClient
-            .from('inventory_stock')
-            .insert({
-                company_id: companyId,
-                warehouse_id: warehouseId,
-                product_id: productId,
-                quantity_on_hand: newQty,
-                quantity_reserved: 0,
-                reorder_level: reorderLevel ?? null,
-                last_movement_at: nowIso
-            })
-            .select('id')
-            .single();
-        if (error) throw error;
-        return data?.id;
-    }
-
-    async function insertMovement({ warehouseId, productId, movementType, quantity, qtyBefore, qtyAfter, referenceType, referenceId, productionDate, expiryDate, notes }) {
-        const companyId = window.AppAuth?.companyId();
-        const userId = window.AppAuth?.currentUser?.id || null;
-        if (!companyId) throw new Error('تعذر تحديد الشركة الحالية.');
-
-        const { error } = await window.supabaseClient
-            .from('stock_movements')
-            .insert({
-                company_id: companyId,
-                warehouse_id: warehouseId,
-                product_id: productId,
-                movement_type: movementType,
-                quantity,
-                quantity_before: qtyBefore,
-                quantity_after: qtyAfter,
-                reference_type: referenceType || null,
-                reference_id: referenceId || null,
-                production_date: productionDate || null,
-                expiry_date: expiryDate || null,
-                notes: notes || null,
-                performed_by: userId
-            });
-        if (error) throw error;
-    }
-
     async function saveStockIn() {
         if (!saveInventoryInBtn) return;
         window.showButtonSpinner(saveInventoryInBtn, true);
@@ -281,31 +207,21 @@ async function initInventoryModule() {
             const items = collectStockInItems();
             if (!items.length) throw new Error('يرجى إضافة صنف واحد على الأقل.');
 
+            // Use database function to process stock movements atomically
             for (const item of items) {
-                const existing = await getInventoryRow(warehouseId, item.product_id);
-                const qtyBefore = Number(existing?.quantity_on_hand || 0);
-                const qtyAfter = qtyBefore + Number(item.quantity);
-
-                await upsertInventoryQuantity({
-                    warehouseId,
-                    productId: item.product_id,
-                    newQty: qtyAfter,
-                    reorderLevel: productReorderMap.get(item.product_id) || null
-                });
-
-                await insertMovement({
-                    warehouseId,
-                    productId: item.product_id,
-                    movementType: inventoryInSupplierField.value ? 'purchase_receipt' : 'adjustment_in',
-                    quantity: item.quantity,
-                    qtyBefore,
-                    qtyAfter,
-                    referenceType: inventoryInSupplierField.value ? 'purchase_invoice' : 'adjustment',
-                    referenceId: null,
-                    productionDate: item.production_date,
-                    expiryDate: item.expiry_date,
-                    notes: inventoryInRefField.value || inventoryInNotesField.value || null
-                });
+                const { error: stockErr } = await window.supabaseClient.rpc(
+                    'fn_process_stock_movement',
+                    {
+                        p_product_id: item.product_id,
+                        p_warehouse_id: warehouseId,
+                        p_movement_type: inventoryInSupplierField.value ? 'purchase' : 'adjustment_in',
+                        p_quantity: item.quantity,
+                        p_reference_type: inventoryInSupplierField.value ? 'purchase_invoice' : 'adjustment',
+                        p_reference_id: null,
+                        p_notes: inventoryInRefField.value || inventoryInNotesField.value || null
+                    }
+                );
+                if (stockErr) throw stockErr;
             }
 
             const closeBtn = document.getElementById('close-inventory-in-form-btn');
@@ -332,60 +248,19 @@ async function initInventoryModule() {
             const items = collectTransferItems();
             if (!items.length) throw new Error('يرجى إضافة صنف واحد على الأقل.');
 
-            const sourceStockMap = await loadStockMapByWarehouse(sourceWarehouse);
+            // Use database function to transfer stock atomically
             for (const item of items) {
-                const available = Number(sourceStockMap.get(item.product_id) || 0);
-                if (item.quantity > available) {
-                    throw new Error(`الكمية غير كافية للصنف ${productLabelMap.get(item.product_id) || item.product_id}. المتاح: ${fmtQty(available)}`);
-                }
-            }
-
-            for (const item of items) {
-                const srcExisting = await getInventoryRow(sourceWarehouse, item.product_id);
-                const srcBefore = Number(srcExisting?.quantity_on_hand || 0);
-                const srcAfter = srcBefore - Number(item.quantity);
-
-                await upsertInventoryQuantity({
-                    warehouseId: sourceWarehouse,
-                    productId: item.product_id,
-                    newQty: srcAfter,
-                    reorderLevel: srcExisting?.reorder_level ?? productReorderMap.get(item.product_id) ?? null
-                });
-
-                await insertMovement({
-                    warehouseId: sourceWarehouse,
-                    productId: item.product_id,
-                    movementType: 'transfer_out',
-                    quantity: item.quantity,
-                    qtyBefore: srcBefore,
-                    qtyAfter: srcAfter,
-                    referenceType: 'transfer',
-                    referenceId: null,
-                    notes: transferNotesField.value || null
-                });
-
-                const dstExisting = await getInventoryRow(targetWarehouse, item.product_id);
-                const dstBefore = Number(dstExisting?.quantity_on_hand || 0);
-                const dstAfter = dstBefore + Number(item.quantity);
-
-                await upsertInventoryQuantity({
-                    warehouseId: targetWarehouse,
-                    productId: item.product_id,
-                    newQty: dstAfter,
-                    reorderLevel: dstExisting?.reorder_level ?? productReorderMap.get(item.product_id) ?? null
-                });
-
-                await insertMovement({
-                    warehouseId: targetWarehouse,
-                    productId: item.product_id,
-                    movementType: 'transfer_in',
-                    quantity: item.quantity,
-                    qtyBefore: dstBefore,
-                    qtyAfter: dstAfter,
-                    referenceType: 'transfer',
-                    referenceId: null,
-                    notes: transferNotesField.value || null
-                });
+                const { data, error: transferErr } = await window.supabaseClient.rpc(
+                    'fn_transfer_stock',
+                    {
+                        p_product_id: item.product_id,
+                        p_from_warehouse_id: sourceWarehouse,
+                        p_to_warehouse_id: targetWarehouse,
+                        p_quantity: item.quantity,
+                        p_notes: transferNotesField.value || null
+                    }
+                );
+                if (transferErr) throw transferErr;
             }
 
             const closeBtn = document.getElementById('close-inventory-transfer-form-btn');

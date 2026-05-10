@@ -491,6 +491,23 @@ async function initSalesModule() {
                 .insert(rows);
             if (insErr) throw insErr;
 
+            // Process stock movements for each item using database function
+            for (const item of items) {
+                const { error: stockErr } = await window.supabaseClient.rpc(
+                    'fn_process_stock_movement',
+                    {
+                        p_product_id: item.product_id,
+                        p_warehouse_id: saleWarehouseField.value,
+                        p_movement_type: 'sale',
+                        p_quantity: item.quantity,
+                        p_reference_type: 'sales_invoice',
+                        p_reference_id: finalSaleId,
+                        p_notes: `Sales invoice ${invoicePayload.invoice_number || generatedNo}`
+                    }
+                );
+                if (stockErr) throw stockErr;
+            }
+
             if (window.AppConfig?.getSection('notificationsSettings')?.notifyInvoiceSave || shouldPrint) {
                 window.AppNotify?.success(`تم حفظ الفاتورة ${finalSaleId}${shouldPrint ? ' وجاهزة للطباعة' : ''}.`);
             }

@@ -432,6 +432,23 @@ async function initPurchasesModule() {
                 .insert(rows);
             if (insErr) throw insErr;
 
+            // Process stock movements for each item using database function
+            for (const item of items) {
+                const { error: stockErr } = await window.supabaseClient.rpc(
+                    'fn_process_stock_movement',
+                    {
+                        p_product_id: item.product_id,
+                        p_warehouse_id: purchaseWarehouseField.value,
+                        p_movement_type: 'purchase',
+                        p_quantity: item.quantity,
+                        p_reference_type: 'purchase_invoice',
+                        p_reference_id: finalPurchaseId,
+                        p_notes: `Purchase invoice ${payload.invoice_number || generatedNo}`
+                    }
+                );
+                if (stockErr) throw stockErr;
+            }
+
             const closeBtn = document.getElementById('close-purchase-form-btn');
             if (closeBtn) closeBtn.click();
             await loadAndRenderPurchases();
