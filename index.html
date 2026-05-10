@@ -19,18 +19,22 @@
 
     <script>
         tailwind.config = {
-            darkMode: 'class', // أو 'media' إذا كنت تفضل الاعتماد على إعدادات النظام
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#5D5CDE',
+                        primary: '#6d5efc',
+                        accent: '#06b6d4',
+                        success: '#16a34a',
+                        warning: '#d97706',
+                        danger: '#dc2626'
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
+<body class="text-gray-800 dark:text-gray-200 min-h-screen">
 
     <!-- ============================================================ -->
     <!-- Login Overlay — visible by default; hidden after auth check  -->
@@ -39,7 +43,7 @@
         <div class="w-full max-w-md">
             <!-- Logo / brand -->
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4 shadow-md">
+                <div class="brand-mark inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 shadow-md">
                     <i class="fas fa-box-open text-white text-2xl"></i>
                 </div>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">نظام TiGeR ERP</h1>
@@ -47,7 +51,7 @@
             </div>
 
             <!-- Login card -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+            <div class="login-card p-8">
                 <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6">تسجيل الدخول</h2>
 
                 <form id="login-form" novalidate>
@@ -239,6 +243,8 @@
             </aside>
         </div>
     </div>
+
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <!-- Spinner Overlay for general loading (optional) -->
     <div id="global-loader" class="fixed inset-0 bg-gray-500 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-50 z-50 flex items-center justify-center hidden">
