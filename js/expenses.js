@@ -27,13 +27,13 @@ async function initExpensesModule() {
     const expenseDateFromFilter = expensesModuleNode.querySelector('#expense-date-from-filter');
     const expenseDateToFilter = expensesModuleNode.querySelector('#expense-date-to-filter');
     
-    // Expense type display names for table
-    const expenseTypeDisplayNames = {
-        'fuel': 'وقود', 'maintenance': 'صيانة', 'rent': 'إيجارات', 'salaries': 'رواتب',
-        'utilities': 'فواتير ومرافق', 'office_supplies': 'أدوات مكتبية', 'marketing': 'تسويق ودعاية',
-        'transport': 'نقل ومواصلات', 'bank_fees': 'رسوم بنكية', 'government_fees': 'رسوم حكومية',
-        'hospitality': 'ضيافة وبوفيه', 'other': 'أخرى'
-    };
+    const lookupMap = (key) => new Map((window.AppConfig?.getLookupOptions(key) || []).map((item) => [item.value, item.label]));
+
+    function populateExpenseLookups() {
+        window.AppConfig?.populateSelect(expenseTypeFilter, 'expenseTypes', { placeholder: 'كل أنواع المصروفات', preserveValue: true });
+        window.AppConfig?.populateSelect(expenseTypeField, 'expenseTypes', { placeholder: 'اختر النوع...', preserveValue: true });
+        window.AppConfig?.populateSelect(expensePaymentMethodField, 'expensePaymentMethods', { preserveValue: true });
+    }
 
 
     function resetExpenseForm(expenseData = null) {
@@ -103,18 +103,20 @@ async function initExpensesModule() {
             expensesTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">لا توجد مصروفات تطابق معايير البحث.</td></tr>`;
             return;
         }
+        const expenseTypeDisplayNames = lookupMap('expenseTypes');
+        const paymentMethodLabels = lookupMap('expensePaymentMethods');
         expensesToRender.forEach(expense => {
             const row = expensesTableBody.insertRow();
             row.innerHTML = `
                 <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${new Date(expense.date).toLocaleDateString('ar-EG')}</td>
                 <td class="px-6 py-3 whitespace-nowrap text-sm">
                     <span class="px-2 py-1 text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-700 dark:text-indigo-100">
-                        ${expenseTypeDisplayNames[expense.type] || expense.type}
+                        ${expenseTypeDisplayNames.get(expense.type) || expense.type}
                     </span>
                 </td>
                 <td class="px-6 py-3 whitespace-normal text-sm text-gray-700 dark:text-gray-200">${expense.description}</td>
                 <td class="px-6 py-3 whitespace-nowrap text-sm font-semibold text-red-600 dark:text-red-400">${parseFloat(expense.amount).toFixed(2)}</td>
-                <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${expense.paymentMethod === 'cash' ? 'نقداً' : (expense.paymentMethod.startsWith('bank_') ? 'بنك' : 'عهدة موظف')}</td>
+                <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${paymentMethodLabels.get(expense.paymentMethod) || expense.paymentMethod}</td>
                 <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${expense.paidTo || (expense.employeeId ? `موظف ID: ${expense.employeeId}`: 'N/A')}</td>
                 <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-left">
                     ${expense.attachmentUrl ? `<a href="${expense.attachmentUrl}" target="_blank" class="text-blue-600 hover:text-blue-800 ml-2" title="عرض المرفق"><i class="fas fa-paperclip"></i></a>` : ''}
@@ -136,6 +138,8 @@ async function initExpensesModule() {
         expensesModuleNode.querySelectorAll('.delete-expense-btn').forEach(btn => {
             btn.addEventListener('click', (e) => handleDeleteExpense(e.currentTarget.getAttribute('data-id')));
         });
+
+        window.applyModuleActionGuards?.('expenses', expensesModuleNode);
     }
 
     if (expenseFormElement) {
@@ -183,9 +187,10 @@ async function initExpensesModule() {
                 const closeBtn = document.getElementById('close-expense-form-btn');
                 if (closeBtn) closeBtn.click();
                 await loadAndRenderExpenses();
+                window.AppNotify?.success(expenseId ? 'تم تحديث المصروف.' : 'تمت إضافة المصروف بنجاح.');
             } catch (error) {
                 console.error("Error saving expense:", error);
-                alert(`فشل حفظ المصروف: ${error.message}`);
+                window.AppNotify?.error(`فشل حفظ المصروف: ${error.message}`);
             } finally {
                 window.showButtonSpinner(saveExpenseBtn, false);
             }
@@ -198,9 +203,10 @@ async function initExpensesModule() {
                 await db.collection('expenses').doc(expenseId).delete();
                 console.log('Expense deleted successfully');
                 await loadAndRenderExpenses();
+                window.AppNotify?.success('تم حذف المصروف.');
             } catch (error) {
                 console.error("Error deleting expense:", error);
-                alert('فشل حذف المصروف.');
+                window.AppNotify?.error('فشل حذف المصروف.');
             }
         }
     }
@@ -209,6 +215,8 @@ async function initExpensesModule() {
     if(expenseSearchInput) expenseSearchInput.addEventListener('input', applyExpenseFiltersAndRender);
     // ...
 
+    populateExpenseLookups();
     await loadAndRenderExpenses();
+    window.applyModuleActionGuards?.('expenses', expensesModuleNode);
     console.log("✅ Expenses module initialized successfully");
 }
