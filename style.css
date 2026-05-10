@@ -27,6 +27,8 @@
     --radius-md: 16px;
     --radius-sm: 12px;
     --transition-base: 180ms ease;
+    --sidebar-compact-width: 5.25rem;
+    --dense-table-cell-padding-y: 0.45rem;
 }
 
 .dark {
@@ -138,6 +140,20 @@ header,
 
 #sidebar {
     overflow: hidden;
+}
+
+body.layout-compact-sidebar #sidebar {
+    width: var(--sidebar-compact-width);
+}
+
+body.layout-compact-sidebar #sidebar .module-btn {
+    justify-content: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+body.layout-compact-sidebar #sidebar .module-btn i {
+    margin: 0;
 }
 
 #sidebar > div:first-child,
@@ -326,6 +342,20 @@ tbody tr:hover {
 
 .dark tbody tr:hover {
     background: rgba(109, 94, 252, 0.1);
+}
+
+body.layout-dense-tables #content-area table th,
+body.layout-dense-tables #content-area table td {
+    padding-top: var(--dense-table-cell-padding-y);
+    padding-bottom: var(--dense-table-cell-padding-y);
+}
+
+body.layout-dense-tables #content-area .form-input,
+body.layout-dense-tables #content-area .form-select,
+body.layout-dense-tables #content-area textarea.form-input,
+body.layout-dense-tables #content-area .form-textarea {
+    min-height: 40px;
+    padding: 0.6rem 0.8rem;
 }
 
 .rounded-lg,

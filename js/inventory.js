@@ -313,7 +313,7 @@ async function initInventoryModule() {
             await loadAndRenderInventoryStock();
         } catch (err) {
             console.error('Error saving stock-in:', err);
-            alert(`فشل حفظ إذن الإضافة: ${err.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل حفظ إذن الإضافة: ${err.message || 'خطأ غير متوقع.'}`);
         } finally {
             window.showButtonSpinner(saveInventoryInBtn, false);
         }
@@ -393,7 +393,7 @@ async function initInventoryModule() {
             await loadAndRenderInventoryStock();
         } catch (err) {
             console.error('Error saving transfer:', err);
-            alert(`فشل حفظ التحويل المخزني: ${err.message || 'خطأ غير متوقع.'}`);
+            window.AppNotify?.error(`فشل حفظ التحويل المخزني: ${err.message || 'خطأ غير متوقع.'}`);
         } finally {
             window.showButtonSpinner(saveTransferBtn, false);
         }
