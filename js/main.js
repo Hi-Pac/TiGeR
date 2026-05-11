@@ -852,19 +852,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('user-menu-button')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('user-menu-dropdown')?.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', () => {
-        document.getElementById('user-menu-dropdown')?.classList.add('hidden');
-    });
-
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-        document.getElementById('user-menu-dropdown')?.classList.add('hidden');
-        await window.AppAuth?.logout?.();
-    });
+    // User menu is now handled in auth.js to avoid duplicate event listeners
+    // The profile button in the dropdown uses the standard module-btn class
+    // and will be handled by the allModuleButtons() event listener above
 
     applyTheme(getCurrentThemePreference());
     positionToastContainer();
