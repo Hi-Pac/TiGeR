@@ -448,7 +448,6 @@
         const menuBtn      = document.getElementById('user-menu-button');
         const menuDropdown = document.getElementById('user-menu-dropdown');
         const logoutBtn    = document.getElementById('logout-btn');
-        const profileBtn   = menuDropdown?.querySelector('[data-module="profile"]');
 
         if (menuBtn && menuDropdown) {
             menuBtn.addEventListener('click', (e) => {
@@ -460,13 +459,6 @@
             document.addEventListener('click', () => {
                 menuDropdown.classList.add('hidden');
             });
-
-            // Close dropdown when profile button is clicked
-            if (profileBtn) {
-                profileBtn.addEventListener('click', () => {
-                    menuDropdown.classList.add('hidden');
-                });
-            }
         }
 
         if (logoutBtn) {
