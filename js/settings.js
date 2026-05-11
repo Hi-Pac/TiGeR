@@ -130,8 +130,10 @@ async function initSettingsModule() {
             .select('id, full_name, role, status')
             .order('full_name', { ascending: true });
         users = Array.isArray(data) ? data.filter((user) => user.status === 'active') : [];
-        permissionOverrideUserField.innerHTML = '<option value="">اختر مستخدم...</option>' +
-            users.map((user) => `<option value="${user.id}">${user.full_name} — ${window.AppConfig.roleLabels[user.role] || user.role}</option>`).join('');
+        if (permissionOverrideUserField) {
+            permissionOverrideUserField.innerHTML = '<option value="">اختر مستخدم...</option>' +
+                users.map((user) => `<option value="${user.id}">${user.full_name} — ${window.AppConfig.roleLabels[user.role] || user.role}</option>`).join('');
+        }
     }
 
     async function loadProductCategories() {
