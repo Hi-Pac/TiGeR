@@ -88,7 +88,7 @@ async function initAccountingModule() {
             // Load from database
             const { data, error } = await window.DB.from('chart_of_accounts')
                 .select('*')
-                .eq('company_id', window.currentUser?.company_id)
+                .eq('company_id', window.AppAuth?.companyId())
                 .eq('status', 'active')
                 .order('code', { ascending: true });
 
@@ -179,7 +179,7 @@ async function initAccountingModule() {
             }
 
             const accountData = {
-                company_id: window.currentUser?.company_id,
+                company_id: window.AppAuth?.companyId(),
                 code: code,
                 name: name,
                 name_ar: name,
@@ -308,7 +308,7 @@ async function initAccountingModule() {
             // Load from database
             const { data, error } = await window.DB.from('journal_entries')
                 .select('*')
-                .eq('company_id', window.currentUser?.company_id)
+                .eq('company_id', window.AppAuth?.companyId())
                 .order('entry_date', { ascending: false })
                 .order('entry_number', { ascending: false });
 
@@ -421,7 +421,7 @@ async function initAccountingModule() {
                 const dateStr = entryDate.replace(/-/g, '');
                 const { data: lastEntry } = await window.DB.from('journal_entries')
                     .select('entry_number')
-                    .eq('company_id', window.currentUser?.company_id)
+                    .eq('company_id', window.AppAuth?.companyId())
                     .like('entry_number', `JE-${dateStr}%`)
                     .order('entry_number', { ascending: false })
                     .limit(1);
@@ -435,15 +435,15 @@ async function initAccountingModule() {
             }
 
             const journalData = {
-                company_id: window.currentUser?.company_id,
-                branch_id: window.currentUser?.branch_id || null,
+                company_id: window.AppAuth?.companyId(),
+                branch_id: window.AppAuth?.branchId() || null,
                 entry_number: entryNumber,
                 entry_date: entryDate,
                 description: description,
                 total_debit: totalDebit,
                 total_credit: totalCredit,
                 status: 'draft',
-                created_by: window.currentUser?.id
+                created_by: window.AppAuth?.currentUser?.id
             };
 
             if (entryId) {
