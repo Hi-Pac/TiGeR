@@ -118,7 +118,7 @@ async function initAccountingModule() {
         }
     }
 
-    const mainTypeDisplay = {'assets': 'أصول', 'liabilities': 'خصوم', 'equity': 'حقوق ملكية', 'revenue': 'إيرادات', 'expenses_coa': 'مصروفات'};
+    const mainTypeDisplay = {'assets': 'أصول', 'liabilities': 'خصوم', 'equity': 'حقوق ملكية', 'revenue': 'إيرادات', 'expenses': 'مصروفات'};
     const natureDisplay = {'debit': 'مدين', 'credit': 'دائن'};
 
     function renderChartOfAccountsTable(accounts) {
