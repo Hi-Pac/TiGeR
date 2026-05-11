@@ -85,20 +85,40 @@ async function initAccountingModule() {
         if (!coaTableBody) return;
         coaTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center">جاري تحميل شجرة الحسابات...</td></tr>`;
         try {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            chartOfAccountsData = [
-                { id: 'acc1', code: '1101', name: 'النقدية بالصندوق', mainType: 'assets', subType: 'الأصول المتداولة', nature: 'debit', currentBalance: 15000.00, openingBalance: 10000 },
-                { id: 'acc2', code: '1201', name: 'حساب البنك الأهلي', mainType: 'assets', subType: 'الأصول المتداولة', nature: 'debit', currentBalance: 75300.50, openingBalance: 50000 },
-                { id: 'acc3', code: '2101', name: 'الموردون', mainType: 'liabilities', subType: 'الخصوم المتداولة', nature: 'credit', currentBalance: 25000.00, openingBalance: 20000 },
-                { id: 'acc4', code: '4101', name: 'إيرادات المبيعات', mainType: 'revenue', subType: '', nature: 'credit', currentBalance: 250000.00, openingBalance: 0 },
-                { id: 'acc5', code: '5101', name: 'مصروف الإيجار', mainType: 'expenses_coa', subType: '', nature: 'debit', currentBalance: 5000.00, openingBalance: 0 },
-            ];
+            // Load from database
+            const { data, error } = await window.DB.from('chart_of_accounts')
+                .select('*')
+                .eq('company_id', window.currentUser?.company_id)
+                .eq('status', 'active')
+                .order('code', { ascending: true });
+
+            if (error) {
+                console.error("Database error loading CoA:", error);
+                throw new Error('فشل تحميل شجرة الحسابات من قاعدة البيانات');
+            }
+
+            // Map database fields to UI format
+            chartOfAccountsData = (data || []).map(acc => ({
+                id: acc.id,
+                code: acc.code,
+                name: acc.name_ar || acc.name,
+                mainType: acc.account_type,
+                subType: acc.parent_id ? 'حساب فرعي' : '', // Could be enhanced to show parent name
+                nature: acc.account_nature,
+                currentBalance: parseFloat(acc.current_balance || 0),
+                openingBalance: parseFloat(acc.opening_balance || 0),
+                notes: acc.notes
+            }));
+
             allAccountsForJournal = [...chartOfAccountsData]; // For journal entry dropdowns
             renderChartOfAccountsTable(chartOfAccountsData);
-        } catch(e){ console.error("Error CoA:", e); coaTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">فشل تحميل شجرة الحسابات.</td></tr>`;}
+        } catch(e){
+            console.error("Error loading CoA:", e);
+            coaTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">${e.message || 'فشل تحميل شجرة الحسابات.'}</td></tr>`;
+        }
     }
-    
-    const mainTypeDisplay = {'assets': 'أصول', 'liabilities': 'خصوم', 'equity': 'حقوق ملكية', 'revenue': 'إيرادات', 'expenses_coa': 'مصروفات'};
+
+    const mainTypeDisplay = {'assets': 'أصول', 'liabilities': 'خصوم', 'equity': 'حقوق ملكية', 'revenue': 'إيرادات', 'expenses': 'مصروفات'};
     const natureDisplay = {'debit': 'مدين', 'credit': 'دائن'};
 
     function renderChartOfAccountsTable(accounts) {
@@ -134,8 +154,79 @@ async function initAccountingModule() {
         });
     }
     if(coaFormElement) coaFormElement.addEventListener('submit', async e => {
-        e.preventDefault(); /* ... save CoA logic ... */
-        alert("حفظ الحساب (محاكاة)"); coaFormContainer.classList.add('hidden'); await loadAndRenderChartOfAccounts();
+        e.preventDefault();
+
+        const accountId = document.getElementById('account-coa-id-field').value;
+        const code = document.getElementById('account-coa-code-field').value.trim();
+        const name = document.getElementById('account-coa-name-field').value.trim();
+        const mainType = document.getElementById('account-coa-main-type-field').value;
+        const subType = document.getElementById('account-coa-sub-type-field').value.trim();
+        const nature = document.getElementById('account-coa-nature-field').value;
+        const openingBalance = parseFloat(document.getElementById('account-coa-opening-balance-field').value) || 0;
+        const notes = document.getElementById('account-coa-notes-field').value.trim();
+
+        // Validation
+        if (!code || !name || !mainType || !nature) {
+            alert('يرجى ملء جميع الحقول المطلوبة (كود الحساب، الاسم، النوع، الطبيعة)');
+            return;
+        }
+
+        try {
+            const saveButton = document.getElementById('save-account-coa-form-btn');
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.textContent = 'جاري الحفظ...';
+            }
+
+            const accountData = {
+                company_id: window.currentUser?.company_id,
+                code: code,
+                name: name,
+                name_ar: name,
+                account_type: mainType,
+                account_nature: nature,
+                opening_balance: openingBalance,
+                current_balance: accountId ? undefined : openingBalance, // Set initial balance only for new accounts
+                notes: notes,
+                status: 'active'
+            };
+
+            let result;
+            if (accountId) {
+                // Update existing account
+                delete accountData.current_balance; // Don't update current balance on edit
+                const { data, error } = await window.DB.from('chart_of_accounts')
+                    .update(accountData)
+                    .eq('id', accountId)
+                    .select();
+                result = { data, error };
+            } else {
+                // Insert new account
+                const { data, error } = await window.DB.from('chart_of_accounts')
+                    .insert([accountData])
+                    .select();
+                result = { data, error };
+            }
+
+            if (result.error) {
+                console.error('Database error saving account:', result.error);
+                throw new Error(result.error.message || 'فشل حفظ الحساب');
+            }
+
+            alert(accountId ? 'تم تحديث الحساب بنجاح' : 'تم إضافة الحساب بنجاح');
+            coaFormContainer.classList.add('hidden');
+            await loadAndRenderChartOfAccounts();
+
+        } catch (error) {
+            console.error('Error saving account:', error);
+            alert('خطأ في حفظ الحساب: ' + (error.message || 'خطأ غير معروف'));
+        } finally {
+            const saveButton = document.getElementById('save-account-coa-form-btn');
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'حفظ الحساب';
+            }
+        }
     });
 
 
@@ -214,13 +305,36 @@ async function initAccountingModule() {
         if(!journalEntriesTableBody) return;
         journalEntriesTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center">جاري تحميل القيود...</td></tr>`;
         try {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            journalEntriesData = [
-                {id: 'je1', date: '2023-10-01', description: 'تسجيل إيجار المكتب', totalDebit: 5000, totalCredit: 5000, status: 'posted'},
-                {id: 'je2', date: '2023-10-05', description: 'إثبات مبيعات نقدية', totalDebit: 12000, totalCredit: 12000, status: 'posted'},
-            ];
+            // Load from database
+            const { data, error } = await window.DB.from('journal_entries')
+                .select('*')
+                .eq('company_id', window.currentUser?.company_id)
+                .order('entry_date', { ascending: false })
+                .order('entry_number', { ascending: false });
+
+            if (error) {
+                console.error("Database error loading journal entries:", error);
+                throw new Error('فشل تحميل القيود من قاعدة البيانات');
+            }
+
+            // Map database fields to UI format
+            journalEntriesData = (data || []).map(entry => ({
+                id: entry.id,
+                entryNumber: entry.entry_number,
+                date: entry.entry_date,
+                description: entry.description,
+                totalDebit: parseFloat(entry.total_debit || 0),
+                totalCredit: parseFloat(entry.total_credit || 0),
+                status: entry.status,
+                referenceType: entry.reference_type,
+                referenceId: entry.reference_id
+            }));
+
             renderJournalEntriesTable(journalEntriesData);
-        } catch(e){ console.error("Err JE:",e); journalEntriesTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">فشل تحميل القيود.</td></tr>`; }
+        } catch(e){
+            console.error("Error loading journal entries:", e);
+            journalEntriesTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">${e.message || 'فشل تحميل القيود.'}</td></tr>`;
+        }
     }
     
     const jeStatusDisplay = {'posted': 'مرحل', 'draft': 'مسودة'};
@@ -234,7 +348,7 @@ async function initAccountingModule() {
             const row = journalEntriesTableBody.insertRow();
             row.innerHTML = `
                 <td class="px-4 py-2 text-sm">${new Date(entry.date).toLocaleDateString('ar-EG')}</td>
-                <td class="px-4 py-2 text-sm font-medium text-primary">${entry.id}</td>
+                <td class="px-4 py-2 text-sm font-medium text-primary">${entry.entryNumber || entry.id}</td>
                 <td class="px-4 py-2 text-sm">${entry.description}</td>
                 <td class="px-4 py-2 text-sm">${entry.totalDebit.toFixed(2)}</td>
                 <td class="px-4 py-2 text-sm">${entry.totalCredit.toFixed(2)}</td>
@@ -248,14 +362,137 @@ async function initAccountingModule() {
         // Add listeners for view/edit JE buttons
     }
      if(journalEntryFormElement) journalEntryFormElement.addEventListener('submit', async e => {
-        e.preventDefault(); 
-        // ... save Journal Entry logic ...
+        e.preventDefault();
+
+        // Get form data
+        const entryId = document.getElementById('journal-entry-id-field').value;
+        const entryDate = document.getElementById('journal-entry-date-field').value;
+        const referenceNumber = document.getElementById('journal-entry-ref-field').value.trim();
+        const description = document.getElementById('journal-entry-description-field').value.trim();
+
         // Validate totals are balanced
-        if(parseFloat(journalTotalDebitEl.textContent) !== parseFloat(journalTotalCreditEl.textContent) || parseFloat(journalTotalDebitEl.textContent) === 0) {
+        const totalDebit = parseFloat(journalTotalDebitEl.textContent) || 0;
+        const totalCredit = parseFloat(journalTotalCreditEl.textContent) || 0;
+
+        if (totalDebit !== totalCredit || totalDebit === 0) {
             alert("القيد غير متوازن أو فارغ. يرجى المراجعة.");
             return;
         }
-        alert("حفظ القيد (محاكاة)"); journalEntryFormContainer.classList.add('hidden'); await loadAndRenderJournalEntries();
+
+        if (!entryDate || !description) {
+            alert("يرجى ملء التاريخ والبيان");
+            return;
+        }
+
+        // Collect journal entry lines
+        const lines = [];
+        journalEntryLinesTableBody.querySelectorAll('.journal-entry-line').forEach(row => {
+            const accountId = row.querySelector('.account-selector').value;
+            const lineDescription = row.querySelector('.line-description-field').value.trim();
+            const debit = parseFloat(row.querySelector('.debit-field').value) || 0;
+            const credit = parseFloat(row.querySelector('.credit-field').value) || 0;
+
+            if (debit > 0 || credit > 0) {
+                lines.push({
+                    account_id: accountId,
+                    description: lineDescription,
+                    debit_amount: debit,
+                    credit_amount: credit
+                });
+            }
+        });
+
+        if (lines.length === 0) {
+            alert("يرجى إضافة بنود للقيد");
+            return;
+        }
+
+        try {
+            const saveButton = document.getElementById('save-journal-entry-form-btn');
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.textContent = 'جاري الحفظ...';
+            }
+
+            // Generate entry number if new
+            let entryNumber = referenceNumber;
+            if (!entryId && !entryNumber) {
+                // Auto-generate entry number: JE-YYYYMMDD-XXX
+                const dateStr = entryDate.replace(/-/g, '');
+                const { data: lastEntry } = await window.DB.from('journal_entries')
+                    .select('entry_number')
+                    .eq('company_id', window.currentUser?.company_id)
+                    .like('entry_number', `JE-${dateStr}%`)
+                    .order('entry_number', { ascending: false })
+                    .limit(1);
+
+                let sequence = 1;
+                if (lastEntry && lastEntry.length > 0) {
+                    const lastNum = lastEntry[0].entry_number.split('-').pop();
+                    sequence = parseInt(lastNum) + 1;
+                }
+                entryNumber = `JE-${dateStr}-${sequence.toString().padStart(3, '0')}`;
+            }
+
+            const journalData = {
+                company_id: window.currentUser?.company_id,
+                branch_id: window.currentUser?.branch_id || null,
+                entry_number: entryNumber,
+                entry_date: entryDate,
+                description: description,
+                total_debit: totalDebit,
+                total_credit: totalCredit,
+                status: 'draft',
+                created_by: window.currentUser?.id
+            };
+
+            if (entryId) {
+                // Update existing entry - not implemented yet as it's complex
+                alert("تعديل القيود غير مدعوم حالياً. يرجى حذف القيد وإنشاء قيد جديد.");
+                return;
+            } else {
+                // Insert new journal entry
+                const { data: journalEntry, error: journalError } = await window.DB.from('journal_entries')
+                    .insert([journalData])
+                    .select()
+                    .single();
+
+                if (journalError) {
+                    console.error('Database error saving journal entry:', journalError);
+                    throw new Error(journalError.message || 'فشل حفظ القيد');
+                }
+
+                // Insert journal entry lines
+                const linesWithEntryId = lines.map(line => ({
+                    ...line,
+                    journal_entry_id: journalEntry.id
+                }));
+
+                const { error: linesError } = await window.DB.from('journal_entry_lines')
+                    .insert(linesWithEntryId);
+
+                if (linesError) {
+                    console.error('Database error saving journal entry lines:', linesError);
+                    // Try to delete the parent entry if lines failed
+                    await window.DB.from('journal_entries').delete().eq('id', journalEntry.id);
+                    throw new Error('فشل حفظ بنود القيد');
+                }
+
+                alert(`تم إضافة القيد بنجاح\nرقم القيد: ${entryNumber}`);
+                journalEntryFormContainer.classList.add('hidden');
+                await loadAndRenderJournalEntries();
+            }
+
+        } catch (error) {
+            console.error('Error saving journal entry:', error);
+            alert('خطأ في حفظ القيد: ' + (error.message || 'خطأ غير معروف'));
+        } finally {
+            const saveButton = document.getElementById('save-journal-entry-form-btn');
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'حفظ القيد';
+            }
+        }
     });
 
 
