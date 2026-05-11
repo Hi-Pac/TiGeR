@@ -766,6 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 expenses: window.initExpensesModule,
                 banks: window.initBanksModule,
                 accounting: window.initAccountingModule,
+                profile: window.initProfileModule,
                 settings: window.initSettingsModule,
                 help: window.initHelpModule
             };
