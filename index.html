@@ -81,22 +81,34 @@
                     </div>
 
                     <!-- Password -->
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <label for="login-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">كلمة المرور</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <i class="fas fa-lock text-gray-400"></i>
                             </div>
                             <input type="password" id="login-password" autocomplete="current-password" required
-                                   class="form-input pr-10 rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                   class="form-input pr-10 pl-10 rounded-xl border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                                    placeholder="••••••••">
+                            <button type="button" id="toggle-password-btn" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                <i class="fas fa-eye" id="toggle-password-icon"></i>
+                            </button>
                         </div>
+                    </div>
+
+                    <!-- Remember me & Forgot password -->
+                    <div class="flex items-center justify-between mb-6">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="remember-me" class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2">
+                            <span class="mr-2 text-sm text-gray-600 dark:text-gray-400">تذكرني</span>
+                        </label>
+                        <a href="#" class="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors">هل نسيت كلمة المرور؟</a>
                     </div>
 
                     <!-- Submit button -->
                     <button type="submit" id="login-btn"
                             class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none shadow-lg">
-                        <span class="flex items-center justify-center">
+                        <span class="flex items-center justify-center" id="login-btn-content">
                             <i class="fas fa-sign-in-alt ml-2"></i>
                             تسجيل الدخول
                         </span>
@@ -106,6 +118,7 @@
                 <!-- Footer text -->
                 <div class="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
                     <p>نظام متكامل لإدارة الموارد والمخزون</p>
+                    <p class="mt-2 text-purple-600 dark:text-purple-400 font-medium">TiGeR ERP v2.0</p>
                 </div>
             </div>
         </div>

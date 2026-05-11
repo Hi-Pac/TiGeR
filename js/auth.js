@@ -366,8 +366,21 @@
         const loginForm  = document.getElementById('login-form');
         const loginBtn   = document.getElementById('login-btn');
         const loginError = document.getElementById('login-error');
+        const togglePasswordBtn = document.getElementById('toggle-password-btn');
+        const passwordInput = document.getElementById('login-password');
+        const togglePasswordIcon = document.getElementById('toggle-password-icon');
 
         if (!loginForm) return;
+
+        // Password visibility toggle
+        if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePasswordIcon.classList.toggle('fa-eye');
+                togglePasswordIcon.classList.toggle('fa-eye-slash');
+            });
+        }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -390,7 +403,10 @@
 
             if (loginBtn) {
                 loginBtn.disabled = true;
-                loginBtn.innerHTML = '<span class="btn-spinner"></span> جاري تسجيل الدخول...';
+                const btnContent = document.getElementById('login-btn-content');
+                if (btnContent) {
+                    btnContent.innerHTML = '<span class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></span> جاري تسجيل الدخول...';
+                }
             }
             if (loginError) loginError.classList.add('hidden');
 
@@ -408,7 +424,18 @@
                 }
                 if (loginBtn) {
                     loginBtn.disabled = false;
-                    loginBtn.innerHTML = '<span class="flex items-center justify-center"><i class="fas fa-sign-in-alt ml-2"></i>تسجيل الدخول</span>';
+                    const btnContent = document.getElementById('login-btn-content');
+                    if (btnContent) {
+                        btnContent.innerHTML = '<i class="fas fa-sign-in-alt ml-2"></i>تسجيل الدخول';
+                    }
+                }
+            } else {
+                // Success - show loading state for app initialization
+                if (loginBtn) {
+                    const btnContent = document.getElementById('login-btn-content');
+                    if (btnContent) {
+                        btnContent.innerHTML = '<span class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></span> جاري تحميل النظام...';
+                    }
                 }
             }
             // On success: AppAuth.login() calls _showApp() and fires auth:signedIn.
