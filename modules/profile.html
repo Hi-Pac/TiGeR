@@ -1,0 +1,171 @@
+<div class="max-w-5xl mx-auto">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">الملف الشخصي</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">إدارة معلومات حسابك وإعدادات الأمان</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sidebar with user info -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4" id="profile-avatar">
+                        <span id="profile-avatar-initial">م</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 text-center" id="profile-display-name">-</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" id="profile-role-badge">-</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-2" id="profile-email">-</p>
+                </div>
+
+                <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">الحالة:</span>
+                            <span class="text-green-600 dark:text-green-400 font-medium" id="profile-status">نشط</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">آخر تسجيل دخول:</span>
+                            <span class="text-gray-800 dark:text-gray-200" id="profile-last-login">-</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">تاريخ الإنشاء:</span>
+                            <span class="text-gray-800 dark:text-gray-200" id="profile-created-at">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content area -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Personal Information -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">المعلومات الشخصية</h3>
+                </div>
+                <form id="profile-info-form" class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="profile-full-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الاسم الكامل</label>
+                            <input type="text" id="profile-full-name" required
+                                   class="form-input rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="profile-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رقم الهاتف</label>
+                            <input type="tel" id="profile-phone"
+                                   class="form-input rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200">
+                            <i class="fas fa-save ml-2"></i>
+                            حفظ التغييرات
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Change Password -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">تغيير كلمة المرور</h3>
+                </div>
+                <form id="profile-password-form" class="p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="profile-current-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">كلمة المرور الحالية</label>
+                            <div class="relative">
+                                <input type="password" id="profile-current-password" required
+                                       class="form-input rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10">
+                                <button type="button" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="profile-current-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="profile-new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">كلمة المرور الجديدة</label>
+                            <div class="relative">
+                                <input type="password" id="profile-new-password" required minlength="6"
+                                       class="form-input rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10">
+                                <button type="button" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="profile-new-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يجب أن تحتوي على 6 أحرف على الأقل</p>
+                        </div>
+                        <div>
+                            <label for="profile-confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تأكيد كلمة المرور</label>
+                            <div class="relative">
+                                <input type="password" id="profile-confirm-password" required
+                                       class="form-input rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10">
+                                <button type="button" class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600 toggle-password-btn" data-target="profile-confirm-password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200">
+                            <i class="fas fa-key ml-2"></i>
+                            تحديث كلمة المرور
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Session Management -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">إدارة الجلسة</h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                            <div>
+                                <p class="font-medium text-gray-800 dark:text-gray-200">تسجيل خروج تلقائي عند السكون</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">سيتم تسجيل خروجك تلقائياً بعد فترة من عدم النشاط</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="auto-logout-enabled" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                            </label>
+                        </div>
+                        <div id="auto-logout-settings" class="space-y-4 hidden">
+                            <div>
+                                <label for="idle-timeout-minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">مدة السكون (بالدقائق)</label>
+                                <select id="idle-timeout-minutes" class="form-select rounded-lg border-gray-300 dark:border-gray-600">
+                                    <option value="5">5 دقائق</option>
+                                    <option value="10">10 دقائق</option>
+                                    <option value="15" selected>15 دقيقة</option>
+                                    <option value="30">30 دقيقة</option>
+                                    <option value="60">ساعة واحدة</option>
+                                    <option value="120">ساعتين</option>
+                                </select>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سيتم تسجيل خروجك تلقائياً بعد هذه المدة من عدم النشاط</p>
+                            </div>
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                <div class="flex items-start">
+                                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 ml-3"></i>
+                                    <div class="text-sm text-blue-800 dark:text-blue-200">
+                                        <p class="font-medium mb-1">النشاط يشمل:</p>
+                                        <ul class="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
+                                            <li>تحريك الماوس</li>
+                                            <li>الضغط على لوحة المفاتيح</li>
+                                            <li>النقر على أي عنصر في الصفحة</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pt-4">
+                            <button type="button" id="save-session-settings-btn" class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200">
+                                <i class="fas fa-save ml-2"></i>
+                                حفظ إعدادات الجلسة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

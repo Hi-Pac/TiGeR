@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         expenses: { label: 'المصروفات', actions: ['view', 'create', 'edit', 'delete'] },
         banks: { label: 'البنوك والخزائن', actions: ['view', 'create', 'edit', 'delete'] },
         accounting: { label: 'الحسابات', actions: ['view', 'create', 'edit', 'export'] },
+        profile: { label: 'الملف الشخصي', actions: ['view'] },
         settings: { label: 'الإعدادات', actions: ['view', 'manage'] },
         help: { label: 'المساعدة', actions: ['view'] }
     });

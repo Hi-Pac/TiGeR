@@ -515,4 +515,95 @@
         return 'فشل تسجيل الدخول. يرجى المحاولة مجدداً.';
     }
 
+    // ── Auto-logout functionality ─────────────────────────────────────────
+    let _idleTimer = null;
+    let _idleTimeoutMs = 15 * 60 * 1000; // 15 minutes default
+    let _autoLogoutEnabled = false;
+
+    function _resetIdleTimer() {
+        if (!_autoLogoutEnabled || !window.AppAuth.isAuthenticated()) return;
+
+        if (_idleTimer) {
+            clearTimeout(_idleTimer);
+        }
+
+        _idleTimer = setTimeout(() => {
+            console.log('Auto-logout: User idle for', _idleTimeoutMs / 60000, 'minutes');
+            _performAutoLogout();
+        }, _idleTimeoutMs);
+    }
+
+    async function _performAutoLogout() {
+        if (!window.AppAuth.isAuthenticated()) return;
+
+        try {
+            // Show notification before logout
+            if (window.AppNotify) {
+                window.AppNotify.warning('تم تسجيل الخروج تلقائياً بسبب عدم النشاط.');
+            }
+
+            // Perform logout
+            await window.AppAuth.logout();
+        } catch (error) {
+            console.error('Auto-logout error:', error);
+        }
+    }
+
+    function _setupIdleDetection() {
+        // Track user activity
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+        activityEvents.forEach(eventName => {
+            document.addEventListener(eventName, _resetIdleTimer, true);
+        });
+
+        // Start timer initially
+        _resetIdleTimer();
+    }
+
+    function _configureAutoLogout(enabled, timeoutMinutes) {
+        _autoLogoutEnabled = enabled;
+        _idleTimeoutMs = timeoutMinutes * 60 * 1000;
+
+        // Clear existing timer
+        if (_idleTimer) {
+            clearTimeout(_idleTimer);
+            _idleTimer = null;
+        }
+
+        // Start new timer if enabled
+        if (enabled && window.AppAuth.isAuthenticated()) {
+            _resetIdleTimer();
+        }
+
+        console.log('Auto-logout configured:', enabled ? `Enabled (${timeoutMinutes} min)` : 'Disabled');
+    }
+
+    // Load settings from localStorage on init
+    function _loadAutoLogoutSettings() {
+        const enabled = localStorage.getItem('autoLogoutEnabled') === 'true';
+        const timeoutMinutes = parseInt(localStorage.getItem('idleTimeoutMinutes') || '15');
+        _configureAutoLogout(enabled, timeoutMinutes);
+    }
+
+    // ── Public API extension ───────────────────────────────────────────────
+    window.AppAuth = {
+        ...window.AppAuth,
+        configureAutoLogout: _configureAutoLogout,
+        getCurrentUser: () => ({ ..._user, ...(_profile || {}) })
+    };
+
+    // Setup idle detection when authenticated
+    window.addEventListener('auth:signedIn', () => {
+        _loadAutoLogoutSettings();
+        _setupIdleDetection();
+    });
+
+    window.addEventListener('auth:signedOut', () => {
+        if (_idleTimer) {
+            clearTimeout(_idleTimer);
+            _idleTimer = null;
+        }
+    });
+
 })();
