@@ -305,6 +305,98 @@ function fmtMoney(n) {
 }
 
 // ===========================================================================
+// Inventory Validation
+// ===========================================================================
+
+/**
+ * Validate if sufficient inventory exists for a sale.
+ * @param {number} requestedQty - Quantity requested to sell
+ * @param {number} availableStock - Current available stock quantity
+ * @param {object} options - Additional options
+ * @param {string} options.productName - Product name for error message
+ * @param {boolean} options.allowNegative - Allow negative stock (default: false)
+ * @returns {object} { valid: boolean, shortage: number, message: string }
+ */
+function validateInventoryAvailability(requestedQty, availableStock, options = {}) {
+    const requested = Number(requestedQty) || 0;
+    const available = Number(availableStock) || 0;
+    const allowNegative = options.allowNegative || false;
+    const productName = options.productName || 'المنتج';
+
+    if (requested <= 0) {
+        return {
+            valid: false,
+            shortage: 0,
+            message: 'الكمية المطلوبة يجب أن تكون أكبر من صفر'
+        };
+    }
+
+    if (allowNegative || requested <= available) {
+        return {
+            valid: true,
+            shortage: 0,
+            message: ''
+        };
+    }
+
+    const shortage = requested - available;
+    return {
+        valid: false,
+        shortage: shortage,
+        message: `${productName}: الكمية المطلوبة ${requested} أكبر من المتاح ${available}. النقص: ${shortage}`
+    };
+}
+
+/**
+ * Validate multiple items against inventory stock.
+ * @param {Array} items - Array of {product_id, product_name, quantity, warehouse_id}
+ * @param {Array} stockData - Array of {product_id, warehouse_id, quantity_on_hand}
+ * @param {object} options - Additional options
+ * @returns {object} { valid: boolean, errors: Array, totalShortage: number }
+ */
+function validateItemsInventory(items, stockData, options = {}) {
+    const allowNegative = options.allowNegative || false;
+    const errors = [];
+    let totalShortage = 0;
+
+    // Create a map for quick stock lookup
+    const stockMap = new Map();
+    (stockData || []).forEach(stock => {
+        const key = `${stock.product_id}_${stock.warehouse_id}`;
+        stockMap.set(key, Number(stock.quantity_on_hand) || 0);
+    });
+
+    items.forEach((item, index) => {
+        const key = `${item.product_id}_${item.warehouse_id}`;
+        const availableStock = stockMap.get(key) || 0;
+        const productName = item.product_name || `الصنف #${index + 1}`;
+
+        const validation = validateInventoryAvailability(
+            item.quantity,
+            availableStock,
+            { productName, allowNegative }
+        );
+
+        if (!validation.valid) {
+            errors.push({
+                index: index,
+                productId: item.product_id,
+                productName: productName,
+                message: validation.message,
+                shortage: validation.shortage
+            });
+            totalShortage += validation.shortage;
+        }
+    });
+
+    return {
+        valid: errors.length === 0,
+        errors: errors,
+        totalShortage: totalShortage
+    };
+}
+
+// ===========================================================================
 // Export — works in both Node.js (Jest) and browser environments
 // ===========================================================================
 const ERPUtils = {
@@ -340,6 +432,10 @@ const ERPUtils = {
 
     // Accounting
     getJournalBalanceStatus,
+
+    // Inventory Validation
+    validateInventoryAvailability,
+    validateItemsInventory,
 
     // Formatting
     fmtMoney,
