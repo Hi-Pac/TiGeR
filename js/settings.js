@@ -209,12 +209,12 @@ async function initSettingsModule() {
             btn.addEventListener('click', async () => {
                 if (!confirm('هل أنت متأكد من حذف هذا التصنيف؟')) return;
                 const id = btn.dataset.id;
-                const { error } = await window.DB.from('product_categories').delete().eq('id', id).execute();
-                if (error) {
-                    window.AppNotify.error('فشل حذف التصنيف: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('product_categories').eq('id', id).softDelete();
                     window.AppNotify.success('تم حذف التصنيف بنجاح.');
                     await loadProductCategories();
+                } catch (error) {
+                    window.AppNotify.error('فشل حذف التصنيف: ' + error.message);
                 }
             });
         });
@@ -263,12 +263,12 @@ async function initSettingsModule() {
             btn.addEventListener('click', async () => {
                 if (!confirm('هل أنت متأكد من حذف هذه الوحدة؟')) return;
                 const id = btn.dataset.id;
-                const { error } = await window.DB.from('product_units').delete().eq('id', id).execute();
-                if (error) {
-                    window.AppNotify.error('فشل حذف الوحدة: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('product_units').eq('id', id).softDelete();
                     window.AppNotify.success('تم حذف الوحدة بنجاح.');
                     await loadProductUnits();
+                } catch (error) {
+                    window.AppNotify.error('فشل حذف الوحدة: ' + error.message);
                 }
             });
         });
@@ -319,13 +319,13 @@ async function initSettingsModule() {
             btn.addEventListener('click', async () => {
                 if (!confirm('هل أنت متأكد من حذف هذا المخزن؟')) return;
                 const id = btn.dataset.id;
-                const { error } = await window.DB.from('warehouses').delete().eq('id', id).execute();
-                if (error) {
-                    window.AppNotify.error('فشل حذف المخزن: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('warehouses').eq('id', id).softDelete();
                     window.AppNotify.success('تم حذف المخزن بنجاح.');
                     await loadWarehousesForRefData();
                     await loadWarehouses(); // Refresh the dropdown lists
+                } catch (error) {
+                    window.AppNotify.error('فشل حذف المخزن: ' + error.message);
                 }
             });
         });
@@ -376,12 +376,12 @@ async function initSettingsModule() {
             btn.addEventListener('click', async () => {
                 if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) return;
                 const id = btn.dataset.id;
-                const { error } = await window.DB.from('branches').delete().eq('id', id).execute();
-                if (error) {
-                    window.AppNotify.error('فشل حذف الفرع: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('branches').eq('id', id).softDelete();
                     window.AppNotify.success('تم حذف الفرع بنجاح.');
                     await loadBranches();
+                } catch (error) {
+                    window.AppNotify.error('فشل حذف الفرع: ' + error.message);
                 }
             });
         });
@@ -830,27 +830,24 @@ async function initSettingsModule() {
             };
 
             if (id) {
-                const { error } = await window.DB.from('product_categories')
-                    .update(payload)
-                    .eq('id', id)
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل تحديث التصنيف: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('product_categories')
+                        .eq('id', id)
+                        .update(payload);
                     window.AppNotify.success('تم تحديث التصنيف بنجاح.');
                     productCategoryForm.reset();
                     await loadProductCategories();
+                } catch (error) {
+                    window.AppNotify.error('فشل تحديث التصنيف: ' + error.message);
                 }
             } else {
-                const { error } = await window.DB.from('product_categories')
-                    .insert([payload])
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل إضافة التصنيف: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('product_categories').insert(payload);
                     window.AppNotify.success('تم إضافة التصنيف بنجاح.');
                     productCategoryForm.reset();
                     await loadProductCategories();
+                } catch (error) {
+                    window.AppNotify.error('فشل إضافة التصنيف: ' + error.message);
                 }
             }
         });
@@ -880,27 +877,24 @@ async function initSettingsModule() {
             };
 
             if (id) {
-                const { error } = await window.DB.from('product_units')
-                    .update(payload)
-                    .eq('id', id)
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل تحديث الوحدة: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('product_units')
+                        .eq('id', id)
+                        .update(payload);
                     window.AppNotify.success('تم تحديث الوحدة بنجاح.');
                     productUnitForm.reset();
                     await loadProductUnits();
+                } catch (error) {
+                    window.AppNotify.error('فشل تحديث الوحدة: ' + error.message);
                 }
             } else {
-                const { error } = await window.DB.from('product_units')
-                    .insert([payload])
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل إضافة الوحدة: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('product_units').insert(payload);
                     window.AppNotify.success('تم إضافة الوحدة بنجاح.');
                     productUnitForm.reset();
                     await loadProductUnits();
+                } catch (error) {
+                    window.AppNotify.error('فشل إضافة الوحدة: ' + error.message);
                 }
             }
         });
@@ -931,29 +925,26 @@ async function initSettingsModule() {
             };
 
             if (id) {
-                const { error } = await window.DB.from('warehouses')
-                    .update(payload)
-                    .eq('id', id)
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل تحديث المخزن: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('warehouses')
+                        .eq('id', id)
+                        .update(payload);
                     window.AppNotify.success('تم تحديث المخزن بنجاح.');
                     warehouseForm.reset();
                     await loadWarehousesForRefData();
                     await loadWarehouses(); // Refresh dropdowns
+                } catch (error) {
+                    window.AppNotify.error('فشل تحديث المخزن: ' + error.message);
                 }
             } else {
-                const { error } = await window.DB.from('warehouses')
-                    .insert([payload])
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل إضافة المخزن: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('warehouses').insert(payload);
                     window.AppNotify.success('تم إضافة المخزن بنجاح.');
                     warehouseForm.reset();
                     await loadWarehousesForRefData();
                     await loadWarehouses(); // Refresh dropdowns
+                } catch (error) {
+                    window.AppNotify.error('فشل إضافة المخزن: ' + error.message);
                 }
             }
         });
@@ -984,27 +975,24 @@ async function initSettingsModule() {
             };
 
             if (id) {
-                const { error } = await window.DB.from('branches')
-                    .update(payload)
-                    .eq('id', id)
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل تحديث الفرع: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('branches')
+                        .eq('id', id)
+                        .update(payload);
                     window.AppNotify.success('تم تحديث الفرع بنجاح.');
                     branchForm.reset();
                     await loadBranches();
+                } catch (error) {
+                    window.AppNotify.error('فشل تحديث الفرع: ' + error.message);
                 }
             } else {
-                const { error } = await window.DB.from('branches')
-                    .insert([payload])
-                    .execute();
-                if (error) {
-                    window.AppNotify.error('فشل إضافة الفرع: ' + error.message);
-                } else {
+                try {
+                    await window.DB.from('branches').insert(payload);
                     window.AppNotify.success('تم إضافة الفرع بنجاح.');
                     branchForm.reset();
                     await loadBranches();
+                } catch (error) {
+                    window.AppNotify.error('فشل إضافة الفرع: ' + error.message);
                 }
             }
         });
