@@ -69,6 +69,32 @@ async function initSettingsModule() {
     const addLookupItemBtn = settingsModuleNode.querySelector('#add-lookup-item-btn');
     const lookupItemsBody = settingsModuleNode.querySelector('#lookup-items-body');
 
+    const productCategoryForm = settingsModuleNode.querySelector('#product-category-form');
+    const productCategoryIdField = settingsModuleNode.querySelector('#product-category-id-field');
+    const productCategoryNameField = settingsModuleNode.querySelector('#product-category-name-field');
+    const productCategoryDescField = settingsModuleNode.querySelector('#product-category-desc-field');
+    const productCategoriesBody = settingsModuleNode.querySelector('#product-categories-tbody');
+
+    const productUnitForm = settingsModuleNode.querySelector('#product-unit-form');
+    const productUnitIdField = settingsModuleNode.querySelector('#product-unit-id-field');
+    const productUnitNameField = settingsModuleNode.querySelector('#product-unit-name-field');
+    const productUnitAbbrField = settingsModuleNode.querySelector('#product-unit-abbr-field');
+    const productUnitsBody = settingsModuleNode.querySelector('#product-units-tbody');
+
+    const warehouseForm = settingsModuleNode.querySelector('#warehouse-form');
+    const warehouseIdField = settingsModuleNode.querySelector('#warehouse-id-field');
+    const warehouseNameField = settingsModuleNode.querySelector('#warehouse-name-field');
+    const warehouseCodeField = settingsModuleNode.querySelector('#warehouse-code-field');
+    const warehouseLocationField = settingsModuleNode.querySelector('#warehouse-location-field');
+    const warehousesRefBody = settingsModuleNode.querySelector('#warehouses-ref-tbody');
+
+    const branchForm = settingsModuleNode.querySelector('#branch-form');
+    const branchIdField = settingsModuleNode.querySelector('#branch-id-field');
+    const branchNameField = settingsModuleNode.querySelector('#branch-name-field');
+    const branchCodeField = settingsModuleNode.querySelector('#branch-code-field');
+    const branchAddressField = settingsModuleNode.querySelector('#branch-address-field');
+    const branchesBody = settingsModuleNode.querySelector('#branches-tbody');
+
     const LOOKUP_LABELS = {
         currencies: 'العملات',
         dateFormats: 'تنسيقات التاريخ',
@@ -106,6 +132,259 @@ async function initSettingsModule() {
         users = Array.isArray(data) ? data.filter((user) => user.status === 'active') : [];
         permissionOverrideUserField.innerHTML = '<option value="">اختر مستخدم...</option>' +
             users.map((user) => `<option value="${user.id}">${user.full_name} — ${window.AppConfig.roleLabels[user.role] || user.role}</option>`).join('');
+    }
+
+    async function loadProductCategories() {
+        const { data } = await window.DB.from('product_categories')
+            .select('*')
+            .order('name_ar', { ascending: true })
+            .get();
+        renderProductCategoriesTable(Array.isArray(data) ? data : []);
+    }
+
+    async function loadProductUnits() {
+        const { data } = await window.DB.from('product_units')
+            .select('*')
+            .order('name_ar', { ascending: true })
+            .get();
+        renderProductUnitsTable(Array.isArray(data) ? data : []);
+    }
+
+    async function loadWarehousesForRefData() {
+        const { data } = await window.DB.from('warehouses')
+            .select('*')
+            .order('name', { ascending: true })
+            .get();
+        renderWarehousesTable(Array.isArray(data) ? data : []);
+    }
+
+    async function loadBranches() {
+        const { data } = await window.DB.from('branches')
+            .select('*')
+            .order('name', { ascending: true })
+            .get();
+        renderBranchesTable(Array.isArray(data) ? data : []);
+    }
+
+    function renderProductCategoriesTable(categories) {
+        if (!productCategoriesBody) return;
+        if (!categories.length) {
+            productCategoriesBody.innerHTML = '<tr><td colspan="4"><div class="empty-state">لا توجد تصنيفات بعد. أضف تصنيف جديد.</div></td></tr>';
+            return;
+        }
+        productCategoriesBody.innerHTML = categories.map((cat) => {
+            const statusBadge = cat.status === 'active'
+                ? '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">نشط</span>'
+                : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">غير نشط</span>';
+            return `
+                <tr>
+                    <td>${cat.name_ar || cat.name || ''}</td>
+                    <td>${cat.description || '—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button type="button" class="text-blue-600 hover:text-blue-800 mr-2 edit-category-btn" data-id="${cat.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 hover:text-red-800 delete-category-btn" data-id="${cat.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        productCategoriesBody.querySelectorAll('.edit-category-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const category = categories.find((c) => String(c.id) === String(id));
+                if (!category) return;
+                productCategoryIdField.value = category.id;
+                productCategoryNameField.value = category.name_ar || category.name || '';
+                productCategoryDescField.value = category.description || '';
+                productCategoryNameField.focus();
+            });
+        });
+
+        productCategoriesBody.querySelectorAll('.delete-category-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('هل أنت متأكد من حذف هذا التصنيف؟')) return;
+                const id = btn.dataset.id;
+                const { error } = await window.DB.from('product_categories').delete().eq('id', id).execute();
+                if (error) {
+                    window.AppNotify.error('فشل حذف التصنيف: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم حذف التصنيف بنجاح.');
+                    await loadProductCategories();
+                }
+            });
+        });
+    }
+
+    function renderProductUnitsTable(units) {
+        if (!productUnitsBody) return;
+        if (!units.length) {
+            productUnitsBody.innerHTML = '<tr><td colspan="4"><div class="empty-state">لا توجد وحدات قياس بعد. أضف وحدة جديدة.</div></td></tr>';
+            return;
+        }
+        productUnitsBody.innerHTML = units.map((unit) => {
+            const statusBadge = unit.status === 'active'
+                ? '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">نشط</span>'
+                : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">غير نشط</span>';
+            return `
+                <tr>
+                    <td>${unit.name_ar || unit.name || ''}</td>
+                    <td>${unit.abbreviation || '—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button type="button" class="text-blue-600 hover:text-blue-800 mr-2 edit-unit-btn" data-id="${unit.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 hover:text-red-800 delete-unit-btn" data-id="${unit.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        productUnitsBody.querySelectorAll('.edit-unit-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const unit = units.find((u) => String(u.id) === String(id));
+                if (!unit) return;
+                productUnitIdField.value = unit.id;
+                productUnitNameField.value = unit.name_ar || unit.name || '';
+                productUnitAbbrField.value = unit.abbreviation || '';
+                productUnitNameField.focus();
+            });
+        });
+
+        productUnitsBody.querySelectorAll('.delete-unit-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('هل أنت متأكد من حذف هذه الوحدة؟')) return;
+                const id = btn.dataset.id;
+                const { error } = await window.DB.from('product_units').delete().eq('id', id).execute();
+                if (error) {
+                    window.AppNotify.error('فشل حذف الوحدة: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم حذف الوحدة بنجاح.');
+                    await loadProductUnits();
+                }
+            });
+        });
+    }
+
+    function renderWarehousesTable(warehousesList) {
+        if (!warehousesRefBody) return;
+        if (!warehousesList.length) {
+            warehousesRefBody.innerHTML = '<tr><td colspan="5"><div class="empty-state">لا توجد مخازن بعد. أضف مخزن جديد.</div></td></tr>';
+            return;
+        }
+        warehousesRefBody.innerHTML = warehousesList.map((wh) => {
+            const statusBadge = wh.status === 'active'
+                ? '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">نشط</span>'
+                : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">غير نشط</span>';
+            return `
+                <tr>
+                    <td>${wh.name || ''}</td>
+                    <td>${wh.code || '—'}</td>
+                    <td>${wh.location || '—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button type="button" class="text-blue-600 hover:text-blue-800 mr-2 edit-warehouse-btn" data-id="${wh.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 hover:text-red-800 delete-warehouse-btn" data-id="${wh.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        warehousesRefBody.querySelectorAll('.edit-warehouse-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const warehouse = warehousesList.find((w) => String(w.id) === String(id));
+                if (!warehouse) return;
+                warehouseIdField.value = warehouse.id;
+                warehouseNameField.value = warehouse.name || '';
+                warehouseCodeField.value = warehouse.code || '';
+                warehouseLocationField.value = warehouse.location || '';
+                warehouseNameField.focus();
+            });
+        });
+
+        warehousesRefBody.querySelectorAll('.delete-warehouse-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('هل أنت متأكد من حذف هذا المخزن؟')) return;
+                const id = btn.dataset.id;
+                const { error } = await window.DB.from('warehouses').delete().eq('id', id).execute();
+                if (error) {
+                    window.AppNotify.error('فشل حذف المخزن: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم حذف المخزن بنجاح.');
+                    await loadWarehousesForRefData();
+                    await loadWarehouses(); // Refresh the dropdown lists
+                }
+            });
+        });
+    }
+
+    function renderBranchesTable(branchesList) {
+        if (!branchesBody) return;
+        if (!branchesList.length) {
+            branchesBody.innerHTML = '<tr><td colspan="5"><div class="empty-state">لا توجد فروع بعد. أضف فرع جديد.</div></td></tr>';
+            return;
+        }
+        branchesBody.innerHTML = branchesList.map((br) => {
+            const statusBadge = br.status === 'active'
+                ? '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">نشط</span>'
+                : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">غير نشط</span>';
+            return `
+                <tr>
+                    <td>${br.name || ''}</td>
+                    <td>${br.code || '—'}</td>
+                    <td>${br.address || '—'}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button type="button" class="text-blue-600 hover:text-blue-800 mr-2 edit-branch-btn" data-id="${br.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 hover:text-red-800 delete-branch-btn" data-id="${br.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        branchesBody.querySelectorAll('.edit-branch-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const branch = branchesList.find((b) => String(b.id) === String(id));
+                if (!branch) return;
+                branchIdField.value = branch.id;
+                branchNameField.value = branch.name || '';
+                branchCodeField.value = branch.code || '';
+                branchAddressField.value = branch.address || '';
+                branchNameField.focus();
+            });
+        });
+
+        branchesBody.querySelectorAll('.delete-branch-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) return;
+                const id = btn.dataset.id;
+                const { error } = await window.DB.from('branches').delete().eq('id', id).execute();
+                if (error) {
+                    window.AppNotify.error('فشل حذف الفرع: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم حذف الفرع بنجاح.');
+                    await loadBranches();
+                }
+            });
+        });
     }
 
     function switchSettingsTab(targetTabId) {
@@ -333,7 +612,14 @@ async function initSettingsModule() {
     }
 
     async function hydrateAll() {
-        await Promise.all([loadWarehouses(), loadUsersForOverrides()]);
+        await Promise.all([
+            loadWarehouses(),
+            loadUsersForOverrides(),
+            loadProductCategories(),
+            loadProductUnits(),
+            loadWarehousesForRefData(),
+            loadBranches()
+        ]);
         hydrateCompanyInfo();
         hydrateGeneralSettings();
         hydrateFinancialSettings();
@@ -522,6 +808,210 @@ async function initSettingsModule() {
         hydrateGeneralSettings();
         hydrateSalesSettings();
         window.AppNotify?.success('تمت إضافة عنصر جديد للقائمة.');
+    });
+
+    productCategoryForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await withSubmit(event, async () => {
+            const id = productCategoryIdField.value.trim();
+            const name = productCategoryNameField.value.trim();
+            const description = productCategoryDescField.value.trim();
+
+            if (!name) {
+                window.AppNotify.warning('أدخل اسم التصنيف.');
+                return;
+            }
+
+            const payload = {
+                name_ar: name,
+                name: name,
+                description: description || null,
+                status: 'active'
+            };
+
+            if (id) {
+                const { error } = await window.DB.from('product_categories')
+                    .update(payload)
+                    .eq('id', id)
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل تحديث التصنيف: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم تحديث التصنيف بنجاح.');
+                    productCategoryForm.reset();
+                    await loadProductCategories();
+                }
+            } else {
+                const { error } = await window.DB.from('product_categories')
+                    .insert([payload])
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل إضافة التصنيف: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم إضافة التصنيف بنجاح.');
+                    productCategoryForm.reset();
+                    await loadProductCategories();
+                }
+            }
+        });
+    });
+
+    settingsModuleNode.querySelector('#cancel-category-btn')?.addEventListener('click', () => {
+        productCategoryForm?.reset();
+    });
+
+    productUnitForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await withSubmit(event, async () => {
+            const id = productUnitIdField.value.trim();
+            const name = productUnitNameField.value.trim();
+            const abbr = productUnitAbbrField.value.trim();
+
+            if (!name) {
+                window.AppNotify.warning('أدخل اسم الوحدة.');
+                return;
+            }
+
+            const payload = {
+                name_ar: name,
+                name: name,
+                abbreviation: abbr || null,
+                status: 'active'
+            };
+
+            if (id) {
+                const { error } = await window.DB.from('product_units')
+                    .update(payload)
+                    .eq('id', id)
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل تحديث الوحدة: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم تحديث الوحدة بنجاح.');
+                    productUnitForm.reset();
+                    await loadProductUnits();
+                }
+            } else {
+                const { error } = await window.DB.from('product_units')
+                    .insert([payload])
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل إضافة الوحدة: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم إضافة الوحدة بنجاح.');
+                    productUnitForm.reset();
+                    await loadProductUnits();
+                }
+            }
+        });
+    });
+
+    settingsModuleNode.querySelector('#cancel-unit-btn')?.addEventListener('click', () => {
+        productUnitForm?.reset();
+    });
+
+    warehouseForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await withSubmit(event, async () => {
+            const id = warehouseIdField.value.trim();
+            const name = warehouseNameField.value.trim();
+            const code = warehouseCodeField.value.trim();
+            const location = warehouseLocationField.value.trim();
+
+            if (!name) {
+                window.AppNotify.warning('أدخل اسم المخزن.');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                code: code || null,
+                location: location || null,
+                status: 'active'
+            };
+
+            if (id) {
+                const { error } = await window.DB.from('warehouses')
+                    .update(payload)
+                    .eq('id', id)
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل تحديث المخزن: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم تحديث المخزن بنجاح.');
+                    warehouseForm.reset();
+                    await loadWarehousesForRefData();
+                    await loadWarehouses(); // Refresh dropdowns
+                }
+            } else {
+                const { error } = await window.DB.from('warehouses')
+                    .insert([payload])
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل إضافة المخزن: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم إضافة المخزن بنجاح.');
+                    warehouseForm.reset();
+                    await loadWarehousesForRefData();
+                    await loadWarehouses(); // Refresh dropdowns
+                }
+            }
+        });
+    });
+
+    settingsModuleNode.querySelector('#cancel-warehouse-btn')?.addEventListener('click', () => {
+        warehouseForm?.reset();
+    });
+
+    branchForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await withSubmit(event, async () => {
+            const id = branchIdField.value.trim();
+            const name = branchNameField.value.trim();
+            const code = branchCodeField.value.trim();
+            const address = branchAddressField.value.trim();
+
+            if (!name) {
+                window.AppNotify.warning('أدخل اسم الفرع.');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                code: code || null,
+                address: address || null,
+                status: 'active'
+            };
+
+            if (id) {
+                const { error } = await window.DB.from('branches')
+                    .update(payload)
+                    .eq('id', id)
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل تحديث الفرع: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم تحديث الفرع بنجاح.');
+                    branchForm.reset();
+                    await loadBranches();
+                }
+            } else {
+                const { error } = await window.DB.from('branches')
+                    .insert([payload])
+                    .execute();
+                if (error) {
+                    window.AppNotify.error('فشل إضافة الفرع: ' + error.message);
+                } else {
+                    window.AppNotify.success('تم إضافة الفرع بنجاح.');
+                    branchForm.reset();
+                    await loadBranches();
+                }
+            }
+        });
+    });
+
+    settingsModuleNode.querySelector('#cancel-branch-btn')?.addEventListener('click', () => {
+        branchForm?.reset();
     });
 
     await hydrateAll();

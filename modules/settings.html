@@ -20,6 +20,7 @@
             <button type="button" class="settings-tab-btn" data-tab-target="notifications-settings-tab"><span>الإشعارات</span><i class="fas fa-bell"></i></button>
             <button type="button" class="settings-tab-btn" data-tab-target="permissions-settings-tab"><span>الصلاحيات</span><i class="fas fa-user-lock"></i></button>
             <button type="button" class="settings-tab-btn" data-tab-target="lookups-settings-tab"><span>القوائم المرجعية</span><i class="fas fa-list-check"></i></button>
+            <button type="button" class="settings-tab-btn" data-tab-target="reference-data-tab"><span>البيانات المرجعية</span><i class="fas fa-database"></i></button>
         </aside>
 
         <div class="settings-grid">
@@ -295,6 +296,181 @@
                                     </tr>
                                 </thead>
                                 <tbody id="lookup-items-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="reference-data-tab" class="settings-tab-pane settings-panel">
+                <h4 class="text-xl mb-4 flex items-center gap-2">
+                    <i class="fas fa-database text-purple-600"></i>
+                    إدارة البيانات المرجعية
+                </h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">إدارة التصنيفات، الوحدات، المخازن والفروع</p>
+
+                <div class="settings-grid">
+                    <!-- Product Categories -->
+                    <div class="settings-subcard">
+                        <h5 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-tags text-indigo-600"></i>
+                            تصنيفات الأصناف
+                        </h5>
+                        <form id="product-category-form" class="settings-form-grid mb-4">
+                            <input type="hidden" id="product-category-id-field">
+                            <div>
+                                <label for="product-category-name-field" class="block text-sm font-medium mb-1">اسم التصنيف <span class="text-red-500">*</span></label>
+                                <input type="text" id="product-category-name-field" required class="form-input rounded-lg" placeholder="مثال: حلويات">
+                            </div>
+                            <div>
+                                <label for="product-category-name-ar-field" class="block text-sm font-medium mb-1">الاسم بالعربية</label>
+                                <input type="text" id="product-category-name-ar-field" class="form-input rounded-lg" placeholder="اختياري">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="product-category-description-field" class="block text-sm font-medium mb-1">الوصف</label>
+                                <input type="text" id="product-category-description-field" class="form-input rounded-lg" placeholder="وصف اختياري">
+                            </div>
+                            <div class="md:col-span-2 flex gap-2">
+                                <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md transition-all">
+                                    <i class="fas fa-save ml-2"></i> حفظ
+                                </button>
+                                <button type="button" id="cancel-product-category-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg text-sm">إلغاء</button>
+                            </div>
+                        </form>
+                        <div class="overflow-x-auto">
+                            <table class="lookup-table">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الوصف</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="product-categories-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Product Units -->
+                    <div class="settings-subcard">
+                        <h5 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-ruler text-green-600"></i>
+                            وحدات القياس
+                        </h5>
+                        <form id="product-unit-form" class="settings-form-grid mb-4">
+                            <input type="hidden" id="product-unit-id-field">
+                            <div>
+                                <label for="product-unit-name-field" class="block text-sm font-medium mb-1">اسم الوحدة <span class="text-red-500">*</span></label>
+                                <input type="text" id="product-unit-name-field" required class="form-input rounded-lg" placeholder="مثال: كرتون">
+                            </div>
+                            <div>
+                                <label for="product-unit-abbreviation-field" class="block text-sm font-medium mb-1">الاختصار</label>
+                                <input type="text" id="product-unit-abbreviation-field" class="form-input rounded-lg" placeholder="مثال: كرتن">
+                            </div>
+                            <div class="md:col-span-2 flex gap-2">
+                                <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md transition-all">
+                                    <i class="fas fa-save ml-2"></i> حفظ
+                                </button>
+                                <button type="button" id="cancel-product-unit-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg text-sm">إلغاء</button>
+                            </div>
+                        </form>
+                        <div class="overflow-x-auto">
+                            <table class="lookup-table">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الاختصار</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="product-units-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Warehouses -->
+                    <div class="settings-subcard">
+                        <h5 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-warehouse text-orange-600"></i>
+                            المخازن
+                        </h5>
+                        <form id="warehouse-form" class="settings-form-grid mb-4">
+                            <input type="hidden" id="warehouse-id-field">
+                            <div>
+                                <label for="warehouse-name-field" class="block text-sm font-medium mb-1">اسم المخزن <span class="text-red-500">*</span></label>
+                                <input type="text" id="warehouse-name-field" required class="form-input rounded-lg" placeholder="مثال: المخزن الرئيسي">
+                            </div>
+                            <div>
+                                <label for="warehouse-code-field" class="block text-sm font-medium mb-1">الرمز</label>
+                                <input type="text" id="warehouse-code-field" class="form-input rounded-lg" placeholder="مثال: WH-01">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="warehouse-location-field" class="block text-sm font-medium mb-1">الموقع</label>
+                                <input type="text" id="warehouse-location-field" class="form-input rounded-lg" placeholder="العنوان أو الموقع">
+                            </div>
+                            <div class="md:col-span-2 flex gap-2">
+                                <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md transition-all">
+                                    <i class="fas fa-save ml-2"></i> حفظ
+                                </button>
+                                <button type="button" id="cancel-warehouse-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg text-sm">إلغاء</button>
+                            </div>
+                        </form>
+                        <div class="overflow-x-auto">
+                            <table class="lookup-table">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الرمز</th>
+                                        <th>الموقع</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="warehouses-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Branches -->
+                    <div class="settings-subcard">
+                        <h5 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-code-branch text-blue-600"></i>
+                            الفروع
+                        </h5>
+                        <form id="branch-form" class="settings-form-grid mb-4">
+                            <input type="hidden" id="branch-id-field">
+                            <div>
+                                <label for="branch-name-field" class="block text-sm font-medium mb-1">اسم الفرع <span class="text-red-500">*</span></label>
+                                <input type="text" id="branch-name-field" required class="form-input rounded-lg" placeholder="مثال: الفرع الرئيسي">
+                            </div>
+                            <div>
+                                <label for="branch-code-field" class="block text-sm font-medium mb-1">الرمز</label>
+                                <input type="text" id="branch-code-field" class="form-input rounded-lg" placeholder="مثال: BR-01">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="branch-address-field" class="block text-sm font-medium mb-1">العنوان</label>
+                                <input type="text" id="branch-address-field" class="form-input rounded-lg" placeholder="عنوان الفرع">
+                            </div>
+                            <div class="md:col-span-2 flex gap-2">
+                                <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md transition-all">
+                                    <i class="fas fa-save ml-2"></i> حفظ
+                                </button>
+                                <button type="button" id="cancel-branch-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg text-sm">إلغاء</button>
+                            </div>
+                        </form>
+                        <div class="overflow-x-auto">
+                            <table class="lookup-table">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الرمز</th>
+                                        <th>العنوان</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branches-body"></tbody>
                             </table>
                         </div>
                     </div>
