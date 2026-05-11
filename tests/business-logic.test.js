@@ -34,6 +34,8 @@ const {
     mapPurchaseStatusFilterToDb,
     mapCustomerRowToViewModel,
     getJournalBalanceStatus,
+    validateInventoryAvailability,
+    validateItemsInventory,
     fmtMoney,
 } = require('../js/business-logic');
 
@@ -556,5 +558,141 @@ describe('fmtMoney', () => {
     });
     it('includes the Egyptian Pound symbol', () => {
         expect(fmtMoney(50)).toContain('ج.م');
+    });
+});
+
+// ===========================================================================
+// 14. validateInventoryAvailability
+// ===========================================================================
+describe('validateInventoryAvailability', () => {
+    it('returns valid when requested quantity is less than available', () => {
+        const result = validateInventoryAvailability(5, 10);
+        expect(result.valid).toBe(true);
+        expect(result.shortage).toBe(0);
+        expect(result.message).toBe('');
+    });
+
+    it('returns valid when requested quantity equals available', () => {
+        const result = validateInventoryAvailability(10, 10);
+        expect(result.valid).toBe(true);
+        expect(result.shortage).toBe(0);
+    });
+
+    it('returns invalid when requested quantity exceeds available', () => {
+        const result = validateInventoryAvailability(15, 10);
+        expect(result.valid).toBe(false);
+        expect(result.shortage).toBe(5);
+        expect(result.message).toContain('النقص: 5');
+    });
+
+    it('returns invalid when requested quantity is zero or negative', () => {
+        const result = validateInventoryAvailability(0, 10);
+        expect(result.valid).toBe(false);
+        expect(result.message).toContain('يجب أن تكون أكبر من صفر');
+    });
+
+    it('uses product name in error message', () => {
+        const result = validateInventoryAvailability(20, 10, { productName: 'شوكولاتة' });
+        expect(result.valid).toBe(false);
+        expect(result.message).toContain('شوكولاتة');
+    });
+
+    it('allows negative stock when allowNegative is true', () => {
+        const result = validateInventoryAvailability(15, 10, { allowNegative: true });
+        expect(result.valid).toBe(true);
+        expect(result.shortage).toBe(0);
+    });
+
+    it('handles zero available stock', () => {
+        const result = validateInventoryAvailability(5, 0);
+        expect(result.valid).toBe(false);
+        expect(result.shortage).toBe(5);
+    });
+});
+
+// ===========================================================================
+// 15. validateItemsInventory
+// ===========================================================================
+describe('validateItemsInventory', () => {
+    it('returns valid when all items have sufficient stock', () => {
+        const items = [
+            { product_id: 'p1', product_name: 'منتج 1', quantity: 5, warehouse_id: 'w1' },
+            { product_id: 'p2', product_name: 'منتج 2', quantity: 3, warehouse_id: 'w1' }
+        ];
+        const stockData = [
+            { product_id: 'p1', warehouse_id: 'w1', quantity_on_hand: 10 },
+            { product_id: 'p2', warehouse_id: 'w1', quantity_on_hand: 8 }
+        ];
+
+        const result = validateItemsInventory(items, stockData);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.totalShortage).toBe(0);
+    });
+
+    it('returns invalid with errors when some items exceed stock', () => {
+        const items = [
+            { product_id: 'p1', product_name: 'شوكولاتة', quantity: 15, warehouse_id: 'w1' },
+            { product_id: 'p2', product_name: 'بسكويت', quantity: 3, warehouse_id: 'w1' }
+        ];
+        const stockData = [
+            { product_id: 'p1', warehouse_id: 'w1', quantity_on_hand: 10 },
+            { product_id: 'p2', warehouse_id: 'w1', quantity_on_hand: 8 }
+        ];
+
+        const result = validateItemsInventory(items, stockData);
+        expect(result.valid).toBe(false);
+        expect(result.errors).toHaveLength(1);
+        expect(result.errors[0].productName).toBe('شوكولاتة');
+        expect(result.errors[0].shortage).toBe(5);
+        expect(result.totalShortage).toBe(5);
+    });
+
+    it('handles items with no stock record (zero stock)', () => {
+        const items = [
+            { product_id: 'p1', product_name: 'منتج جديد', quantity: 5, warehouse_id: 'w1' }
+        ];
+        const stockData = []; // No stock records
+
+        const result = validateItemsInventory(items, stockData);
+        expect(result.valid).toBe(false);
+        expect(result.errors).toHaveLength(1);
+        expect(result.errors[0].shortage).toBe(5);
+    });
+
+    it('calculates total shortage correctly for multiple items', () => {
+        const items = [
+            { product_id: 'p1', product_name: 'منتج 1', quantity: 15, warehouse_id: 'w1' },
+            { product_id: 'p2', product_name: 'منتج 2', quantity: 12, warehouse_id: 'w1' }
+        ];
+        const stockData = [
+            { product_id: 'p1', warehouse_id: 'w1', quantity_on_hand: 10 },
+            { product_id: 'p2', warehouse_id: 'w1', quantity_on_hand: 8 }
+        ];
+
+        const result = validateItemsInventory(items, stockData);
+        expect(result.valid).toBe(false);
+        expect(result.errors).toHaveLength(2);
+        expect(result.totalShortage).toBe(9); // (15-10) + (12-8) = 5 + 4
+    });
+
+    it('allows negative stock when allowNegative is true', () => {
+        const items = [
+            { product_id: 'p1', product_name: 'منتج 1', quantity: 15, warehouse_id: 'w1' }
+        ];
+        const stockData = [
+            { product_id: 'p1', warehouse_id: 'w1', quantity_on_hand: 10 }
+        ];
+
+        const result = validateItemsInventory(items, stockData, { allowNegative: true });
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('handles empty items array', () => {
+        const result = validateItemsInventory([], []);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.totalShortage).toBe(0);
     });
 });
