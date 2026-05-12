@@ -149,7 +149,33 @@ async function initAccountingModule() {
                 const accToEdit = chartOfAccountsData.find(a => a.id === accId);
                 if (accToEdit) {
                    resetCoaForm(accToEdit); // Call reset with data
-                   coaFormContainer.classList.remove('hidden'); 
+                   coaFormContainer.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Add delete listeners
+        accountingModuleNode.querySelectorAll('.delete-coa-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const accId = e.currentTarget.getAttribute('data-id');
+                const accToDelete = chartOfAccountsData.find(a => a.id === accId);
+                if (!accToDelete) return;
+
+                if (!confirm(`هل أنت متأكد من حذف الحساب: ${accToDelete.name}؟\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+                    return;
+                }
+
+                try {
+                    // Soft delete by setting status to 'inactive'
+                    await window.DB.from('chart_of_accounts')
+                        .eq('id', accId)
+                        .update({ status: 'inactive' });
+
+                    alert('تم حذف الحساب بنجاح');
+                    await loadAndRenderChartOfAccounts();
+                } catch (error) {
+                    console.error('Error deleting account:', error);
+                    alert('حدث خطأ أثناء حذف الحساب: ' + (error.message || 'خطأ غير معروف'));
                 }
             });
         });
@@ -294,16 +320,18 @@ async function initAccountingModule() {
         journalTotalDebitEl.textContent = totalDebit.toFixed(2);
         journalTotalCreditEl.textContent = totalCredit.toFixed(2);
 
+        // Allow save if balanced OR if both are zero (empty draft entry)
         if (totalDebit === totalCredit && totalDebit > 0) {
             journalBalanceStatusEl.textContent = 'متوازن';
             journalBalanceStatusEl.className = 'text-sm text-green-600 dark:text-green-400';
             if(document.getElementById('save-journal-entry-form-btn')) document.getElementById('save-journal-entry-form-btn').disabled = false;
-        } else if (totalDebit > 0 || totalCredit > 0) {
+        } else if (totalDebit === 0 && totalCredit === 0) {
+            journalBalanceStatusEl.textContent = 'قيد فارغ (مسودة)';
+            journalBalanceStatusEl.className = 'text-sm text-gray-500 dark:text-gray-400';
+            if(document.getElementById('save-journal-entry-form-btn')) document.getElementById('save-journal-entry-form-btn').disabled = false;
+        } else {
             journalBalanceStatusEl.textContent = 'غير متوازن';
             journalBalanceStatusEl.className = 'text-sm text-red-600 dark:text-red-400';
-             if(document.getElementById('save-journal-entry-form-btn')) document.getElementById('save-journal-entry-form-btn').disabled = true;
-        } else {
-            journalBalanceStatusEl.textContent = '';
              if(document.getElementById('save-journal-entry-form-btn')) document.getElementById('save-journal-entry-form-btn').disabled = true;
         }
     }
