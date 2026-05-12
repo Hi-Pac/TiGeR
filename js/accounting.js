@@ -90,7 +90,8 @@ async function initAccountingModule() {
                 .select('*')
                 .eq('company_id', window.AppAuth?.companyId())
                 .eq('status', 'active')
-                .order('code', { ascending: true });
+                .order('code', { ascending: true })
+                .get(); // ← Missing .get() call!
 
             if (error) {
                 console.error("Database error loading CoA:", error);
@@ -316,7 +317,8 @@ async function initAccountingModule() {
                 .select('*')
                 .eq('company_id', window.AppAuth?.companyId())
                 .order('entry_date', { ascending: false })
-                .order('entry_number', { ascending: false });
+                .order('entry_number', { ascending: false })
+                .get(); // ← Missing .get() call!
 
             if (error) {
                 console.error("Database error loading journal entries:", error);
@@ -430,7 +432,8 @@ async function initAccountingModule() {
                     .eq('company_id', window.AppAuth?.companyId())
                     .like('entry_number', `JE-${dateStr}%`)
                     .order('entry_number', { ascending: false })
-                    .limit(1);
+                    .limit(1)
+                    .get(); // ← Missing .get() call!
 
                 let sequence = 1;
                 if (lastEntry && lastEntry.length > 0) {
