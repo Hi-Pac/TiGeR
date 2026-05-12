@@ -195,17 +195,23 @@ async function initAccountingModule() {
             if (accountId) {
                 // Update existing account
                 delete accountData.current_balance; // Don't update current balance on edit
-                const { data, error } = await window.DB.from('chart_of_accounts')
-                    .update(accountData)
-                    .eq('id', accountId)
-                    .select();
-                result = { data, error };
+                try {
+                    const updatedAccount = await window.DB.from('chart_of_accounts')
+                        .eq('id', accountId)
+                        .update(accountData);
+                    result = { data: updatedAccount, error: null };
+                } catch (err) {
+                    result = { data: null, error: err };
+                }
             } else {
                 // Insert new account
-                const { data, error } = await window.DB.from('chart_of_accounts')
-                    .insert([accountData])
-                    .select();
-                result = { data, error };
+                try {
+                    const newAccount = await window.DB.from('chart_of_accounts')
+                        .insert(accountData);
+                    result = { data: newAccount, error: null };
+                } catch (err) {
+                    result = { data: null, error: err };
+                }
             }
 
             if (result.error) {
@@ -452,12 +458,11 @@ async function initAccountingModule() {
                 return;
             } else {
                 // Insert new journal entry
-                const { data: journalEntry, error: journalError } = await window.DB.from('journal_entries')
-                    .insert([journalData])
-                    .select()
-                    .single();
-
-                if (journalError) {
+                let journalEntry;
+                try {
+                    journalEntry = await window.DB.from('journal_entries')
+                        .insert(journalData);
+                } catch (journalError) {
                     console.error('Database error saving journal entry:', journalError);
                     throw new Error(journalError.message || 'فشل حفظ القيد');
                 }
@@ -468,13 +473,17 @@ async function initAccountingModule() {
                     journal_entry_id: journalEntry.id
                 }));
 
-                const { error: linesError } = await window.DB.from('journal_entry_lines')
-                    .insert(linesWithEntryId);
-
-                if (linesError) {
+                try {
+                    await window.DB.from('journal_entry_lines')
+                        .insertMany(linesWithEntryId);
+                } catch (linesError) {
                     console.error('Database error saving journal entry lines:', linesError);
                     // Try to delete the parent entry if lines failed
-                    await window.DB.from('journal_entries').delete().eq('id', journalEntry.id);
+                    try {
+                        await window.supabaseClient.from('journal_entries').delete().eq('id', journalEntry.id);
+                    } catch (deleteErr) {
+                        console.error('Failed to rollback journal entry:', deleteErr);
+                    }
                     throw new Error('فشل حفظ بنود القيد');
                 }
 
