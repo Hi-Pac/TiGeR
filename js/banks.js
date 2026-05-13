@@ -2,6 +2,10 @@ let allBankAccountsData = [];
 let allBankTransactionsData = []; // Might be loaded per account or filtered
 
 async function initBanksModule() {
+    // Reset stale state from any previous visit to this module.
+    allBankAccountsData = [];
+    allBankTransactionsData = [];
+
     console.log("Banks Module Initialized!");
 
     const banksModuleNode = document.getElementById('banks-module');

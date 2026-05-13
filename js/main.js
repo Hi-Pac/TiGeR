@@ -740,6 +740,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Track which module scripts have already been injected into the page.
     const _loadedModuleScripts = new Set();
 
+    // In-flight guard: prevents a second loadModule() call from racing the first.
+    let _moduleLoadInFlight = false;
+
     /**
      * Lazy-load a module's JS file the first time it is needed.
      * Subsequent calls for the same moduleId resolve immediately.
@@ -756,7 +759,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const loadModule = window.loadModule = async function(moduleId) {
+        if (_moduleLoadInFlight) return;
         if (!ensureModuleAccess(moduleId)) return;
+        _moduleLoadInFlight = true;
         window.showGlobalLoader(true);
         try {
             // 1. Fetch and inject the module's HTML template.
@@ -777,31 +782,40 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadModuleScript(moduleId);
 
             // 3. Run the module initializer now that both HTML and JS are ready.
-            const initializers = {
-                users: window.initUsersModule,
-                products: window.initProductsModule,
-                customers: window.initCustomersModule,
-                dashboard: window.initDashboardModule,
-                suppliers: window.initSuppliersModule,
-                purchases: window.initPurchasesModule,
-                sales: window.initSalesModule,
-                inventory: window.initInventoryModule,
-                expenses: window.initExpensesModule,
-                banks: window.initBanksModule,
-                accounting: window.initAccountingModule,
-                profile: window.initProfileModule,
-                settings: window.initSettingsModule,
-                help: window.initHelpModule
+            // NOTE: Initializer names are looked up from window at call-time (after the
+            // lazy script has loaded) so the reference is always fresh. Module scripts
+            // define plain top-level functions (e.g. `function initDashboardModule()`)
+            // which become window properties in non-strict classic scripts.
+            const INITIALIZER_MAP = {
+                users:      'initUsersModule',
+                products:   'initProductsModule',
+                customers:  'initCustomersModule',
+                dashboard:  'initDashboardModule',
+                suppliers:  'initSuppliersModule',
+                purchases:  'initPurchasesModule',
+                sales:      'initSalesModule',
+                inventory:  'initInventoryModule',
+                expenses:   'initExpensesModule',
+                banks:      'initBanksModule',
+                accounting: 'initAccountingModule',
+                profile:    'initProfileModule',
+                settings:   'initSettingsModule',
+                help:       'initHelpModule'
             };
 
-            if (typeof initializers[moduleId] === 'function') {
-                await initializers[moduleId]();
+            const initFnName = INITIALIZER_MAP[moduleId];
+            const initFn = initFnName ? window[initFnName] : undefined;
+            if (typeof initFn === 'function') {
+                await initFn();
+            } else if (initFnName) {
+                console.warn(`[loadModule] Initializer '${initFnName}' not found on window after loading js/${moduleId}.js`);
             }
             window.applyModuleActionGuards(moduleId, contentArea);
         } catch (error) {
             console.error('Error loading module:', error);
             contentArea.innerHTML = `<div class="module-shell p-4 text-red-500">فشل تحميل الوحدة: ${error.message}</div>`;
         } finally {
+            _moduleLoadInFlight = false;
             window.showGlobalLoader(false);
         }
     };

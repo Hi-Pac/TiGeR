@@ -3,6 +3,11 @@ let supplierCategoryOptions = [];
 const categoryNameById = new Map();
 
 async function initSuppliersModule() {
+    // Reset stale state from any previous visit to this module.
+    allSuppliersData = [];
+    supplierCategoryOptions = [];
+    categoryNameById.clear();
+
     console.log("Suppliers Module Initialized!");
 
     const suppliersModuleNode = document.getElementById('suppliers-module');
