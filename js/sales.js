@@ -316,6 +316,9 @@ async function initSalesModule() {
         return { subtotal, discount, taxRate, taxAmount, grandTotal };
     }
 
+    // Page size for the sales list. Increase or add cursor-based pagination UI as needed.
+    const SALES_PAGE_SIZE = 100;
+
     async function loadAndRenderSales() {
         if (!salesTableBody) return;
         salesTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">جاري تحميل فواتير المبيعات...</td></tr>`;
@@ -323,10 +326,38 @@ async function initSalesModule() {
         try {
             await Promise.all([loadCustomers(), loadSalespersons(), loadWarehouses()]);
 
-            const { data, error } = await DB.from('sales_invoices')
-                .select('*')
+            // Explicit column selection (avoids over-fetching notes, audit fields, etc.)
+            // Embed invoice items in the same query to eliminate N+1 on edit clicks.
+            const { data, error } = await window.supabaseClient
+                .from('sales_invoices')
+                .select(`
+                    id,
+                    invoice_number,
+                    invoice_date,
+                    customer_id,
+                    salesperson_id,
+                    warehouse_id,
+                    payment_method,
+                    payment_status,
+                    delivery_status,
+                    invoice_status,
+                    subtotal_amount,
+                    discount_amount,
+                    tax_rate,
+                    tax_amount,
+                    total_amount,
+                    notes,
+                    sales_invoice_items (
+                        id,
+                        product_id,
+                        quantity,
+                        unit_price,
+                        discount_amount,
+                        total_amount
+                    )
+                `)
                 .order('invoice_date', { ascending: false })
-                .get();
+                .limit(SALES_PAGE_SIZE);
             if (error) throw error;
 
             const customerMap = new Map(allCustomersForSale.map((c) => [c.id, c.shop_name]));
@@ -338,6 +369,7 @@ async function initSalesModule() {
                 customer_name: customerMap.get(r.customer_id) || '—',
                 salesperson_name: salespersonMap.get(r.salesperson_id) || '—',
                 warehouse_name: warehouseMap.get(r.warehouse_id) || '—'
+                // r.sales_invoice_items is now pre-fetched and available for edit
             }));
 
             applySaleFiltersAndRender();
@@ -411,13 +443,20 @@ async function initSalesModule() {
                 const sale = allSalesData.find((s) => s.id === saleId);
                 if (!sale) return;
 
-                const { data: items } = await window.supabaseClient
-                    .from('sales_invoice_items')
-                    .select('*')
-                    .eq('sales_invoice_id', saleId)
-                    .order('created_at', { ascending: true });
+                // Items were pre-fetched with the list query (sales_invoice_items embedded).
+                // Fall back to a direct fetch only if the embedded array is missing (e.g. RLS
+                // stripped it or the record was loaded before this optimisation was deployed).
+                let items = Array.isArray(sale.sales_invoice_items) ? sale.sales_invoice_items : null;
+                if (!items) {
+                    const { data: fetched } = await window.supabaseClient
+                        .from('sales_invoice_items')
+                        .select('id,product_id,quantity,unit_price,discount_amount,total_amount')
+                        .eq('sales_invoice_id', saleId)
+                        .order('created_at', { ascending: true });
+                    items = fetched || [];
+                }
 
-                openSaleFormForEdit({ ...sale, items: items || [] });
+                openSaleFormForEdit({ ...sale, items });
             });
         });
 
