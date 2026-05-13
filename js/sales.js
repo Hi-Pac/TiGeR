@@ -41,7 +41,7 @@ async function initSalesModule() {
     const saveSaleBtn = document.getElementById('save-sale-form-btn');
     const saveAndPrintSaleBtn = document.getElementById('save-print-sale-form-btn');
 
-    const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
+    const fmtMoney = (n) => window.ERPUtils.fmtMoney(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
     const getSalesSettings = () => window.AppConfig?.getSection('salesSettings') || {};
     const getFinancialSettings = () => window.AppConfig?.getSection('financialSettings') || {};
@@ -49,35 +49,10 @@ async function initSalesModule() {
     const deliveryLabel = { pending: 'قيد الانتظار', partial: 'جزئي', dispatched: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجعة' };
 
     // Delegate to ERPUtils canonical implementations (js/business-logic.js)
-    const mapDeliveryUiToDb    = (v) => (window.ERPUtils?.mapDeliveryUiToDb    ?? _mapDeliveryUiToDbFallback)(v);
-    const mapDeliveryDbToUi    = (v) => (window.ERPUtils?.mapDeliveryDbToUi    ?? _mapDeliveryDbToUiFallback)(v);
-    const mapStatusFilterToDb  = (v) => (window.ERPUtils?.mapSalesStatusFilterToDb ?? _mapSalesStatusFilterFallback)(v);
-    const inferPaymentStatus   = (m) => (window.ERPUtils?.inferPaymentStatus   ?? _inferPaymentStatusFallback)(m);
-
-    // Fallback implementations (active only when business-logic.js did not load)
-    function _mapDeliveryUiToDbFallback(value) {
-        if (value === 'pending_delivery') return 'pending';
-        if (value === 'out_for_delivery') return 'dispatched';
-        if (value === 'delivered') return 'delivered';
-        return 'pending';
-    }
-    function _mapDeliveryDbToUiFallback(value) {
-        if (value === 'pending') return 'pending_delivery';
-        if (value === 'dispatched') return 'out_for_delivery';
-        if (value === 'delivered') return 'delivered';
-        return 'pending_delivery';
-    }
-    function _mapSalesStatusFilterFallback(value) {
-        if (value === 'pending_payment') return { field: 'payment_status', value: 'unpaid' };
-        if (['unpaid', 'partially_paid', 'paid', 'overdue'].includes(value)) return { field: 'payment_status', value };
-        if (value === 'pending_delivery') return { field: 'delivery_status', value: 'pending' };
-        if (value === 'delivered') return { field: 'delivery_status', value: 'delivered' };
-        if (value === 'cancelled') return { field: 'invoice_status', value: 'cancelled' };
-        return null;
-    }
-    function _inferPaymentStatusFallback(method) {
-        return method === 'cash' ? 'paid' : 'unpaid';
-    }
+    const mapDeliveryUiToDb    = (v) => window.ERPUtils.mapDeliveryUiToDb(v);
+    const mapDeliveryDbToUi    = (v) => window.ERPUtils.mapDeliveryDbToUi(v);
+    const mapStatusFilterToDb  = (v) => window.ERPUtils.mapSalesStatusFilterToDb(v);
+    const inferPaymentStatus   = (m) => window.ERPUtils.inferPaymentStatus(m);
 
     function saleItemOptionsHtml(selectedId = '', selectedWarehouseId = '') {
         return allProductsForSale.map((p) => {
@@ -92,12 +67,7 @@ async function initSalesModule() {
     }
 
     async function loadCustomers() {
-        const { data } = await DB.from('customers')
-            .select('id,shop_name,status')
-            .eq('status', 'active')
-            .order('shop_name', { ascending: true })
-            .get();
-        allCustomersForSale = Array.isArray(data) ? data : [];
+        allCustomersForSale = await window.AppDataService.getCustomers();
 
         const options = '<option value="">اختر العميل...</option>' +
             allCustomersForSale.map((c) => `<option value="${c.id}">${c.shop_name}</option>`).join('');
@@ -109,50 +79,21 @@ async function initSalesModule() {
     }
 
     async function loadSalespersons() {
-        const { data } = await DB.from('profiles')
-            .select('id,full_name,role,status')
-            .eq('status', 'active')
-            .order('full_name', { ascending: true })
-            .get();
-        allSalespersons = (Array.isArray(data) ? data : []).filter((u) => ['sales', 'admin'].includes(u.role));
+        allSalespersons = await window.AppDataService.getSalespersons();
         const options = '<option value="">اختر المندوب...</option>' +
             allSalespersons.map((u) => `<option value="${u.id}">${u.full_name}</option>`).join('');
         if (saleSalespersonField) saleSalespersonField.innerHTML = options;
     }
 
     async function loadWarehouses() {
-        const { data } = await DB.from('warehouses')
-            .select('id,name,status')
-            .eq('status', 'active')
-            .order('name', { ascending: true })
-            .get();
-        allWarehousesForSale = Array.isArray(data) ? data : [];
+        allWarehousesForSale = await window.AppDataService.getWarehouses();
         const options = '<option value="">اختر المخزن...</option>' +
             allWarehousesForSale.map((w) => `<option value="${w.id}">${w.name}</option>`).join('');
         if (saleWarehouseField) saleWarehouseField.innerHTML = options;
     }
 
     async function loadProductsWithStock() {
-        const [{ data: products }, { data: units }, { data: stockRows }] = await Promise.all([
-            DB.from('products').select('id,name,sale_price,unit_id,status').eq('status', 'active').order('name', { ascending: true }).get(),
-            DB.from('product_units').select('id,name,name_ar').get(),
-            window.supabaseClient.from('inventory_stock').select('product_id,warehouse_id,quantity_on_hand')
-        ]);
-
-        const unitMap = new Map((units || []).map((u) => [u.id, u.name_ar || u.name]));
-        const stockByProduct = new Map();
-        (stockRows || []).forEach((r) => {
-            if (!stockByProduct.has(r.product_id)) stockByProduct.set(r.product_id, {});
-            stockByProduct.get(r.product_id)[r.warehouse_id] = Number(r.quantity_on_hand || 0);
-        });
-
-        allProductsForSale = (products || []).map((p) => ({
-            id: p.id,
-            name: p.name,
-            sale_price: Number(p.sale_price || 0),
-            unit_name: unitMap.get(p.unit_id) || '',
-            stockByWarehouse: stockByProduct.get(p.id) || {}
-        }));
+        allProductsForSale = await window.AppDataService.getProductsWithStock();
     }
 
     function resetSaleForm(saleData = null) {
@@ -319,16 +260,14 @@ async function initSalesModule() {
     // Page size for the sales list. Increase or add cursor-based pagination UI as needed.
     const SALES_PAGE_SIZE = 100;
 
-    async function loadAndRenderSales() {
+    async function loadAndRenderSales(filters = {}) {
         if (!salesTableBody) return;
         salesTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">جاري تحميل فواتير المبيعات...</td></tr>`;
 
         try {
             await Promise.all([loadCustomers(), loadSalespersons(), loadWarehouses()]);
 
-            // Explicit column selection (avoids over-fetching notes, audit fields, etc.)
-            // Embed invoice items in the same query to eliminate N+1 on edit clicks.
-            const { data, error } = await window.supabaseClient
+            let query = window.supabaseClient
                 .from('sales_invoices')
                 .select(`
                     id,
@@ -358,6 +297,26 @@ async function initSalesModule() {
                 `)
                 .order('invoice_date', { ascending: false })
                 .limit(SALES_PAGE_SIZE);
+
+            // Apply filters
+            if (filters.search) {
+                query = query.or(`invoice_number.ilike.%${filters.search}%,customer_name.ilike.%${filters.search}%`);
+            }
+            if (filters.customerId) {
+                query = query.eq('customer_id', filters.customerId);
+            }
+            if (filters.statusVal) {
+                const rule = mapStatusFilterToDb(filters.statusVal);
+                if (rule) query = query.eq(rule.field, rule.value);
+            }
+            if (filters.dateFrom) {
+                query = query.gte('invoice_date', filters.dateFrom);
+            }
+            if (filters.dateTo) {
+                query = query.lte('invoice_date', filters.dateTo);
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
 
             const customerMap = new Map(allCustomersForSale.map((c) => [c.id, c.shop_name]));
@@ -372,7 +331,7 @@ async function initSalesModule() {
                 // r.sales_invoice_items is now pre-fetched and available for edit
             }));
 
-            applySaleFiltersAndRender();
+            renderSalesTable(allSalesData); // Render filtered data
         } catch (err) {
             console.error('Error loading sales:', err);
             salesTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4 text-red-500">فشل تحميل فواتير المبيعات: ${err.message}</td></tr>`;
@@ -380,32 +339,14 @@ async function initSalesModule() {
     }
 
     function applySaleFiltersAndRender() {
-        let filtered = [...allSalesData];
-
-        const search = (saleSearchInput?.value || '').trim().toLowerCase();
-        const customerId = saleCustomerFilter?.value || '';
-        const statusVal = saleStatusFilter?.value || '';
-        const dateFrom = saleDateFromFilter?.value || '';
-        const dateTo = saleDateToFilter?.value || '';
-
-        if (search) {
-            filtered = filtered.filter((s) =>
-                String(s.invoice_number || '').toLowerCase().includes(search) ||
-                String(s.customer_name || '').toLowerCase().includes(search)
-            );
-        }
-
-        if (customerId) filtered = filtered.filter((s) => s.customer_id === customerId);
-
-        if (statusVal) {
-            const rule = mapStatusFilterToDb(statusVal);
-            if (rule) filtered = filtered.filter((s) => s[rule.field] === rule.value);
-        }
-
-        if (dateFrom) filtered = filtered.filter((s) => String(s.invoice_date || '') >= dateFrom);
-        if (dateTo) filtered = filtered.filter((s) => String(s.invoice_date || '') <= dateTo);
-
-        renderSalesTable(filtered);
+        const filters = {
+            search: (saleSearchInput?.value || '').trim().toLowerCase(),
+            customerId: saleCustomerFilter?.value || '',
+            statusVal: saleStatusFilter?.value || '',
+            dateFrom: saleDateFromFilter?.value || '',
+            dateTo: saleDateToFilter?.value || '',
+        };
+        loadAndRenderSales(filters);
     }
 
     function renderSalesTable(salesToRender) {

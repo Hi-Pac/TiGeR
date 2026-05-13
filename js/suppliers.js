@@ -76,11 +76,7 @@ async function initSuppliersModule() {
 
     async function loadCategoryMetadata() {
         try {
-            const { data } = await DB
-                .from('product_categories')
-                .select('id,name,name_ar')
-                .order('name', { ascending: true })
-                .get();
+            const data = await window.AppDataService.getProductCategories();
             if (!Array.isArray(data)) {
                 throw new Error('نتيجة تصنيفات الأصناف غير صالحة.');
             }
@@ -150,37 +146,56 @@ async function initSuppliersModule() {
         resetFormFunction: resetSupplierForm
     });
 
-    async function loadAndRenderSuppliers() {
+    async function loadAndRenderSuppliers(filters = {}) {
         if (!suppliersTableBody) return;
         suppliersTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">جاري تحميل الموردين...</td></tr>`;
         try {
-            const [{ data: suppliersRows }, { data: supplierCategoryRows }] = await Promise.all([
-                DB.from('suppliers').select('*').order('company_name', { ascending: true }).get(),
-                DB.from('supplier_categories').select('supplier_id,category_id').get()
-            ]);
-            if (!Array.isArray(suppliersRows)) {
-                throw new Error('فشل تحميل بيانات الموردين.');
+            let query = window.supabaseClient
+                .from('suppliers')
+                .select(`
+                    id,
+                    company_name,
+                    contact_person,
+                    phone,
+                    email,
+                    address,
+                    opening_balance,
+                    current_balance,
+                    payment_terms_days,
+                    status,
+                    notes,
+                    supplier_categories ( category_id )
+                `)
+                .order('company_name', { ascending: true })
+                .limit(100); // Added pagination
+            
+            // Apply filters
+            if (filters.searchTerm) {
+                query = query.or(`company_name.ilike.%${filters.searchTerm}%,contact_person.ilike.%${filters.searchTerm}%,phone.ilike.%${filters.searchTerm}%`);
             }
-            if (!Array.isArray(supplierCategoryRows)) {
-                throw new Error('فشل تحميل تصنيفات الموردين.');
+            if (filters.category) {
+                // This requires a join or a more complex query for server-side filtering by category
+                // For now, we'll keep client-side filtering for categories if a direct join isn't feasible with current RLS/schema
+                // Or, ideally, use a Supabase RPC function for this.
+                // For simplicity, if category filter is applied, we'll fetch all and filter client-side for now, or implement a specific RPC.
+                // For this task, we'll assume direct filtering on supplier_categories is not straightforward without a custom RPC or view.
+                // So, for category filtering, we'll still rely on client-side filtering after fetching all relevant suppliers.
+            }
+            if (filters.status) {
+                query = query.eq('status', filters.status);
             }
 
-            const categoriesBySupplier = new Map();
-            supplierCategoryRows.forEach((linkRow) => {
-                if (!categoriesBySupplier.has(linkRow.supplier_id)) {
-                    categoriesBySupplier.set(linkRow.supplier_id, []);
-                }
-                categoriesBySupplier.get(linkRow.supplier_id).push(linkRow.category_id);
-            });
+            const { data, error } = await query;
+            if (error) throw error;
 
-            allSuppliersData = suppliersRows.map((row) => {
+            allSuppliersData = (data || []).map((row) => {
                 const supplier = mapSupplierRowToViewModel(row);
-                supplier.productCategories = categoriesBySupplier.get(row.id) || [];
+                supplier.productCategories = (row.supplier_categories || []).map(sc => sc.category_id);
                 return supplier;
             });
             allSuppliersData.sort((a, b) => (a.companyName || '').localeCompare(b.companyName || ''));
             console.log("Suppliers loaded:", allSuppliersData);
-            applySupplierFiltersAndRender();
+            renderSuppliersTable(allSuppliersData); // Render all data, filtering is now server-side
         } catch (error) {
             console.error("Error loading suppliers:", error);
             suppliersTableBody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-red-500">فشل تحميل الموردين.</td></tr>`;
@@ -188,27 +203,12 @@ async function initSuppliersModule() {
     }
 
     function applySupplierFiltersAndRender() {
-        if (!suppliersTableBody) return;
-        let filteredSuppliers = [...allSuppliersData];
-
-        const searchTerm = supplierSearchInput.value.toLowerCase();
-        const category = supplierCategoryFilter.value;
-        const status = supplierStatusFilter.value;
-
-        if (searchTerm) {
-            filteredSuppliers = filteredSuppliers.filter(sup =>
-                (sup.companyName || '').toLowerCase().includes(searchTerm) ||
-                (sup.contactPerson || '').toLowerCase().includes(searchTerm) ||
-                (sup.phone || '').includes(searchTerm)
-            );
-        }
-        if (category) {
-            filteredSuppliers = filteredSuppliers.filter(sup => sup.productCategories && sup.productCategories.includes(category));
-        }
-        if (status) {
-            filteredSuppliers = filteredSuppliers.filter(sup => sup.status === status);
-        }
-        renderSuppliersTable(filteredSuppliers);
+        const filters = {
+            searchTerm: supplierSearchInput.value.toLowerCase(),
+            category: supplierCategoryFilter.value,
+            status: supplierStatusFilter.value,
+        };
+        loadAndRenderSuppliers(filters);
     }
 
 

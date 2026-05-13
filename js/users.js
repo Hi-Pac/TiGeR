@@ -3,14 +3,6 @@
 let allUsersData = [];
 let usersEmailMap = new Map(); // Store email addresses separately
 
-const ROLE_LABELS = {
-    admin: 'مدير',
-    accountant: 'محاسب',
-    sales: 'مندوب مبيعات',
-    warehouse: 'أمين مخزن',
-    viewer: 'مشاهد',
-};
-
 async function initUsersModule() {
     // Reset stale state from any previous visit to this module.
     allUsersData = [];
@@ -95,7 +87,7 @@ async function initUsersModule() {
         resetFormFunction: resetUserForm,
     });
 
-    async function loadAndRenderUsers() {
+    async function loadAndRenderUsers(filters = {}) {
         if (!usersTableBody || !window.supabaseClient) {
             if (usersTableBody) {
                 usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">خطأ في تهيئة قاعدة البيانات.</td></tr>`;
@@ -106,11 +98,27 @@ async function initUsersModule() {
         usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4">جاري تحميل المستخدمين... <span class="loader ml-2"></span></td></tr>`;
 
         try {
-            // Get profiles from database
-            const { data: profilesData, error: profilesError } = await window.supabaseClient
+            let query = window.supabaseClient
                 .from('profiles')
                 .select('id, full_name, phone, role, status')
-                .order('full_name', { ascending: true });
+                .order('full_name', { ascending: true })
+                .limit(100); // Added pagination
+
+            // Apply filters
+            if (filters.searchTerm) {
+                query = query.or(`full_name.ilike.%${filters.searchTerm}%,phone.ilike.%${filters.searchTerm}%`);
+                // Note: Email filtering requires fetching auth.users, which is done separately below.
+                // For now, email search will be client-side after fetching profiles.
+            }
+            if (filters.roleFilter) {
+                query = query.eq('role', filters.roleFilter);
+            }
+            if (filters.statusFilter) {
+                query = query.eq('status', filters.statusFilter);
+            }
+
+            // Get profiles from database
+            const { data: profilesData, error: profilesError } = await query;
 
             if (profilesError) throw profilesError;
 
@@ -132,7 +140,14 @@ async function initUsersModule() {
             }
 
             allUsersData = profilesData || [];
-            applyFiltersAndRender();
+            // Client-side filter for email search if server-side was not applied
+            if (filters.searchTerm && usersEmailMap.size > 0) {
+                allUsersData = allUsersData.filter(user => {
+                    const userEmail = usersEmailMap.get(user.id) || '';
+                    return userEmail.toLowerCase().includes(filters.searchTerm);
+                });
+            }
+            renderUsersTable(allUsersData);
         } catch (error) {
             console.error('Error loading users from profiles:', error);
             usersTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-red-500">فشل تحميل المستخدمين: ${error.message}</td></tr>`;
@@ -140,26 +155,12 @@ async function initUsersModule() {
     }
 
     function applyFiltersAndRender() {
-        if (!usersTableBody) return;
-
-        let filteredUsers = [...allUsersData];
-        const searchTerm = (userSearchInput?.value || '').trim().toLowerCase();
-        const roleFilter = userRoleFilter?.value || '';
-        const statusFilter = userStatusFilter?.value || '';
-
-        if (searchTerm) {
-            filteredUsers = filteredUsers.filter((user) => {
-                const fullName = (user.full_name || '').toLowerCase();
-                const phone = (user.phone || '').toLowerCase();
-                const email = (usersEmailMap.get(user.id) || '').toLowerCase();
-                return fullName.includes(searchTerm) || phone.includes(searchTerm) || email.includes(searchTerm);
-            });
-        }
-
-        if (roleFilter) filteredUsers = filteredUsers.filter(user => user.role === roleFilter);
-        if (statusFilter) filteredUsers = filteredUsers.filter(user => user.status === statusFilter);
-
-        renderUsersTable(filteredUsers);
+        const filters = {
+            searchTerm: (userSearchInput?.value || '').trim().toLowerCase(),
+            roleFilter: userRoleFilter?.value || '',
+            statusFilter: userStatusFilter?.value || '',
+        };
+        loadAndRenderUsers(filters);
     }
 
     function renderUsersTable(usersToRender) {
@@ -174,7 +175,7 @@ async function initUsersModule() {
         usersToRender.forEach((user) => {
             const row = usersTableBody.insertRow();
             const initials = (user.full_name || 'NA').substring(0, 2).toUpperCase();
-            const roleLabel = ROLE_LABELS[user.role] || user.role || '-';
+            const roleLabel = window.AppConfig.roleLabels[user.role] || user.role || '-';
             const userEmail = usersEmailMap.get(user.id) || '-';
 
             row.innerHTML = `

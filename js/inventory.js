@@ -280,19 +280,33 @@ async function initInventoryModule() {
         }
     }
 
-    async function loadAndRenderInventoryStock() {
+    async function loadAndRenderInventoryStock(filters = {}) {
         if (!inventoryTableBody) return;
         inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل أرصدة المخزون...</td></tr>`;
 
         try {
-            const { data, error } = await window.supabaseClient
+            let query = window.supabaseClient
                 .from('v_inventory_summary')
-                .select('*')
-                .order('product_name', { ascending: true });
+                .select('product_name,warehouse_name,quantity_available,stock_status,unit_name,effective_reorder_level,last_movement_at')
+                .order('product_name', { ascending: true })
+                .limit(100); // Added pagination
+
+            // Apply filters
+            if (filters.search) {
+                query = query.or(`product_name.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%`);
+            }
+            if (filters.warehouseId) {
+                query = query.eq('warehouse_id', filters.warehouseId);
+            }
+            if (filters.stockStatus) {
+                query = query.eq('stock_status', filters.stockStatus);
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
 
             allInventoryStockData = Array.isArray(data) ? data : [];
-            applyInventoryFiltersAndRender();
+            renderInventoryTable(allInventoryStockData); // Render filtered data
         } catch (err) {
             console.error('Error loading inventory summary:', err);
             inventoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-red-500">فشل تحميل أرصدة المخزون: ${err.message}</td></tr>`;
@@ -300,27 +314,12 @@ async function initInventoryModule() {
     }
 
     function applyInventoryFiltersAndRender() {
-        let filtered = [...allInventoryStockData];
-
-        const search = (inventorySearchInput?.value || '').trim().toLowerCase();
-        const warehouseId = inventoryWarehouseFilter?.value || '';
-        const stockStatus = inventoryStockStatusFilter?.value || '';
-
-        if (search) {
-            filtered = filtered.filter((item) =>
-                String(item.product_name || '').toLowerCase().includes(search) ||
-                String(item.barcode || '').toLowerCase().includes(search)
-            );
-        }
-
-        if (warehouseId) {
-            const selectedName = allWarehousesForInventory.find((w) => w.id === warehouseId)?.name;
-            if (selectedName) filtered = filtered.filter((item) => item.warehouse_name === selectedName);
-        }
-
-        if (stockStatus) filtered = filtered.filter((item) => item.stock_status === stockStatus);
-
-        renderInventoryTable(filtered);
+        const filters = {
+            search: (inventorySearchInput?.value || '').trim().toLowerCase(),
+            warehouseId: inventoryWarehouseFilter?.value || '',
+            stockStatus: inventoryStockStatusFilter?.value || '',
+        };
+        loadAndRenderInventoryStock(filters);
     }
 
     function renderInventoryTable(rows) {
