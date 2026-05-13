@@ -248,7 +248,11 @@ async function initAccountingModule() {
 
             if (result.error) {
                 console.error('Database error saving account:', result.error);
-                throw new Error(result.error.message || 'فشل حفظ الحساب');
+                const errMsg = result.error.message || '';
+                if (errMsg.includes('chart_of_accounts_company_id_code_key') || errMsg.includes('duplicate key')) {
+                    throw new Error(`كود الحساب "${code}" مستخدم مسبقاً، يرجى اختيار كود مختلف`);
+                }
+                throw new Error(errMsg || 'فشل حفظ الحساب');
             }
 
             alert(accountId ? 'تم تحديث الحساب بنجاح' : 'تم إضافة الحساب بنجاح');
