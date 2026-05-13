@@ -38,7 +38,7 @@ async function initPurchasesModule() {
     const purchaseGrandTotalAmountEl = document.getElementById('purchase-grand-total-amount');
     const savePurchaseBtn = document.getElementById('save-purchase-form-btn');
 
-    const fmtMoney = (n) => (window.ERPUtils?.fmtMoney ?? ((x) => `${(Number(x) || 0).toFixed(2)} ج.م`))(n);
+    const fmtMoney = (n) => window.ERPUtils.fmtMoney(n);
     const todayISO = () => new Date().toISOString().slice(0, 10);
     const getTransactionSettings = () => window.AppConfig?.getSection('salesSettings') || {};
     const getFinancialSettings = () => window.AppConfig?.getSection('financialSettings') || {};
@@ -46,35 +46,10 @@ async function initPurchasesModule() {
     const receiptLabel = { pending: 'بانتظار الاستلام', partial: 'استلام جزئي', received: 'تم الاستلام', returned: 'مرتجع' };
 
     // Delegate to ERPUtils canonical implementations (js/business-logic.js)
-    const mapReceiptUiToDb    = (v) => (window.ERPUtils?.mapReceiptUiToDb    ?? _mapReceiptUiToDbFallback)(v);
-    const mapReceiptDbToUi    = (v) => (window.ERPUtils?.mapReceiptDbToUi    ?? _mapReceiptDbToUiFallback)(v);
-    const inferPaymentStatus  = (m) => (window.ERPUtils?.inferPaymentStatus  ?? _inferPaymentStatusFallback)(m);
-    const mapStatusFilterToDb = (v) => (window.ERPUtils?.mapPurchaseStatusFilterToDb ?? _mapPurchaseStatusFilterFallback)(v);
-
-    // Fallback implementations (active only when business-logic.js did not load)
-    function _mapReceiptUiToDbFallback(value) {
-        if (value === 'pending_receipt')    return 'pending';
-        if (value === 'partially_received') return 'partial';
-        if (value === 'received')           return 'received';
-        return 'pending';
-    }
-    function _mapReceiptDbToUiFallback(value) {
-        if (value === 'pending')  return 'pending_receipt';
-        if (value === 'partial')  return 'partially_received';
-        if (value === 'received') return 'received';
-        return 'pending_receipt';
-    }
-    function _inferPaymentStatusFallback(method) {
-        return method === 'cash' ? 'paid' : 'unpaid';
-    }
-    function _mapPurchaseStatusFilterFallback(value) {
-        if (['unpaid', 'partially_paid', 'paid'].includes(value)) return { field: 'payment_status', value };
-        if (value === 'pending_receipt')    return { field: 'receipt_status', value: 'pending'  };
-        if (value === 'partially_received') return { field: 'receipt_status', value: 'partial'  };
-        if (value === 'received')           return { field: 'receipt_status', value: 'received' };
-        if (value === 'cancelled')          return { field: 'invoice_status', value: 'cancelled' };
-        return null;
-    }
+    const mapReceiptUiToDb    = (v) => window.ERPUtils.mapReceiptUiToDb(v);
+    const mapReceiptDbToUi    = (v) => window.ERPUtils.mapReceiptDbToUi(v);
+    const inferPaymentStatus  = (m) => window.ERPUtils.inferPaymentStatus(m);
+    const mapStatusFilterToDb = (v) => window.ERPUtils.mapPurchaseStatusFilterToDb(v);
 
     function itemOptionsHtml(selectedId = '') {
         return allProductsForPurchase
@@ -87,12 +62,7 @@ async function initPurchasesModule() {
     }
 
     async function loadSuppliers() {
-        const { data } = await DB.from('suppliers')
-            .select('id,company_name,status')
-            .eq('status', 'active')
-            .order('company_name', { ascending: true })
-            .get();
-        allSuppliersForPurchase = Array.isArray(data) ? data : [];
+        allSuppliersForPurchase = await window.AppDataService.getSuppliers();
 
         const options = '<option value="">اختر المورد...</option>' +
             allSuppliersForPurchase.map((s) => `<option value="${s.id}">${s.company_name}</option>`).join('');
@@ -104,12 +74,7 @@ async function initPurchasesModule() {
     }
 
     async function loadWarehouses() {
-        const { data } = await DB.from('warehouses')
-            .select('id,name,status')
-            .eq('status', 'active')
-            .order('name', { ascending: true })
-            .get();
-        allWarehousesForPurchase = Array.isArray(data) ? data : [];
+        allWarehousesForPurchase = await window.AppDataService.getWarehouses();
 
         const options = '<option value="">اختر المخزن...</option>' +
             allWarehousesForPurchase.map((w) => `<option value="${w.id}">${w.name}</option>`).join('');
@@ -117,18 +82,7 @@ async function initPurchasesModule() {
     }
 
     async function loadProducts() {
-        const [{ data: products }, { data: units }] = await Promise.all([
-            DB.from('products').select('id,name,purchase_price,unit_id,status').eq('status', 'active').order('name', { ascending: true }).get(),
-            DB.from('product_units').select('id,name,name_ar').get()
-        ]);
-
-        const unitMap = new Map((units || []).map((u) => [u.id, u.name_ar || u.name]));
-        allProductsForPurchase = (products || []).map((p) => ({
-            id: p.id,
-            name: p.name,
-            purchase_price: Number(p.purchase_price || 0),
-            unit_name: unitMap.get(p.unit_id) || ''
-        }));
+        allProductsForPurchase = await window.AppDataService.getProducts();
     }
 
     function resetPurchaseForm(purchaseData = null) {
@@ -261,17 +215,62 @@ async function initPurchasesModule() {
         return { subtotal, discount, taxRate, taxAmount, grandTotal };
     }
 
-    async function loadAndRenderPurchases() {
+    async function loadAndRenderPurchases(filters = {}) {
         if (!purchasesTableBody) return;
         purchasesTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">جاري تحميل فواتير المشتريات...</td></tr>`;
 
         try {
             await Promise.all([loadSuppliers(), loadWarehouses()]);
 
-            const { data, error } = await DB.from('purchase_invoices')
-                .select('*')
+            let query = window.supabaseClient
+                .from('purchase_invoices')
+                .select(`
+                    id,
+                    invoice_number,
+                    invoice_date,
+                    supplier_id,
+                    warehouse_id,
+                    payment_method,
+                    payment_status,
+                    receipt_status,
+                    invoice_status,
+                    subtotal_amount,
+                    discount_amount,
+                    tax_rate,
+                    tax_amount,
+                    total_amount,
+                    notes,
+                    purchase_invoice_items (
+                        id,
+                        product_id,
+                        quantity,
+                        unit_cost,
+                        discount_amount,
+                        total_amount
+                    )
+                `)
                 .order('invoice_date', { ascending: false })
-                .get();
+                .limit(100); // Added pagination
+
+            // Apply filters
+            if (filters.search) {
+                query = query.or(`invoice_number.ilike.%${filters.search}%,supplier_name.ilike.%${filters.search}%`);
+            }
+            if (filters.supplierId) {
+                query = query.eq('supplier_id', filters.supplierId);
+            }
+            if (filters.statusVal) {
+                const rule = mapStatusFilterToDb(filters.statusVal);
+                if (rule) query = query.eq(rule.field, rule.value);
+            }
+            if (filters.dateFrom) {
+                query = query.gte('invoice_date', filters.dateFrom);
+            }
+            if (filters.dateTo) {
+                query = query.lte('invoice_date', filters.dateTo);
+            }
+
+            const { data, error } = await query;
             if (error) throw error;
 
             const supplierMap = new Map(allSuppliersForPurchase.map((s) => [s.id, s.company_name]));
@@ -281,9 +280,10 @@ async function initPurchasesModule() {
                 ...r,
                 supplier_name: supplierMap.get(r.supplier_id) || '—',
                 warehouse_name: warehouseMap.get(r.warehouse_id) || '—'
+                // r.purchase_invoice_items is now pre-fetched and available for edit
             }));
 
-            applyPurchaseFiltersAndRender();
+            renderPurchasesTable(allPurchasesData); // Render filtered data
         } catch (err) {
             console.error('Error loading purchases:', err);
             purchasesTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4 text-red-500">فشل تحميل فواتير المشتريات: ${err.message}</td></tr>`;
@@ -291,32 +291,14 @@ async function initPurchasesModule() {
     }
 
     function applyPurchaseFiltersAndRender() {
-        let filtered = [...allPurchasesData];
-
-        const search = (purchaseSearchInput?.value || '').trim().toLowerCase();
-        const supplierId = purchaseSupplierFilter?.value || '';
-        const statusVal = purchaseStatusFilter?.value || '';
-        const dateFrom = purchaseDateFromFilter?.value || '';
-        const dateTo = purchaseDateToFilter?.value || '';
-
-        if (search) {
-            filtered = filtered.filter((p) =>
-                String(p.invoice_number || '').toLowerCase().includes(search) ||
-                String(p.supplier_name || '').toLowerCase().includes(search)
-            );
-        }
-
-        if (supplierId) filtered = filtered.filter((p) => p.supplier_id === supplierId);
-
-        if (statusVal) {
-            const rule = mapStatusFilterToDb(statusVal);
-            if (rule) filtered = filtered.filter((p) => p[rule.field] === rule.value);
-        }
-
-        if (dateFrom) filtered = filtered.filter((p) => String(p.invoice_date || '') >= dateFrom);
-        if (dateTo) filtered = filtered.filter((p) => String(p.invoice_date || '') <= dateTo);
-
-        renderPurchasesTable(filtered);
+        const filters = {
+            search: (purchaseSearchInput?.value || '').trim().toLowerCase(),
+            supplierId: purchaseSupplierFilter?.value || '',
+            statusVal: purchaseStatusFilter?.value || '',
+            dateFrom: purchaseDateFromFilter?.value || '',
+            dateTo: purchaseDateToFilter?.value || '',
+        };
+        loadAndRenderPurchases(filters);
     }
 
     function renderPurchasesTable(purchasesToRender) {
@@ -354,13 +336,20 @@ async function initPurchasesModule() {
                 const purchase = allPurchasesData.find((x) => x.id === purchaseId);
                 if (!purchase) return;
 
-                const { data: items } = await window.supabaseClient
-                    .from('purchase_invoice_items')
-                    .select('*')
-                    .eq('purchase_invoice_id', purchaseId)
-                    .order('created_at', { ascending: true });
+                // Items were pre-fetched with the list query (purchase_invoice_items embedded).
+                // Fall back to a direct fetch only if the embedded array is missing (e.g. RLS
+                // stripped it or the record was loaded before this optimisation was deployed).
+                let items = Array.isArray(purchase.purchase_invoice_items) ? purchase.purchase_invoice_items : null;
+                if (!items) {
+                    const { data: fetched } = await window.supabaseClient
+                        .from('purchase_invoice_items')
+                        .select('id,product_id,quantity,unit_cost,discount_amount,total_amount')
+                        .eq('purchase_invoice_id', purchaseId)
+                        .order('created_at', { ascending: true });
+                    items = fetched || [];
+                }
 
-                openPurchaseFormForEdit({ ...purchase, items: items || [] });
+                openPurchaseFormForEdit({ ...purchase, items });
             });
         });
 

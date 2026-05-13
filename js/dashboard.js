@@ -64,69 +64,25 @@ async function initDashboardModule() {
 
     async function loadDashboardStats() {
         try {
-            const [
-                salesRes,
-                purchasesRes,
-                customersRes,
-                expensesRes,
-                recentSalesRes,
-                lowStockRes,
-                customerNamesRes
-            ] = await Promise.all([
-                window.supabaseClient
-                    .from('sales_invoices')
-                    .select('id,invoice_date,total_amount,invoice_status,payment_status,customer_id')
-                    .in('invoice_status', ['posted', 'draft']),
-                window.supabaseClient
-                    .from('purchase_invoices')
-                    .select('id,invoice_date,total_amount,invoice_status')
-                    .in('invoice_status', ['posted', 'draft']),
-                window.supabaseClient
-                    .from('customers')
-                    .select('id,created_at,status')
-                    .eq('status', 'active')
-                    .is('deleted_at', null),
-                window.supabaseClient
-                    .from('expenses')
-                    .select('id,expense_date,amount,status')
-                    .eq('status', 'confirmed'),
-                window.supabaseClient
-                    .from('sales_invoices')
-                    .select('id,invoice_number,invoice_date,total_amount,invoice_status,payment_status,customer_id')
-                    .in('invoice_status', ['posted', 'draft'])
-                    .order('invoice_date', { ascending: false })
-                    .limit(5),
-                window.supabaseClient
-                    .from('v_inventory_summary')
-                    .select('product_name,warehouse_name,quantity_available,stock_status')
-                    .in('stock_status', ['low_stock', 'out_of_stock'])
-                    .order('quantity_available', { ascending: true })
-                    .limit(5),
-                window.supabaseClient
-                    .from('customers')
-                    .select('id,shop_name')
-            ]);
+            // Call a hypothetical Supabase RPC function to get all dashboard summary data in one go
+            const { data, error } = await window.supabaseClient.rpc('fn_get_dashboard_summary');
 
-            if (salesRes.error) throw salesRes.error;
-            if (purchasesRes.error) throw purchasesRes.error;
-            if (customersRes.error) throw customersRes.error;
-            if (expensesRes.error) throw expensesRes.error;
-            if (recentSalesRes.error) throw recentSalesRes.error;
-            if (lowStockRes.error) throw lowStockRes.error;
-            if (customerNamesRes.error) throw customerNamesRes.error;
+            if (error) throw error;
 
-            const sales = salesRes.data || [];
-            const purchases = purchasesRes.data || [];
-            const customers = customersRes.data || [];
-            const expenses = expensesRes.data || [];
-            const recentSales = recentSalesRes.data || [];
-            const lowStock = lowStockRes.data || [];
-            const customerNameMap = new Map((customerNamesRes.data || []).map((c) => [c.id, c.shop_name]));
+            const summary = data || {};
 
-            const totalSales = sales.reduce((sum, x) => sum + Number(x.total_amount || 0), 0);
-            const totalPurchases = purchases.reduce((sum, x) => sum + Number(x.total_amount || 0), 0);
-            const totalCustomers = customers.length;
-            const totalExpenses = expenses.reduce((sum, x) => sum + Number(x.amount || 0), 0);
+            const sales = summary.sales || [];
+            const purchases = summary.purchases || [];
+            const customers = summary.customers || [];
+            const expenses = summary.expenses || [];
+            const recentSales = summary.recent_sales || [];
+            const lowStock = summary.low_stock || [];
+            const customerNameMap = new Map((summary.customer_names || []).map((c) => [c.id, c.shop_name]));
+
+            const totalSales = summary.total_sales || 0;
+            const totalPurchases = summary.total_purchases || 0;
+            const totalCustomers = summary.total_customers || 0;
+            const totalExpenses = summary.total_expenses || 0;
             const netProfit = totalSales - totalPurchases - totalExpenses;
 
             if (totalSalesEl) totalSalesEl.textContent = fmtMoney(totalSales);
@@ -137,6 +93,8 @@ async function initDashboardModule() {
             const current30 = getRangeDays(30, 0);
             const prev30 = getRangeDays(30, 30);
 
+            // These calculations still rely on the full data for historical comparison
+            // Ideally, the RPC would return these pre-calculated as well.
             const salesCurrent = sumRowsByDate(sales, 'invoice_date', 'total_amount', current30);
             const salesPrevious = sumRowsByDate(sales, 'invoice_date', 'total_amount', prev30);
             const purchasesCurrent = sumRowsByDate(purchases, 'invoice_date', 'total_amount', current30);
