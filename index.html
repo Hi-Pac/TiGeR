@@ -9,13 +9,13 @@
     <link rel="stylesheet" href="style.css"> <!-- ربط ملف الأنماط المخصص -->
 
     <!-- Pure business-logic utilities (no DOM, no Supabase — must load first) -->
-    <script src="js/business-logic.js"></script>
+    <script src="js/business-logic.js" defer></script>
     <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
     <!-- Supabase Client & Firestore Compatibility Wrapper -->
-    <script src="js/supabase-client.js"></script>
+    <script src="js/supabase-client.js" defer></script>
     <!-- Phase 2: Authentication module (must load before main.js) -->
-    <script src="js/auth.js"></script>
+    <script src="js/auth.js" defer></script>
 
     <script>
         tailwind.config = {
@@ -292,24 +292,8 @@
     </div>
 
 
-    <!-- JavaScript Files -->
-    <script src="js/main.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/users.js"></script>
-    <script src="js/products.js"></script>
-    <script src="js/customers.js"></script>
-    <!-- أضف هنا روابط لملفات JS للوحدات الأخرى عندما تنشئها -->
-    
-    <script src="js/suppliers.js"></script>
-    <script src="js/purchases.js"></script>
-    <script src="js/sales.js"></script>
-    <script src="js/inventory.js"></script>
-    <script src="js/expenses.js"></script>
-    <script src="js/banks.js"></script>
-    <script src="js/accounting.js"></script>
-    <script src="js/profile.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/help.js"></script>
+    <!-- Core application shell — module scripts are lazy-loaded on demand by main.js -->
+    <script src="js/main.js" defer></script>
    
 </body>
 </html>
