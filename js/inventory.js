@@ -4,6 +4,12 @@ let allProductsForInventory = [];
 let allSuppliersForInventory = [];
 
 async function initInventoryModule() {
+    // Reset stale state from any previous visit to this module.
+    allInventoryStockData = [];
+    allWarehousesForInventory = [];
+    allProductsForInventory = [];
+    allSuppliersForInventory = [];
+
     const inventoryModuleNode = document.getElementById('inventory-module');
     if (!inventoryModuleNode) return;
 

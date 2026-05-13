@@ -7,6 +7,9 @@ const CUSTOMER_STATUS_CLASS_BY_VALUE = {
 };
 
 async function initCustomersModule() {
+    // Reset stale state from any previous visit to this module.
+    allCustomersData = [];
+
     console.log("Customers Module Initialized!");
 
     const customersModuleNode = document.getElementById('customers-module');

@@ -5,6 +5,13 @@ let productUnitsOptions = [];
 const productUnitNameById = new Map();
 
 async function initProductsModule() {
+    // Reset stale state from any previous visit to this module.
+    allProductsData = [];
+    productCategoriesOptions = [];
+    productCategoryNameById.clear();
+    productUnitsOptions = [];
+    productUnitNameById.clear();
+
     console.log("Products Module Initialized!");
 
     const productsModuleNode = document.getElementById('products-module');
