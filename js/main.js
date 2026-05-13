@@ -737,10 +737,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.currentLoadedModule = null;
 
+    // Track which module scripts have already been injected into the page.
+    const _loadedModuleScripts = new Set();
+
+    /**
+     * Lazy-load a module's JS file the first time it is needed.
+     * Subsequent calls for the same moduleId resolve immediately.
+     */
+    function loadModuleScript(moduleId) {
+        if (_loadedModuleScripts.has(moduleId)) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `js/${moduleId}.js`;
+            script.onload = () => { _loadedModuleScripts.add(moduleId); resolve(); };
+            script.onerror = () => reject(new Error(`Failed to load script: js/${moduleId}.js`));
+            document.body.appendChild(script);
+        });
+    }
+
     const loadModule = window.loadModule = async function(moduleId) {
         if (!ensureModuleAccess(moduleId)) return;
         window.showGlobalLoader(true);
         try {
+            // 1. Fetch and inject the module's HTML template.
             const response = await fetch(`modules/${moduleId}.html`);
             if (!response.ok) throw new Error(`Could not load module ${moduleId}.html: ${response.statusText}`);
             const html = await response.text();
@@ -754,6 +773,10 @@ document.addEventListener('DOMContentLoaded', () => {
             closeMobileSidebar();
             currentLoadedModule = moduleId;
 
+            // 2. Lazy-load the module's JS file (no-op if already loaded).
+            await loadModuleScript(moduleId);
+
+            // 3. Run the module initializer now that both HTML and JS are ready.
             const initializers = {
                 users: window.initUsersModule,
                 products: window.initProductsModule,
