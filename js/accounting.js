@@ -92,11 +92,11 @@ async function initAccountingModule() {
         try {
             // Load from database
             const { data, error } = await window.DB.from('chart_of_accounts')
-                .select('*')
+                .select('id,code,name,name_ar,account_type,parent_id,account_nature,current_balance,opening_balance,notes')
                 .eq('company_id', window.AppAuth?.companyId())
                 .eq('status', 'active')
                 .order('code', { ascending: true })
-                .get(); // ← Missing .get() call!
+                .limit(100); // Added pagination
 
             if (error) {
                 console.error("Database error loading CoA:", error);
@@ -346,12 +346,30 @@ async function initAccountingModule() {
         journalEntriesTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center">جاري تحميل القيود...</td></tr>`;
         try {
             // Load from database
-            const { data, error } = await window.DB.from('journal_entries')
-                .select('*')
+            const { data, error } = await window.supabaseClient
+                .from('journal_entries')
+                .select(`
+                    id,
+                    entry_number,
+                    entry_date,
+                    description,
+                    total_debit,
+                    total_credit,
+                    status,
+                    reference_type,
+                    reference_id,
+                    journal_entry_lines (
+                        id,
+                        account_id,
+                        description,
+                        debit_amount,
+                        credit_amount
+                    )
+                `)
                 .eq('company_id', window.AppAuth?.companyId())
                 .order('entry_date', { ascending: false })
                 .order('entry_number', { ascending: false })
-                .get(); // ← Missing .get() call!
+                .limit(100); // Added pagination
 
             if (error) {
                 console.error("Database error loading journal entries:", error);
@@ -368,7 +386,8 @@ async function initAccountingModule() {
                 totalCredit: parseFloat(entry.total_credit || 0),
                 status: entry.status,
                 referenceType: entry.reference_type,
-                referenceId: entry.reference_id
+                referenceId: entry.reference_id,
+                lines: entry.journal_entry_lines || [] // Pre-fetched lines
             }));
 
             renderJournalEntriesTable(journalEntriesData);
@@ -377,7 +396,7 @@ async function initAccountingModule() {
             journalEntriesTableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">${e.message || 'فشل تحميل القيود.'}</td></tr>`;
         }
     }
-    
+
     const jeStatusDisplay = {'posted': 'مرحل', 'draft': 'مسودة'};
     const jeStatusClass = {'posted': 'bg-green-100 text-green-800', 'draft': 'bg-yellow-100 text-yellow-800'};
 
@@ -401,7 +420,30 @@ async function initAccountingModule() {
             `;
         });
         // Add listeners for view/edit JE buttons
-    }
+        accountingModuleNode.querySelectorAll('.edit-je-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const entryId = e.currentTarget.getAttribute('data-id');
+                const entryToEdit = journalEntriesData.find(je => je.id === entryId);
+                if (entryToEdit) {
+                    // Populate form with pre-fetched lines
+                    resetJournalEntryForm({ ...entryToEdit, lines: entryToEdit.lines || [] });
+                    journalEntryFormContainer.classList.remove('hidden');
+                }
+            });
+        });
+
+        accountingModuleNode.querySelectorAll('.view-je-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const entryId = e.currentTarget.getAttribute('data-id');
+                const entryToView = journalEntriesData.find(je => je.id === entryId);
+                if (entryToView) {
+                    // For now, just log or show a simple alert. Full view would need a dedicated UI.
+                    window.AppNotify?.info(`عرض تفاصيل القيد ID: ${entryId} (قيد الإنشاء)`);
+                }
+            });
+        });
+    } // Added missing closing brace for renderJournalEntriesTable
+
      if(journalEntryFormElement) journalEntryFormElement.addEventListener('submit', async e => {
         e.preventDefault();
 
@@ -519,7 +561,7 @@ async function initAccountingModule() {
                         await window.supabaseClient.from('journal_entries').delete().eq('id', journalEntry.id);
                     } catch (deleteErr) {
                         console.error('Failed to rollback journal entry:', deleteErr);
-                    }
+                    } 
                     throw new Error('فشل حفظ بنود القيد');
                 }
 

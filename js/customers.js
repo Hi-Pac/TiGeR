@@ -91,20 +91,35 @@ async function initCustomersModule() {
         resetFormFunction: resetCustomerForm
     });
 
-    async function loadAndRenderCustomers() {
+    async function loadAndRenderCustomers(filters = {}) {
         if (!customersTableBody) return;
         customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل العملاء...</td></tr>`;
         try {
-            const { data } = await DB
+            let query = window.supabaseClient
                 .from('customers')
-                .select('*')
+                .select('id,shop_name,owner_name,phone,phone2,email,area,address,credit_limit,opening_balance,current_balance,status,notes')
                 .order('shop_name', { ascending: true })
-                .get();
+                .limit(100); // Added pagination
+
+            // Apply filters
+            if (filters.searchTerm) {
+                query = query.or(`shop_name.ilike.%${filters.searchTerm}%,owner_name.ilike.%${filters.searchTerm}%,phone.ilike.%${filters.searchTerm}%,phone2.ilike.%${filters.searchTerm}%`);
+            }
+            if (filters.area) {
+                query = query.eq('area', filters.area);
+            }
+            if (filters.status) {
+                query = query.eq('status', filters.status);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
             allCustomersData = (data || []).map(mapCustomerRowToViewModel);
             allCustomersData.sort((a, b) => (a.shopName || '').localeCompare(b.shopName || ''));
             console.log("Customers loaded:", allCustomersData);
-            populateAreaFilter(allCustomersData);
-            applyCustomerFiltersAndRender();
+            populateAreaFilter(allCustomersData); // populate filter options based on all data, not just filtered
+            renderCustomersTable(allCustomersData); // Render all data, filtering is now server-side
         } catch (error) {
             console.error("Error loading customers:", error);
             customersTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-red-500">فشل تحميل العملاء.</td></tr>`;
@@ -128,28 +143,12 @@ async function initCustomersModule() {
     }
 
     function applyCustomerFiltersAndRender() {
-        if(!customersTableBody) return;
-        let filteredCustomers = [...allCustomersData];
-
-        const searchTerm = customerSearchInput.value.toLowerCase();
-        const area = customerAreaFilter.value;
-        const status = customerStatusFilter.value;
-
-        if (searchTerm) {
-            filteredCustomers = filteredCustomers.filter(cust =>
-                (cust.shopName || '').toLowerCase().includes(searchTerm) ||
-                (cust.ownerName || '').toLowerCase().includes(searchTerm) ||
-                (cust.phone || '').includes(searchTerm) ||
-                (cust.phone2 || '').includes(searchTerm)
-            );
-        }
-        if (area) {
-            filteredCustomers = filteredCustomers.filter(cust => cust.area === area);
-        }
-        if (status) {
-            filteredCustomers = filteredCustomers.filter(cust => cust.status === status);
-        }
-        renderCustomersTable(filteredCustomers);
+        const filters = {
+            searchTerm: customerSearchInput.value.toLowerCase(),
+            area: customerAreaFilter.value,
+            status: customerStatusFilter.value,
+        };
+        loadAndRenderCustomers(filters);
     }
 
     function renderCustomersTable(customersToRender) {

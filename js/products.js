@@ -139,15 +139,25 @@ async function initProductsModule() {
         resetFormFunction: resetProductForm
     });
 
-    async function loadAndRenderProducts() {
+    async function loadAndRenderProducts(filters = {}) {
         if (!productsTableBody) return;
         productsTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">جاري تحميل الأصناف...</td></tr>`;
         try {
-            const { data } = await DB
+            let query = DB
                 .from('products')
-                .select('*')
+                .select('id,name,barcode,category_id,unit_id,purchase_price,sale_price,description,reorder_level,status')
                 .order('name', { ascending: true })
-                .get();
+                .limit(100); // Added pagination
+
+            // Apply filters
+            if (filters.searchTerm) {
+                query = query.or(`name.ilike.%${filters.searchTerm}%,barcode.ilike.%${filters.searchTerm}%`);
+            }
+            if (filters.categoryFilter) {
+                query = query.eq('category_id', filters.categoryFilter);
+            }
+
+            const { data } = await query;
             if (!Array.isArray(data)) throw new Error('فشل تحميل الأصناف.');
             allProductsData = data.map((row) => ({
                 id: row.id,
@@ -165,7 +175,7 @@ async function initProductsModule() {
             }));
             allProductsData.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
             console.log("Products loaded:", allProductsData);
-            applyProductFiltersAndRender();
+            renderProductsTable(allProductsData); // Render filtered data
         } catch (error) {
             console.error("Error loading products:", error);
             productsTableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-red-500">فشل تحميل الأصناف.</td></tr>`;
@@ -173,22 +183,11 @@ async function initProductsModule() {
     }
 
     function applyProductFiltersAndRender() {
-        if(!productsTableBody) return;
-        let filteredProducts = [...allProductsData];
-
-        const searchTerm = productSearchInput.value.toLowerCase();
-        const categoryFilter = productCategoryFilter.value;
-
-        if (searchTerm) {
-            filteredProducts = filteredProducts.filter(product =>
-                (product.name || '').toLowerCase().includes(searchTerm) ||
-                (product.barcode || '').toLowerCase().includes(searchTerm)
-            );
-        }
-        if (categoryFilter) {
-            filteredProducts = filteredProducts.filter(product => product.categoryId === categoryFilter);
-        }
-        renderProductsTable(filteredProducts);
+        const filters = {
+            searchTerm: productSearchInput.value.toLowerCase(),
+            categoryFilter: productCategoryFilter.value,
+        };
+        loadAndRenderProducts(filters);
     }
 
 
