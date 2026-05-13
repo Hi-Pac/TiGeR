@@ -58,7 +58,12 @@
         if (app)     app.classList.add('hidden');
         if (overlay) overlay.classList.remove('hidden');
         const errEl = document.getElementById('login-error');
-        if (errEl) {
+        const errTextEl = document.getElementById('login-error-text');
+        if (errEl && errTextEl) {
+            errTextEl.textContent = errorMsg || '';
+            errEl.classList.toggle('hidden', !errorMsg);
+        } else if (errEl) {
+            // Fallback for old structure
             errEl.textContent = errorMsg || '';
             errEl.classList.toggle('hidden', !errorMsg);
         }
@@ -361,8 +366,21 @@
         const loginForm  = document.getElementById('login-form');
         const loginBtn   = document.getElementById('login-btn');
         const loginError = document.getElementById('login-error');
+        const togglePasswordBtn = document.getElementById('toggle-password-btn');
+        const passwordInput = document.getElementById('login-password');
+        const togglePasswordIcon = document.getElementById('toggle-password-icon');
 
         if (!loginForm) return;
+
+        // Password visibility toggle
+        if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
+            togglePasswordBtn.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePasswordIcon.classList.toggle('fa-eye');
+                togglePasswordIcon.classList.toggle('fa-eye-slash');
+            });
+        }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -371,29 +389,53 @@
             const password = document.getElementById('login-password')?.value || '';
 
             if (!email || !password) {
-                if (loginError) {
-                    loginError.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور.';
-                    loginError.classList.remove('hidden');
+                const errEl = document.getElementById('login-error');
+                const errTextEl = document.getElementById('login-error-text');
+                if (errEl && errTextEl) {
+                    errTextEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور.';
+                    errEl.classList.remove('hidden');
+                } else if (errEl) {
+                    errEl.textContent = 'يرجى إدخال البريد الإلكتروني وكلمة المرور.';
+                    errEl.classList.remove('hidden');
                 }
                 return;
             }
 
             if (loginBtn) {
                 loginBtn.disabled = true;
-                loginBtn.innerHTML = '<span class="btn-spinner"></span> جاري تسجيل الدخول...';
+                const btnContent = document.getElementById('login-btn-content');
+                if (btnContent) {
+                    btnContent.innerHTML = '<span class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></span> جاري تسجيل الدخول...';
+                }
             }
             if (loginError) loginError.classList.add('hidden');
 
             const { error } = await window.AppAuth.login(email, password);
 
             if (error) {
-                if (loginError) {
-                    loginError.textContent = error;
-                    loginError.classList.remove('hidden');
+                const errEl = document.getElementById('login-error');
+                const errTextEl = document.getElementById('login-error-text');
+                if (errEl && errTextEl) {
+                    errTextEl.textContent = error;
+                    errEl.classList.remove('hidden');
+                } else if (errEl) {
+                    errEl.textContent = error;
+                    errEl.classList.remove('hidden');
                 }
                 if (loginBtn) {
                     loginBtn.disabled = false;
-                    loginBtn.textContent = 'تسجيل الدخول';
+                    const btnContent = document.getElementById('login-btn-content');
+                    if (btnContent) {
+                        btnContent.innerHTML = '<i class="fas fa-sign-in-alt ml-2"></i>تسجيل الدخول';
+                    }
+                }
+            } else {
+                // Success - show loading state for app initialization
+                if (loginBtn) {
+                    const btnContent = document.getElementById('login-btn-content');
+                    if (btnContent) {
+                        btnContent.innerHTML = '<span class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-2"></span> جاري تحميل النظام...';
+                    }
                 }
             }
             // On success: AppAuth.login() calls _showApp() and fires auth:signedIn.
@@ -472,5 +514,96 @@
         }
         return 'فشل تسجيل الدخول. يرجى المحاولة مجدداً.';
     }
+
+    // ── Auto-logout functionality ─────────────────────────────────────────
+    let _idleTimer = null;
+    let _idleTimeoutMs = 15 * 60 * 1000; // 15 minutes default
+    let _autoLogoutEnabled = false;
+
+    function _resetIdleTimer() {
+        if (!_autoLogoutEnabled || !window.AppAuth.isAuthenticated()) return;
+
+        if (_idleTimer) {
+            clearTimeout(_idleTimer);
+        }
+
+        _idleTimer = setTimeout(() => {
+            console.log('Auto-logout: User idle for', _idleTimeoutMs / 60000, 'minutes');
+            _performAutoLogout();
+        }, _idleTimeoutMs);
+    }
+
+    async function _performAutoLogout() {
+        if (!window.AppAuth.isAuthenticated()) return;
+
+        try {
+            // Show notification before logout
+            if (window.AppNotify) {
+                window.AppNotify.warning('تم تسجيل الخروج تلقائياً بسبب عدم النشاط.');
+            }
+
+            // Perform logout
+            await window.AppAuth.logout();
+        } catch (error) {
+            console.error('Auto-logout error:', error);
+        }
+    }
+
+    function _setupIdleDetection() {
+        // Track user activity
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+        activityEvents.forEach(eventName => {
+            document.addEventListener(eventName, _resetIdleTimer, true);
+        });
+
+        // Start timer initially
+        _resetIdleTimer();
+    }
+
+    function _configureAutoLogout(enabled, timeoutMinutes) {
+        _autoLogoutEnabled = enabled;
+        _idleTimeoutMs = timeoutMinutes * 60 * 1000;
+
+        // Clear existing timer
+        if (_idleTimer) {
+            clearTimeout(_idleTimer);
+            _idleTimer = null;
+        }
+
+        // Start new timer if enabled
+        if (enabled && window.AppAuth.isAuthenticated()) {
+            _resetIdleTimer();
+        }
+
+        console.log('Auto-logout configured:', enabled ? `Enabled (${timeoutMinutes} min)` : 'Disabled');
+    }
+
+    // Load settings from localStorage on init
+    function _loadAutoLogoutSettings() {
+        const enabled = localStorage.getItem('autoLogoutEnabled') === 'true';
+        const timeoutMinutes = parseInt(localStorage.getItem('idleTimeoutMinutes') || '15');
+        _configureAutoLogout(enabled, timeoutMinutes);
+    }
+
+    // ── Public API extension ───────────────────────────────────────────────
+    window.AppAuth = {
+        ...window.AppAuth,
+        configureAutoLogout: _configureAutoLogout,
+        getCurrentUser: () => ({ ..._user, ...(_profile || {}) })
+    };
+
+    // Setup idle detection when authenticated
+    window.addEventListener('auth:signedIn', () => {
+        _loadAutoLogoutSettings();
+        _setupIdleDetection();
+    });
+
+    window.addEventListener('auth:signedOut', () => {
+        if (_idleTimer) {
+            clearTimeout(_idleTimer);
+            _idleTimer = null;
+        }
+    });
 
 })();

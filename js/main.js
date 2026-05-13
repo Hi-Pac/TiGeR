@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         expenses: { label: 'المصروفات', actions: ['view', 'create', 'edit', 'delete'] },
         banks: { label: 'البنوك والخزائن', actions: ['view', 'create', 'edit', 'delete'] },
         accounting: { label: 'الحسابات', actions: ['view', 'create', 'edit', 'export'] },
+        profile: { label: 'الملف الشخصي', actions: ['view'] },
         settings: { label: 'الإعدادات', actions: ['view', 'manage'] },
         help: { label: 'المساعدة', actions: ['view'] }
     });
@@ -736,10 +737,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.currentLoadedModule = null;
 
+    // Track which module scripts have already been injected into the page.
+    const _loadedModuleScripts = new Set();
+
+    /**
+     * Lazy-load a module's JS file the first time it is needed.
+     * Subsequent calls for the same moduleId resolve immediately.
+     */
+    function loadModuleScript(moduleId) {
+        if (_loadedModuleScripts.has(moduleId)) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `js/${moduleId}.js`;
+            script.onload = () => { _loadedModuleScripts.add(moduleId); resolve(); };
+            script.onerror = () => reject(new Error(`Failed to load script: js/${moduleId}.js`));
+            document.body.appendChild(script);
+        });
+    }
+
     const loadModule = window.loadModule = async function(moduleId) {
         if (!ensureModuleAccess(moduleId)) return;
         window.showGlobalLoader(true);
         try {
+            // 1. Fetch and inject the module's HTML template.
             const response = await fetch(`modules/${moduleId}.html`);
             if (!response.ok) throw new Error(`Could not load module ${moduleId}.html: ${response.statusText}`);
             const html = await response.text();
@@ -753,6 +773,10 @@ document.addEventListener('DOMContentLoaded', () => {
             closeMobileSidebar();
             currentLoadedModule = moduleId;
 
+            // 2. Lazy-load the module's JS file (no-op if already loaded).
+            await loadModuleScript(moduleId);
+
+            // 3. Run the module initializer now that both HTML and JS are ready.
             const initializers = {
                 users: window.initUsersModule,
                 products: window.initProductsModule,
@@ -765,6 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 expenses: window.initExpensesModule,
                 banks: window.initBanksModule,
                 accounting: window.initAccountingModule,
+                profile: window.initProfileModule,
                 settings: window.initSettingsModule,
                 help: window.initHelpModule
             };
@@ -850,19 +875,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('user-menu-button')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.getElementById('user-menu-dropdown')?.classList.toggle('hidden');
-    });
-
-    document.addEventListener('click', () => {
-        document.getElementById('user-menu-dropdown')?.classList.add('hidden');
-    });
-
-    document.getElementById('logout-btn')?.addEventListener('click', async () => {
-        document.getElementById('user-menu-dropdown')?.classList.add('hidden');
-        await window.AppAuth?.logout?.();
-    });
+    // User menu is now handled in auth.js to avoid duplicate event listeners
+    // The profile button in the dropdown uses the standard module-btn class
+    // and will be handled by the allModuleButtons() event listener above
 
     applyTheme(getCurrentThemePreference());
     positionToastContainer();

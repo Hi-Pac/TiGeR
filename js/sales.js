@@ -437,6 +437,46 @@ async function initSalesModule() {
             if (!saleCustomerField.value) throw new Error('يرجى اختيار العميل.');
             if (!saleWarehouseField.value) throw new Error('يرجى اختيار المخزن.');
 
+            // ✅ NEW: Validate inventory availability before saving
+            const warehouseId = saleWarehouseField.value;
+            const productIds = [...new Set(items.map(item => item.product_id))];
+
+            // Fetch current stock for all products in this warehouse
+            const { data: stockData, error: stockErr } = await window.supabaseClient
+                .from('inventory_stock')
+                .select('product_id, warehouse_id, quantity_on_hand')
+                .eq('warehouse_id', warehouseId)
+                .in('product_id', productIds);
+
+            if (stockErr) {
+                console.error('Error fetching stock:', stockErr);
+                throw new Error('فشل التحقق من المخزون المتاح');
+            }
+
+            // Get product names for better error messages
+            const productsMap = new Map();
+            allProductsForSale.forEach(p => productsMap.set(p.id, p.name));
+
+            // Prepare items with product names and warehouse
+            const itemsToValidate = items.map(item => ({
+                product_id: item.product_id,
+                product_name: productsMap.get(item.product_id) || 'منتج غير معروف',
+                quantity: item.quantity,
+                warehouse_id: warehouseId
+            }));
+
+            // Validate inventory using business-logic function
+            const validation = window.ERPUtils?.validateItemsInventory(
+                itemsToValidate,
+                stockData || [],
+                { allowNegative: false }
+            );
+
+            if (!validation.valid) {
+                const errorMessages = validation.errors.map(err => err.message).join('\n');
+                throw new Error(`لا يمكن حفظ الفاتورة - المخزون غير كافٍ:\n\n${errorMessages}\n\nإجمالي النقص: ${validation.totalShortage}`);
+            }
+
             const totals = calculateSaleTotals();
             const nowStamp = Date.now();
             const generatedNo = `SI-${nowStamp}`;
@@ -490,6 +530,23 @@ async function initSalesModule() {
                 .from('sales_invoice_items')
                 .insert(rows);
             if (insErr) throw insErr;
+
+            // Process stock movements for each item using database function
+            for (const item of items) {
+                const { error: stockErr } = await window.supabaseClient.rpc(
+                    'fn_process_stock_movement',
+                    {
+                        p_product_id: item.product_id,
+                        p_warehouse_id: saleWarehouseField.value,
+                        p_movement_type: 'sale',
+                        p_quantity: item.quantity,
+                        p_reference_type: 'sales_invoice',
+                        p_reference_id: finalSaleId,
+                        p_notes: `Sales invoice ${invoicePayload.invoice_number || generatedNo}`
+                    }
+                );
+                if (stockErr) throw stockErr;
+            }
 
             if (window.AppConfig?.getSection('notificationsSettings')?.notifyInvoiceSave || shouldPrint) {
                 window.AppNotify?.success(`تم حفظ الفاتورة ${finalSaleId}${shouldPrint ? ' وجاهزة للطباعة' : ''}.`);

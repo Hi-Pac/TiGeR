@@ -1,13 +1,9 @@
 <div id="users-module" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
     <div class="flex flex-wrap items-center justify-between mb-4">
         <h3 class="text-lg font-bold">إدارة المستخدمين</h3>
-        <button id="add-user-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center">
-            <i class="fas fa-plus ml-2"></i> إضافة مستخدم جديد
+        <button id="add-user-btn" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center shadow-md transition-all transform hover:scale-105">
+            <i class="fas fa-user-plus ml-2"></i> إضافة مستخدم جديد
         </button>
-    </div>
-
-    <div class="mb-3 p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 text-xs text-blue-800 dark:text-blue-200">
-        لإنشاء مستخدم جديد: أنشئه أولاً من <strong>Supabase Authentication</strong> ثم أضف ملفه هنا باستخدام <strong>Auth UID</strong>.
     </div>
 
     <div class="flex flex-wrap gap-4 mb-4">
@@ -15,9 +11,9 @@
             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                 <i class="fas fa-search text-gray-400"></i>
             </div>
-            <input type="text" id="user-search-input" class="form-input pr-10" placeholder="بحث بالاسم أو الهاتف أو Auth UID...">
+            <input type="text" id="user-search-input" class="form-input pr-10 rounded-lg" placeholder="بحث بالاسم، الهاتف، أو البريد الإلكتروني...">
         </div>
-        <select id="user-role-filter" class="form-select">
+        <select id="user-role-filter" class="form-select rounded-lg">
             <option value="">كل الأدوار</option>
             <option value="admin">مدير</option>
             <option value="accountant">محاسب</option>
@@ -25,22 +21,22 @@
             <option value="warehouse">أمين مخزن</option>
             <option value="viewer">مشاهد</option>
         </select>
-        <select id="user-status-filter" class="form-select">
+        <select id="user-status-filter" class="form-select rounded-lg">
             <option value="">كل الحالات</option>
             <option value="active">نشط</option>
             <option value="inactive">غير نشط</option>
         </select>
     </div>
 
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-50 dark:bg-gray-700">
+            <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
                 <tr>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">المستخدم</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Auth UID</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الدور</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الحالة</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الإجراءات</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">المستخدم</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">البريد الإلكتروني</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">الدور</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">الحالة</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">الإجراءات</th>
                 </tr>
             </thead>
             <tbody id="users-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -61,22 +57,35 @@
     <form id="user-form">
         <input type="hidden" id="user-id-field">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label for="user-auth-id-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth UID</label>
-                <input type="text" id="user-auth-id-field" required class="form-input" placeholder="مثال: 790ee7d3-5ad5-4748-b73e-3cea9aeaa32f">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">هذا الحقل مطلوب عند الإضافة، ويجب أن يطابق UID الموجود في Supabase Authentication.</p>
+            <div id="email-field-container">
+                <label for="user-email-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    البريد الإلكتروني <span class="text-red-500">*</span>
+                </label>
+                <input type="email" id="user-email-field" required class="form-input rounded-lg" placeholder="user@example.com">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سيتم إنشاء حساب تلقائياً للمستخدم بهذا البريد الإلكتروني</p>
+            </div>
+            <div id="password-field-container">
+                <label for="user-password-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    كلمة المرور <span class="text-red-500">*</span>
+                </label>
+                <input type="password" id="user-password-field" required class="form-input rounded-lg" placeholder="كلمة مرور قوية">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يجب أن تكون 6 أحرف على الأقل</p>
             </div>
             <div>
-                <label for="user-name-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم</label>
-                <input type="text" id="user-name-field" required class="form-input">
+                <label for="user-name-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    الاسم <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="user-name-field" required class="form-input rounded-lg">
             </div>
             <div>
                 <label for="user-phone-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم الهاتف</label>
-                <input type="tel" id="user-phone-field" class="form-input">
+                <input type="tel" id="user-phone-field" class="form-input rounded-lg">
             </div>
             <div>
-                <label for="user-role-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الدور</label>
-                <select id="user-role-field" required class="form-select">
+                <label for="user-role-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    الدور <span class="text-red-500">*</span>
+                </label>
+                <select id="user-role-field" required class="form-select rounded-lg">
                     <option value="">اختر الدور</option>
                     <option value="admin">مدير</option>
                     <option value="accountant">محاسب</option>
@@ -86,8 +95,10 @@
                 </select>
             </div>
             <div>
-                <label for="user-status-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الحالة</label>
-                <select id="user-status-field" required class="form-select">
+                <label for="user-status-field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    الحالة <span class="text-red-500">*</span>
+                </label>
+                <select id="user-status-field" required class="form-select rounded-lg">
                     <option value="active">نشط</option>
                     <option value="inactive">غير نشط</option>
                 </select>
@@ -95,8 +106,8 @@
         </div>
 
         <div class="flex justify-end mt-6 space-x-2 space-x-reverse">
-            <button type="button" id="cancel-user-form-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md text-sm">إلغاء</button>
-            <button type="submit" id="save-user-form-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md text-sm flex items-center justify-center">
+            <button type="button" id="cancel-user-form-btn" class="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg text-sm transition-all">إلغاء</button>
+            <button type="submit" id="save-user-form-btn" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center justify-center shadow-md transition-all transform hover:scale-105">
                 <span>حفظ</span>
             </button>
         </div>
