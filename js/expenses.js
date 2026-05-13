@@ -2,6 +2,10 @@ let allExpensesData = [];
 let allEmployeesForExpense = []; // For employee dropdown if needed
 
 async function initExpensesModule() {
+    // Reset stale state from any previous visit to this module.
+    allExpensesData = [];
+    allEmployeesForExpense = [];
+
     console.log("Expenses Module Initialized!");
 
     const expensesModuleNode = document.getElementById('expenses-module');

@@ -12,6 +12,10 @@ const ROLE_LABELS = {
 };
 
 async function initUsersModule() {
+    // Reset stale state from any previous visit to this module.
+    allUsersData = [];
+    usersEmailMap = new Map();
+
     const usersModuleNode = document.getElementById('users-module');
     if (!usersModuleNode) return;
 

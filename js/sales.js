@@ -5,6 +5,13 @@ let allProductsForSale = [];
 let allWarehousesForSale = [];
 
 async function initSalesModule() {
+    // Reset stale state from any previous visit to this module.
+    allSalesData = [];
+    allCustomersForSale = [];
+    allSalespersons = [];
+    allProductsForSale = [];
+    allWarehousesForSale = [];
+
     const salesModuleNode = document.getElementById('sales-module');
     if (!salesModuleNode) return;
 

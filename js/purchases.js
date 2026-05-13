@@ -4,6 +4,12 @@ let allProductsForPurchase = [];
 let allWarehousesForPurchase = [];
 
 async function initPurchasesModule() {
+    // Reset stale state from any previous visit to this module.
+    allPurchasesData = [];
+    allSuppliersForPurchase = [];
+    allProductsForPurchase = [];
+    allWarehousesForPurchase = [];
+
     const purchasesModuleNode = document.getElementById('purchases-module');
     if (!purchasesModuleNode) return;
 
