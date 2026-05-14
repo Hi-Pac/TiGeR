@@ -96,7 +96,8 @@ async function initAccountingModule() {
                 .eq('company_id', window.AppAuth?.companyId())
                 .eq('status', 'active')
                 .order('code', { ascending: true })
-                .limit(100); // Added pagination
+                .limit(100)
+                .get(); // Execute DB wrapper select query
 
             if (error) {
                 console.error("Database error loading CoA:", error);
@@ -512,7 +513,7 @@ async function initAccountingModule() {
                     .like('entry_number', `JE-${dateStr}%`)
                     .order('entry_number', { ascending: false })
                     .limit(1)
-                    .get(); // ← Missing .get() call!
+                    .get();
 
                 let sequence = 1;
                 if (lastEntry && lastEntry.length > 0) {
